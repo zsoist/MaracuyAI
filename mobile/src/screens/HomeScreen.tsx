@@ -1,20 +1,30 @@
 import React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AlertFeed } from '../components/AlertFeed';
+import { ContextCard } from '../components/ContextCard';
 import { MoodIndicator } from '../components/MoodIndicator';
 import { ParakeetCard } from '../components/ParakeetCard';
+import { FEATURES } from '../config/env';
 import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import { useStore } from '../store/useStore';
+import { accessibilityLabels } from '../theme/accessibility';
+import { colors, spacing, typography } from '../theme/tokens';
 import type { HomeScreenProps } from '../types/navigation';
 
 export function HomeScreen({ navigation }: HomeScreenProps) {
   const { parakeets, latestAnalysis } = useStore();
-  const { alerts, refreshing, onRefresh } = useHomeDashboard();
+  const { alerts, contextSnapshot, riskEvents, refreshing, onRefresh } = useHomeDashboard();
 
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          accessibilityLabel={accessibilityLabels.refreshHome}
+        />
+      }
     >
       <View style={styles.header}>
         <Text style={styles.title}>Parakeet Wellness</Text>
@@ -35,11 +45,21 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
       )}
 
+      {FEATURES.contextEngine && (
+        <ContextCard
+          contextSnapshot={contextSnapshot}
+          riskEvents={riskEvents}
+          onConfigureHabitat={() => navigation.navigate('Settings')}
+        />
+      )}
+
       <AlertFeed alerts={alerts} />
 
       <TouchableOpacity
         style={styles.recordButton}
         onPress={() => navigation.navigate('Record')}
+        accessibilityRole="button"
+        accessibilityLabel="Abrir pantalla de grabacion"
       >
         <Text style={styles.recordButtonIcon}>{'\u{1F3A4}'}</Text>
         <Text style={styles.recordButtonText}>Grabar vocalizacion</Text>
@@ -77,15 +97,15 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: colors.background,
   },
   header: {
-    padding: 20,
+    padding: spacing.xl,
     paddingTop: 60,
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.primary,
   },
   title: {
-    fontSize: 28,
+    fontSize: typography.title,
     fontWeight: 'bold',
     color: '#fff',
   },
@@ -95,10 +115,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   latestCard: {
-    backgroundColor: '#fff',
-    margin: 16,
+    backgroundColor: colors.surface,
+    margin: spacing.lg,
     borderRadius: 16,
-    padding: 20,
+    padding: spacing.xl,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -107,21 +127,21 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   recommendation: {
-    fontSize: 13,
-    color: '#666',
+    fontSize: typography.caption,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 12,
     lineHeight: 18,
   },
   recordButton: {
     flexDirection: 'row',
-    backgroundColor: '#4CAF50',
-    marginHorizontal: 16,
+    backgroundColor: colors.primary,
+    marginHorizontal: spacing.lg,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#4CAF50',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -144,17 +164,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: typography.section,
     fontWeight: '700',
-    color: '#333',
+    color: colors.textPrimary,
   },
   addButton: {
     fontSize: 15,
-    color: '#4CAF50',
+    color: colors.primary,
     fontWeight: '600',
   },
   emptyState: {
@@ -166,7 +186,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    color: '#999',
+    color: colors.textSecondary,
     marginTop: 12,
     textAlign: 'center',
   },

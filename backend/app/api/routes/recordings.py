@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import AuthContext, get_auth_context
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.analysis_result import AnalysisResult
 from app.models.recording import Recording
@@ -38,6 +39,9 @@ class RecordingResponse(BaseModel):
     duration_seconds: float
     file_size_bytes: int
     sample_rate: int | None
+    quality_score: float
+    quality_label: str
+    quality_warnings: list[str] = Field(default_factory=list)
     recorded_at: str
     created_at: str
 
@@ -151,6 +155,10 @@ async def delete_recording(
 
 
 def _to_response(recording: Recording) -> RecordingResponse:
+    if settings.FEATURE_CAPTURE_QUALITY:
+        quality = _estimate_recording_quality(recording)
+    else:
+        quality = {"score": 0.0, "label": "disabled", "warnings": []}
     return RecordingResponse(
         id=str(recording.id),
         file_url=recording.file_url,
@@ -158,6 +166,9 @@ def _to_response(recording: Recording) -> RecordingResponse:
         duration_seconds=recording.duration_seconds,
         file_size_bytes=recording.file_size_bytes,
         sample_rate=recording.sample_rate,
+        quality_score=quality["score"],
+        quality_label=quality["label"],
+        quality_warnings=quality["warnings"],
         recorded_at=recording.recorded_at.isoformat(),
         created_at=recording.created_at.isoformat(),
     )
@@ -182,3 +193,53 @@ def _to_detail_response(
             for a in analyses
         ],
     )
+
+
+def _estimate_recording_quality(recording: Recording) -> dict[str, object]:
+    score = 0.0
+    warnings: list[str] = []
+
+    duration = recording.duration_seconds
+    sample_rate = recording.sample_rate or 0
+    size_bytes = recording.file_size_bytes
+
+    if duration < 3:
+        warnings.append("Recording is very short. Aim for at least 10 seconds.")
+    elif duration < 10:
+        score += 0.15
+        warnings.append("Short recording. More context improves analysis confidence.")
+    elif duration <= 120:
+        score += 0.45
+    else:
+        score += 0.35
+        warnings.append("Long recording may include mixed events. Trim if needed.")
+
+    if sample_rate >= 22050:
+        score += 0.35
+    elif sample_rate >= 16000:
+        score += 0.2
+        warnings.append("Sample rate is acceptable but not ideal.")
+    else:
+        score += 0.05
+        warnings.append("Low sample rate may reduce classification quality.")
+
+    if size_bytes < 100_000:
+        warnings.append("Small file size suggests weak signal or compression artifacts.")
+    else:
+        score += 0.2
+
+    score = round(min(score, 0.99), 2)
+    if score < 0.4:
+        label = "poor"
+    elif score < 0.65:
+        label = "fair"
+    elif score < 0.85:
+        label = "good"
+    else:
+        label = "excellent"
+
+    return {
+        "score": score,
+        "label": label,
+        "warnings": warnings,
+    }

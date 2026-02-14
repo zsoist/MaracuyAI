@@ -1,21 +1,34 @@
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import analysis, auth, parakeets, recordings
+from app.api.routes import analysis, auth, context, parakeets, recordings
 from app.core.config import settings
 from app.core.database import Base, engine
+from app.jobs.context_refresh import context_refresh_loop
 from app.core.rate_limit import InMemoryRateLimitMiddleware
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    refresh_task: asyncio.Task | None = None
+    refresh_stop_event = asyncio.Event()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    if settings.FEATURE_CONTEXT_ENGINE and settings.CONTEXT_AUTO_REFRESH_ENABLED:
+        refresh_task = asyncio.create_task(context_refresh_loop(refresh_stop_event))
+
     yield
+
+    if refresh_task is not None:
+        refresh_stop_event.set()
+        with suppress(asyncio.CancelledError):
+            await refresh_task
     await engine.dispose()
 
 
@@ -44,6 +57,7 @@ app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(parakeets.router, prefix=settings.API_V1_PREFIX)
 app.include_router(recordings.router, prefix=settings.API_V1_PREFIX)
 app.include_router(analysis.router, prefix=settings.API_V1_PREFIX)
+app.include_router(context.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health")

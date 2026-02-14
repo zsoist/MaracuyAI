@@ -874,3 +874,91 @@ Se eliminó el bloqueo de login obligatorio y se implementó modo invitado persi
    - no introduce servicios pagos extra; usa storage local + DB actual.
 3. Riesgo residual:
    - hoy no hay flujo de migración de datos invitado -> cuenta (future enhancement).
+
+---
+
+## 18) Update Track Execution A/B (2026-02-14)
+
+Se ejecutó la estrategia pedida de 2 tracks en paralelo con feature flags:
+
+1. Track 1: Phase A + base D
+2. Track 2: Phase B temprano
+
+### 18.1 Track 1 implementado
+
+Backend context foundation:
+
+- Nuevos modelos:
+  - `environment_snapshots`
+  - `habitat_profiles`
+  - `risk_events`
+- Nuevo servicio:
+  - `backend/app/services/context_service.py`
+  - Fallback weather: NOAA -> Open-Meteo
+  - Fallback AQI: AirNow (si API key) -> Open-Meteo Air Quality
+  - generación de risk events por umbrales (calor, frío, AQI)
+- Nuevas rutas:
+  - `GET/PUT /api/v1/context/habitat`
+  - `POST /api/v1/context/refresh`
+  - `GET /api/v1/context/current`
+  - `GET /api/v1/context/history`
+  - `GET /api/v1/context/risk-events`
+- Scheduler base:
+  - `backend/app/jobs/context_refresh.py`
+  - loop opcional via `CONTEXT_AUTO_REFRESH_ENABLED`
+
+UI foundation iOS/accessibility base:
+
+- `mobile/src/theme/tokens.ts`
+- `mobile/src/theme/accessibility.ts`
+- Integración inicial en `Home` y `Record` (labels + tokens base)
+- `ContextCard` en Home y configuración de habitat en Settings.
+
+### 18.2 Track 2 implementado
+
+Capture quality + validation temprana:
+
+- Hook de calidad:
+  - `mobile/src/hooks/useRecordingQuality.ts`
+- Componente de calidad:
+  - `mobile/src/components/RecordingQualityMeter.tsx`
+- Integrado en grabación:
+  - `mobile/src/hooks/useRecordAnalysis.ts`
+  - `mobile/src/screens/RecordScreen.tsx`
+- Validaciones backend reforzadas:
+  - min duración configurable (`AUDIO_MIN_DURATION_SECONDS`)
+  - scoring de calidad en response de recordings:
+    - `quality_score`
+    - `quality_label`
+    - `quality_warnings`
+- Enriquecimiento de `details` en análisis:
+  - `signal_quality`
+  - `noise_profile`
+  - `segment_count`
+  - `segment_moods`
+
+### 18.3 Feature flags añadidos
+
+Backend:
+- `FEATURE_CONTEXT_ENGINE`
+- `FEATURE_CAPTURE_QUALITY`
+- `FEATURE_IOS_UX_FOUNDATION`
+- `FEATURE_ADVANCED_REASONING`
+- `FEATURE_OFFLINE_RESILIENCE`
+- `FEATURE_SMART_DISCOVERY`
+
+Mobile:
+- `EXPO_PUBLIC_FEATURE_CONTEXT_ENGINE`
+- `EXPO_PUBLIC_FEATURE_CAPTURE_QUALITY`
+- `EXPO_PUBLIC_FEATURE_IOS_UX_FOUNDATION`
+- `EXPO_PUBLIC_FEATURE_ADVANCED_REASONING`
+- `EXPO_PUBLIC_FEATURE_OFFLINE_RESILIENCE`
+- `EXPO_PUBLIC_FEATURE_SMART_DISCOVERY`
+
+### 18.4 Gating recomendado (siguiente)
+
+Con A/B base ya activo:
+
+1. Entrar a C (reasoner híbrido) detrás de `FEATURE_ADVANCED_REASONING`.
+2. Entrar a E (offline/telemetry/flags rollout) detrás de `FEATURE_OFFLINE_RESILIENCE`.
+3. Entrar a F (smart discovery/watchlist/review queue) detrás de `FEATURE_SMART_DISCOVERY`.

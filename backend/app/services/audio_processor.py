@@ -87,6 +87,7 @@ class AudioProcessor:
         return segments
 
     def get_feature_summary(self, features: AudioFeatures) -> dict:
+        quality = self.get_signal_quality(features)
         return {
             "spectral_centroid_mean": float(np.mean(features.spectral_centroid)),
             "spectral_centroid_std": float(np.std(features.spectral_centroid)),
@@ -99,4 +100,55 @@ class AudioProcessor:
             "pitch_std": features.pitch_std,
             "mfcc_means": [float(m) for m in np.mean(features.mfccs, axis=1)],
             "duration": features.duration,
+            "signal_quality": quality["signal_quality"],
+            "noise_profile": quality["noise_profile"],
+        }
+
+    def get_signal_quality(self, features: AudioFeatures) -> dict:
+        rms_mean = float(np.mean(features.rms_energy))
+        rms_std = float(np.std(features.rms_energy))
+        zcr_mean = float(np.mean(features.zero_crossing_rate))
+
+        score = 0.0
+        if rms_mean >= 0.02:
+            score += 0.4
+        elif rms_mean >= 0.01:
+            score += 0.25
+        else:
+            score += 0.1
+
+        if rms_std >= 0.01:
+            score += 0.25
+        else:
+            score += 0.1
+
+        if zcr_mean <= 0.12:
+            score += 0.25
+        elif zcr_mean <= 0.2:
+            score += 0.15
+        else:
+            score += 0.05
+
+        score = round(min(score, 0.95), 2)
+        if score < 0.4:
+            label = "low"
+        elif score < 0.7:
+            label = "medium"
+        else:
+            label = "high"
+
+        if zcr_mean > 0.2:
+            noise_label = "high_noise"
+        elif zcr_mean > 0.12:
+            noise_label = "moderate_noise"
+        else:
+            noise_label = "low_noise"
+
+        return {
+            "signal_quality": {"score": score, "label": label},
+            "noise_profile": {
+                "label": noise_label,
+                "zcr_mean": round(zcr_mean, 4),
+                "rms_mean": round(rms_mean, 4),
+            },
         }

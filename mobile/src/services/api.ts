@@ -1,7 +1,16 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL, AUTH_TOKEN_KEY, GUEST_ID_KEY } from '../config/env';
-import type { AnalysisResult, Parakeet, Recording, User, WellnessSummary } from '../types';
+import type {
+  AnalysisResult,
+  ContextSnapshot,
+  HabitatProfile,
+  Parakeet,
+  Recording,
+  RiskEvent,
+  User,
+  WellnessSummary,
+} from '../types';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -194,6 +203,54 @@ export interface Alert {
 
 export async function getAlerts(): Promise<Alert[]> {
   const { data } = await api.get<Alert[]>('/analysis/alerts');
+  return data;
+}
+
+// Context
+export async function getHabitatProfile(): Promise<HabitatProfile | null> {
+  const { data } = await api.get<HabitatProfile | null>('/context/habitat');
+  return data;
+}
+
+export async function upsertHabitatProfile(payload: {
+  name: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  location_name?: string | null;
+  timezone_name?: string;
+  habitat_type?: string;
+  notes?: string | null;
+}): Promise<HabitatProfile> {
+  const { data } = await api.put<HabitatProfile>('/context/habitat', payload);
+  return data;
+}
+
+export async function refreshContext(payload?: {
+  latitude?: number;
+  longitude?: number;
+  location_name?: string;
+  timezone_name?: string;
+}): Promise<ContextSnapshot> {
+  const { data } = await api.post<ContextSnapshot>('/context/refresh', payload || {});
+  return data;
+}
+
+export async function getCurrentContext(): Promise<ContextSnapshot | null> {
+  const { data } = await api.get<ContextSnapshot | null>('/context/current');
+  return data;
+}
+
+export async function getContextHistory(limit = 24): Promise<ContextSnapshot[]> {
+  const { data } = await api.get<ContextSnapshot[]>('/context/history', {
+    params: { limit },
+  });
+  return data;
+}
+
+export async function getRiskEvents(limit = 20): Promise<RiskEvent[]> {
+  const { data } = await api.get<RiskEvent[]>('/context/risk-events', {
+    params: { limit },
+  });
   return data;
 }
 

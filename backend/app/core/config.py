@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     RATE_LIMIT_REQUESTS: int = 120
     RATE_LIMIT_WINDOW_SECONDS: int = 60
 
+    # Feature flags
+    FEATURE_CONTEXT_ENGINE: bool = True
+    FEATURE_CAPTURE_QUALITY: bool = True
+    FEATURE_IOS_UX_FOUNDATION: bool = True
+    FEATURE_ADVANCED_REASONING: bool = False
+    FEATURE_OFFLINE_RESILIENCE: bool = False
+    FEATURE_SMART_DISCOVERY: bool = False
+
     # Storage
     STORAGE_BACKEND: str = "local"  # "local" or "s3"
     UPLOAD_DIR: str = "/app/uploads"
@@ -42,8 +50,15 @@ class Settings(BaseSettings):
 
     # Audio processing
     AUDIO_SAMPLE_RATE: int = 22050
+    AUDIO_MIN_DURATION_SECONDS: float = 2.0
     AUDIO_MAX_DURATION_SECONDS: int = 300  # 5 minutes max
     AUDIO_SEGMENT_DURATION: float = 3.0  # seconds per analysis window
+
+    # Context providers
+    AIRNOW_API_KEY: str = ""
+    CONTEXT_HTTP_TIMEOUT_SECONDS: float = 8.0
+    CONTEXT_AUTO_REFRESH_ENABLED: bool = False
+    CONTEXT_REFRESH_INTERVAL_SECONDS: int = 1800
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

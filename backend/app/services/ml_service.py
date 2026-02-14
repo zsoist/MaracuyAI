@@ -41,7 +41,14 @@ class MLService:
         aggregated = self._aggregate_results(segment_results)
 
         full_features = self.processor.extract_features(y)
-        aggregated["details"] = self.processor.get_feature_summary(full_features)
+        quality = self.processor.get_signal_quality(full_features)
+        aggregated["details"] = {
+            **self.processor.get_feature_summary(full_features),
+            "segment_count": len(segments),
+            "segment_moods": [r["mood"] for r in segment_results],
+            "signal_quality": quality["signal_quality"],
+            "noise_profile": quality["noise_profile"],
+        }
 
         return aggregated
 

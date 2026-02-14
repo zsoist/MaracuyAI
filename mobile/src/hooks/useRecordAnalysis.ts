@@ -3,10 +3,12 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Alert } from 'react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { FEATURES } from '../config/env';
 import * as api from '../services/api';
 import { useStore } from '../store/useStore';
 import type { AnalysisResult, Parakeet } from '../types';
 import { getErrorMessage } from '../utils/errorMessage';
+import { useRecordingQuality } from './useRecordingQuality';
 
 interface UseRecordAnalysisResult {
   isRecording: boolean;
@@ -19,6 +21,13 @@ interface UseRecordAnalysisResult {
   stopRecording: () => Promise<void>;
   pickAudioFile: () => Promise<void>;
   resetAnalysis: () => void;
+  recordingQuality: {
+    currentLevel: number;
+    averageLevel: number;
+    peakLevel: number;
+    label: 'poor' | 'fair' | 'good' | 'excellent';
+    guidance: string;
+  };
 }
 
 export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResult {
@@ -30,6 +39,9 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [selectedParakeetId, setSelectedParakeetId] = useState<string | null>(null);
+
+  const { summary: recordingQuality, startMonitoring, stopMonitoring, reset: resetQuality } =
+    useRecordingQuality();
 
   const recordingRef = useRef<Audio.Recording | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
@@ -44,11 +56,12 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
   useEffect(() => {
     return () => {
       clearTimer();
+      stopMonitoring();
       if (recordingRef.current) {
         recordingRef.current.stopAndUnloadAsync().catch(() => undefined);
       }
     };
-  }, [clearTimer]);
+  }, [clearTimer, stopMonitoring]);
 
   useEffect(() => {
     if (parakeets.length === 0) {
@@ -99,25 +112,29 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
         playsInSilentModeIOS: true,
       });
 
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      const recordingOptions: Audio.RecordingOptions = {
+        ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+      };
+
+      const { recording } = await Audio.Recording.createAsync(recordingOptions);
       recordingRef.current = recording;
       setIsRecording(true);
       setDuration(0);
       setAnalysisResult(null);
+      resetQuality();
+
+      if (FEATURES.captureQuality) {
+        startMonitoring(recording);
+      }
 
       clearTimer();
       timerRef.current = setInterval(() => {
         setDuration((seconds) => seconds + 1);
       }, 1000);
     } catch (error) {
-      Alert.alert(
-        'Error',
-        getErrorMessage(error, 'No se pudo iniciar la grabacion.')
-      );
+      Alert.alert('Error', getErrorMessage(error, 'No se pudo iniciar la grabacion.'));
     }
-  }, [clearTimer]);
+  }, [clearTimer, resetQuality, startMonitoring]);
 
   const stopRecording = useCallback(async () => {
     if (!recordingRef.current) {
@@ -125,6 +142,7 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
     }
 
     clearTimer();
+    stopMonitoring();
     setIsRecording(false);
 
     try {
@@ -136,16 +154,33 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
         playsInSilentModeIOS: true,
       });
 
+      if (duration < 3) {
+        Alert.alert('Grabacion muy corta', 'Graba al menos 3 segundos para analizar.');
+        resetQuality();
+        return;
+      }
+
+      if (FEATURES.captureQuality && recordingQuality.averageLevel < 0.08) {
+        Alert.alert(
+          'Calidad de audio baja',
+          'La señal se ve muy baja. Puedes volver a grabar en un ambiente mas silencioso.'
+        );
+      }
+
       if (uri) {
         await analyzeAudio(uri, 'recording.wav');
       }
     } catch (error) {
-      Alert.alert(
-        'Error',
-        getErrorMessage(error, 'No se pudo detener la grabacion.')
-      );
+      Alert.alert('Error', getErrorMessage(error, 'No se pudo detener la grabacion.'));
     }
-  }, [analyzeAudio, clearTimer]);
+  }, [
+    analyzeAudio,
+    clearTimer,
+    duration,
+    recordingQuality.averageLevel,
+    resetQuality,
+    stopMonitoring,
+  ]);
 
   const pickAudioFile = useCallback(async () => {
     try {
@@ -159,16 +194,14 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
       const asset = result.assets[0];
       await analyzeAudio(asset.uri, asset.name);
     } catch (error) {
-      Alert.alert(
-        'Error',
-        getErrorMessage(error, 'No se pudo seleccionar el archivo.')
-      );
+      Alert.alert('Error', getErrorMessage(error, 'No se pudo seleccionar el archivo.'));
     }
   }, [analyzeAudio]);
 
   const resetAnalysis = () => {
     setAnalysisResult(null);
     setDuration(0);
+    resetQuality();
   };
 
   return {
@@ -182,5 +215,6 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
     stopRecording,
     pickAudioFile,
     resetAnalysis,
+    recordingQuality,
   };
 }

@@ -43,6 +43,12 @@ class StorageService:
             self._delete_if_exists(file_path)
             raise ValueError("Audio file has no usable signal.")
 
+        if duration < settings.AUDIO_MIN_DURATION_SECONDS:
+            self._delete_if_exists(file_path)
+            raise ValueError(
+                f"Audio too short ({duration:.1f}s). Min: {settings.AUDIO_MIN_DURATION_SECONDS:.1f}s"
+            )
+
         if duration > settings.AUDIO_MAX_DURATION_SECONDS:
             self._delete_if_exists(file_path)
             raise ValueError(

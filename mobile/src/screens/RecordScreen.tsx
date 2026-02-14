@@ -4,8 +4,12 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AnalysisLoadingState } from '../components/AnalysisLoadingState';
 import { AnalysisResultCard } from '../components/AnalysisResultCard';
 import { ParakeetTargetSelector } from '../components/ParakeetTargetSelector';
+import { RecordingQualityMeter } from '../components/RecordingQualityMeter';
+import { FEATURES } from '../config/env';
 import { useRecordAnalysis } from '../hooks/useRecordAnalysis';
 import { useStore } from '../store/useStore';
+import { accessibilityLabels } from '../theme/accessibility';
+import { colors, spacing, typography } from '../theme/tokens';
 import { formatDuration } from '../utils/audioHelpers';
 
 export function RecordScreen() {
@@ -21,6 +25,7 @@ export function RecordScreen() {
     stopRecording,
     pickAudioFile,
     resetAnalysis,
+    recordingQuality,
   } = useRecordAnalysis(parakeets);
 
   const toggleRecording = () => {
@@ -46,6 +51,16 @@ export function RecordScreen() {
               onSelect={setSelectedParakeetId}
             />
 
+            {FEATURES.captureQuality && (
+              <RecordingQualityMeter
+                currentLevel={recordingQuality.currentLevel}
+                averageLevel={recordingQuality.averageLevel}
+                peakLevel={recordingQuality.peakLevel}
+                label={recordingQuality.label}
+                guidance={recordingQuality.guidance}
+              />
+            )}
+
             <Text style={styles.timerText}>{formatDuration(duration)}</Text>
 
             {isRecording && (
@@ -55,6 +70,10 @@ export function RecordScreen() {
             <TouchableOpacity
               style={[styles.recordBtn, isRecording && styles.recordBtnActive]}
               onPress={toggleRecording}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isRecording ? accessibilityLabels.stopRecording : accessibilityLabels.startRecording
+              }
             >
               <View style={[styles.recordInner, isRecording && styles.recordInnerActive]} />
             </TouchableOpacity>
@@ -64,7 +83,12 @@ export function RecordScreen() {
             </Text>
 
             {!isRecording && (
-              <TouchableOpacity style={styles.uploadButton} onPress={() => void pickAudioFile()}>
+              <TouchableOpacity
+                style={styles.uploadButton}
+                onPress={() => void pickAudioFile()}
+                accessibilityRole="button"
+                accessibilityLabel={accessibilityLabels.uploadAudio}
+              >
                 <Text style={styles.uploadText}>Subir archivo de audio</Text>
               </TouchableOpacity>
             )}
@@ -78,7 +102,7 @@ export function RecordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -91,14 +115,14 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   timerText: {
-    fontSize: 64,
+    fontSize: 56,
     fontWeight: '200',
-    color: '#333',
-    marginBottom: 8,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
   },
   recordingHint: {
-    fontSize: 13,
-    color: '#999',
+    fontSize: typography.caption,
+    color: colors.textSecondary,
     marginBottom: 40,
   },
   recordBtn: {
@@ -106,19 +130,19 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 4,
-    borderColor: '#F44336',
+    borderColor: colors.danger,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   recordBtnActive: {
-    borderColor: '#F44336',
+    borderColor: colors.danger,
   },
   recordInner: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#F44336',
+    backgroundColor: colors.danger,
   },
   recordInnerActive: {
     width: 28,
@@ -126,8 +150,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   recordLabel: {
-    fontSize: 15,
-    color: '#666',
+    fontSize: typography.body,
+    color: colors.textSecondary,
     marginBottom: 40,
   },
   uploadButton: {
@@ -135,11 +159,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#4CAF50',
+    borderColor: colors.primary,
   },
   uploadText: {
-    color: '#4CAF50',
-    fontSize: 15,
+    color: colors.primary,
+    fontSize: typography.body,
     fontWeight: '500',
   },
 });
