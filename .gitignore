@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# React Native
+mobile/node_modules/
+mobile/.expo/
+mobile/ios/Pods/
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/build/
+*.jks
+*.keystore
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Audio files (large)
+*.wav
+*.mp3
+*.m4a
+*.flac
+!backend/app/ml/test_samples/
+
+# ML weights (track with Git LFS if needed)
+backend/app/ml/weights/*.h5
+backend/app/ml/weights/*.pt
+backend/app/ml/weights/*.onnx
+
+# Docker
+docker-compose.override.yml
+
+# Database
+*.db
+*.sqlite3
+
+# Uploads
+uploads/
