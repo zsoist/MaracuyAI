@@ -1,18 +1,36 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import type { AnalysisResult, Parakeet, Recording, User, WellnessSummary } from '../types';
 
-const API_BASE_URL = __DEV__
-  ? 'http://localhost:8000/api/v1'
-  : 'https://api.parakeetwellness.com/api/v1';
+const configuredBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+const defaultDevBaseUrl =
+  Platform.OS === 'android'
+    ? 'http://10.0.2.2:8000/api/v1'
+    : 'http://localhost:8000/api/v1';
+const API_BASE_URL =
+  configuredBaseUrl || (__DEV__ ? defaultDevBaseUrl : 'https://api.parakeetwellness.com/api/v1');
+const AUTH_TOKEN_KEY = 'auth_token';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
 });
 
+async function getAuthToken() {
+  return SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+}
+
+async function setAuthToken(token: string) {
+  await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
+}
+
+async function clearAuthToken() {
+  await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+}
+
 api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('auth_token');
+  const token = await getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -26,7 +44,7 @@ export async function register(email: string, password: string, displayName?: st
     password,
     display_name: displayName,
   });
-  await AsyncStorage.setItem('auth_token', data.access_token);
+  await setAuthToken(data.access_token);
   return data;
 }
 
@@ -35,7 +53,7 @@ export async function login(email: string, password: string) {
     email,
     password,
   });
-  await AsyncStorage.setItem('auth_token', data.access_token);
+  await setAuthToken(data.access_token);
   return data;
 }
 
@@ -45,7 +63,7 @@ export async function getMe(): Promise<User> {
 }
 
 export async function logout() {
-  await AsyncStorage.removeItem('auth_token');
+  await clearAuthToken();
 }
 
 // Parakeets
@@ -69,6 +87,25 @@ export async function updateParakeet(
   updates: Partial<Parakeet>
 ): Promise<Parakeet> {
   const { data } = await api.put<Parakeet>(`/parakeets/${id}`, updates);
+  return data;
+}
+
+export async function uploadParakeetPhoto(
+  id: string,
+  photoUri: string,
+  filename: string,
+  mimeType: string
+): Promise<Parakeet> {
+  const formData = new FormData();
+  formData.append('file', {
+    uri: photoUri,
+    name: filename,
+    type: mimeType,
+  } as unknown as Blob);
+
+  const { data } = await api.post<Parakeet>(`/parakeets/${id}/photo`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return data;
 }
 
@@ -142,6 +179,15 @@ export interface Alert {
 export async function getAlerts(): Promise<Alert[]> {
   const { data } = await api.get<Alert[]>('/analysis/alerts');
   return data;
+}
+
+export function toMediaUrl(pathOrUrl: string): string {
+  if (!pathOrUrl) return pathOrUrl;
+  if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+    return pathOrUrl;
+  }
+  const rootUrl = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
+  return `${rootUrl}${pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`}`;
 }
 
 export default api;

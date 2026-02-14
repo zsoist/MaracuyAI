@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { toMediaUrl } from '../services/api';
 import type { Parakeet } from '../types';
 
 interface ParakeetCardProps {
@@ -12,7 +13,14 @@ export function ParakeetCard({ parakeet, onPress, latestMood }: ParakeetCardProp
   return (
     <TouchableOpacity style={styles.card} onPress={() => onPress(parakeet)}>
       <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{parakeet.name.charAt(0).toUpperCase()}</Text>
+        {parakeet.photo_url ? (
+          <Image
+            source={{ uri: toMediaUrl(parakeet.photo_url) }}
+            style={styles.avatarImage}
+          />
+        ) : (
+          <Text style={styles.avatarText}>{parakeet.name.charAt(0).toUpperCase()}</Text>
+        )}
       </View>
       <View style={styles.info}>
         <Text style={styles.name}>{parakeet.name}</Text>
@@ -48,6 +56,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  avatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   avatarText: {
     color: '#fff',

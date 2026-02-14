@@ -33,11 +33,6 @@ export function WellnessChart({ analyses }: WellnessChartProps) {
   const energyData = sorted.map((a) => Math.round(a.energy_level * 100));
   const confidenceData = sorted.map((a) => Math.round(a.confidence * 100));
 
-  const dotColor = (index: number) => {
-    const mood = sorted[index]?.mood as MoodType;
-    return MOOD_CONFIG[mood]?.color || '#607D8B';
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Tendencia de bienestar</Text>
@@ -82,7 +77,7 @@ export function WellnessChart({ analyses }: WellnessChartProps) {
         style={styles.chart}
       />
       <View style={styles.legend}>
-        {sorted.slice(-5).reverse().map((a, i) => {
+        {sorted.slice(-5).reverse().map((a) => {
           const config = MOOD_CONFIG[a.mood as MoodType];
           return (
             <View key={a.id} style={styles.legendItem}>

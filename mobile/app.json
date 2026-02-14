@@ -32,7 +32,8 @@
       "expo-av",
       "expo-image-picker",
       "expo-document-picker",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-secure-store"
     ]
   }
 }

@@ -40,9 +40,15 @@ export function LoginScreen() {
       }
       const user = await api.getMe();
       setUser(user);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const message =
-        err?.response?.data?.detail || 'Ocurrio un error. Verifica tus datos e intenta de nuevo.';
+        (typeof err === 'object' &&
+          err !== null &&
+          'response' in err &&
+          typeof (err as { response?: { data?: { detail?: string } } }).response?.data?.detail ===
+            'string' &&
+          (err as { response?: { data?: { detail?: string } } }).response?.data?.detail) ||
+        'Ocurrio un error. Verifica tus datos e intenta de nuevo.';
       Alert.alert('Error', message);
     } finally {
       setLoading(false);

@@ -13,8 +13,9 @@ import {
 } from 'react-native';
 import * as api from '../services/api';
 import { useStore } from '../store/useStore';
+import type { AddParakeetScreenProps } from '../types/navigation';
 
-export function AddParakeetScreen({ navigation }: { navigation: any }) {
+export function AddParakeetScreen({ navigation }: AddParakeetScreenProps) {
   const { addParakeet } = useStore();
   const [name, setName] = useState('');
   const [colorDescription, setColorDescription] = useState('');
@@ -36,8 +37,15 @@ export function AddParakeetScreen({ navigation }: { navigation: any }) {
       });
       addParakeet(parakeet);
       navigation.goBack();
-    } catch (err: any) {
-      const message = err?.response?.data?.detail || 'No se pudo crear el periquito.';
+    } catch (err: unknown) {
+      const message =
+        (typeof err === 'object' &&
+          err !== null &&
+          'response' in err &&
+          typeof (err as { response?: { data?: { detail?: string } } }).response?.data?.detail ===
+            'string' &&
+          (err as { response?: { data?: { detail?: string } } }).response?.data?.detail) ||
+        'No se pudo crear el periquito.';
       Alert.alert('Error', message);
     } finally {
       setLoading(false);

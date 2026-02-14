@@ -1,19 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { MoodIndicator } from '../components/MoodIndicator';
 import { WellnessChart } from '../components/WellnessChart';
 import * as api from '../services/api';
 import { MOOD_CONFIG, useStore } from '../store/useStore';
+import type { ParakeetProfileScreenProps } from '../types/navigation';
 import type { AnalysisResult, MoodType, WellnessSummary } from '../types';
 
-export function ParakeetProfileScreen({ route }: { route: any }) {
+export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
   const { parakeetId } = route.params;
-  const { parakeets } = useStore();
+  const { parakeets, updateParakeet } = useStore();
   const parakeet = parakeets.find((p) => p.id === parakeetId);
 
   const [summary, setSummary] = useState<WellnessSummary | null>(null);
   const [analyses, setAnalyses] = useState<AnalysisResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -28,9 +40,41 @@ export function ParakeetProfileScreen({ route }: { route: any }) {
       setSummary(summaryData);
       setAnalyses(historyData);
     } catch {
-      // silent
+      Alert.alert('Error', 'No se pudo cargar el perfil del periquito.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePickPhoto = async () => {
+    if (!parakeet) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permiso requerido', 'Habilita acceso a fotos para subir imagen.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) {
+      return;
+    }
+
+    const asset = result.assets[0];
+    const fileName = asset.fileName || `parakeet-${parakeet.id}.jpg`;
+    const mimeType = asset.mimeType || 'image/jpeg';
+
+    setIsUploadingPhoto(true);
+    try {
+      const updated = await api.uploadParakeetPhoto(parakeet.id, asset.uri, fileName, mimeType);
+      updateParakeet(updated);
+    } catch {
+      Alert.alert('Error', 'No se pudo subir la foto.');
+    } finally {
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -65,14 +109,32 @@ export function ParakeetProfileScreen({ route }: { route: any }) {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{parakeet.name.charAt(0).toUpperCase()}</Text>
-        </View>
+        {parakeet.photo_url ? (
+          <Image
+            style={styles.photo}
+            source={{
+              uri: api.toMediaUrl(parakeet.photo_url),
+            }}
+          />
+        ) : (
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{parakeet.name.charAt(0).toUpperCase()}</Text>
+          </View>
+        )}
         <Text style={styles.name}>{parakeet.name}</Text>
         {parakeet.color_description && (
           <Text style={styles.description}>{parakeet.color_description}</Text>
         )}
         {parakeet.notes && <Text style={styles.notes}>{parakeet.notes}</Text>}
+        <TouchableOpacity
+          style={[styles.photoButton, isUploadingPhoto && styles.photoButtonDisabled]}
+          disabled={isUploadingPhoto}
+          onPress={handlePickPhoto}
+        >
+          <Text style={styles.photoButtonText}>
+            {isUploadingPhoto ? 'Subiendo foto...' : 'Actualizar foto'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {summary && summary.total_analyses > 0 ? (
@@ -176,6 +238,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  photo: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
+  },
   avatarText: {
     fontSize: 36,
     fontWeight: 'bold',
@@ -196,6 +266,21 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     marginTop: 8,
     textAlign: 'center',
+  },
+  photoButton: {
+    marginTop: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  photoButtonDisabled: {
+    opacity: 0.7,
+  },
+  photoButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
   },
   statsRow: {
     flexDirection: 'row',

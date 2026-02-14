@@ -1,4 +1,5 @@
 import io
+import imghdr
 import os
 import uuid
 from pathlib import Path
@@ -13,6 +14,8 @@ class StorageService:
     def __init__(self):
         self.upload_dir = Path(settings.UPLOAD_DIR)
         self.upload_dir.mkdir(parents=True, exist_ok=True)
+        self.public_dir = self.upload_dir / "public"
+        self.public_dir.mkdir(parents=True, exist_ok=True)
 
     async def save_audio(
         self, contents: bytes, user_id: str, original_filename: str
@@ -29,45 +32,89 @@ class StorageService:
             f.write(contents)
 
         try:
-            y, sr = librosa.load(io.BytesIO(contents), sr=None)
+            y, sr = librosa.load(io.BytesIO(contents), sr=None, mono=True)
             duration = float(librosa.get_duration(y=y, sr=sr))
             sample_rate = int(sr)
-        except Exception:
-            duration = 0.0
-            sample_rate = None
+        except Exception as exc:
+            self._delete_if_exists(file_path)
+            raise ValueError("Invalid or unsupported audio file.") from exc
+
+        if duration <= 0:
+            self._delete_if_exists(file_path)
+            raise ValueError("Audio file has no usable signal.")
 
         if duration > settings.AUDIO_MAX_DURATION_SECONDS:
-            os.remove(file_path)
+            self._delete_if_exists(file_path)
             raise ValueError(
                 f"Audio too long ({duration:.0f}s). Max: {settings.AUDIO_MAX_DURATION_SECONDS}s"
             )
 
-        wav_path = user_dir / f"{file_id}.wav"
+        target_path = file_path
         if ext != ".wav":
+            wav_path = user_dir / f"{file_id}.wav"
             try:
                 y_resampled, _ = librosa.load(
                     io.BytesIO(contents), sr=settings.AUDIO_SAMPLE_RATE, mono=True
                 )
                 sf.write(str(wav_path), y_resampled, settings.AUDIO_SAMPLE_RATE)
+                target_path = wav_path
             except Exception:
-                wav_path = file_path
+                target_path = file_path
 
         return {
-            "file_url": str(wav_path if wav_path.exists() else file_path),
+            "file_url": str(target_path),
             "duration_seconds": duration,
             "sample_rate": sample_rate,
         }
 
+    async def save_image(self, contents: bytes, user_id: str, original_filename: str) -> str:
+        detected = imghdr.what(None, h=contents)
+        if detected is None:
+            raise ValueError("Invalid or unsupported image file.")
+
+        ext_map = {
+            "jpeg": ".jpg",
+            "png": ".png",
+            "gif": ".gif",
+            "webp": ".webp",
+        }
+        ext = ext_map.get(detected)
+        if ext is None:
+            raise ValueError("Unsupported image format. Allowed: JPG, PNG, GIF, WEBP.")
+
+        photos_dir = self.public_dir / "photos" / user_id
+        photos_dir.mkdir(parents=True, exist_ok=True)
+
+        photo_id = str(uuid.uuid4())
+        filename = f"{photo_id}{ext}"
+        output_path = photos_dir / filename
+        with open(output_path, "wb") as f:
+            f.write(contents)
+
+        return f"/media/photos/{user_id}/{filename}"
+
     async def delete_audio(self, file_url: str) -> None:
         path = Path(file_url)
-        if path.exists():
-            os.remove(path)
+        self._delete_if_exists(path)
         wav_variant = path.with_suffix(".wav")
-        if wav_variant != path and wav_variant.exists():
-            os.remove(wav_variant)
+        if wav_variant != path:
+            self._delete_if_exists(wav_variant)
+
+    async def delete_file(self, file_url: str) -> None:
+        path = Path(file_url)
+        if not path.is_absolute():
+            normalized = file_url.lstrip("/")
+            if normalized.startswith("media/"):
+                normalized = f"public/{normalized.removeprefix('media/')}"
+            path = self.upload_dir / normalized
+        self._delete_if_exists(path)
 
     async def get_audio_path(self, file_url: str) -> Path:
         path = Path(file_url)
         if not path.exists():
             raise FileNotFoundError(f"Audio file not found: {file_url}")
         return path
+
+    def _delete_if_exists(self, path: Path) -> None:
+        if path.exists():
+            os.remove(path)

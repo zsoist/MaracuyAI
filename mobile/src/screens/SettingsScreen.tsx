@@ -3,7 +3,7 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as api from '../services/api';
 import { useStore } from '../store/useStore';
 
-export function SettingsScreen({ navigation }: { navigation: any }) {
+export function SettingsScreen() {
   const { user, setUser, setParakeets, setRecordings } = useStore();
 
   const handleLogout = async () => {

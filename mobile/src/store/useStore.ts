@@ -11,6 +11,7 @@ interface AppState {
   parakeets: Parakeet[];
   setParakeets: (parakeets: Parakeet[]) => void;
   addParakeet: (parakeet: Parakeet) => void;
+  updateParakeet: (parakeet: Parakeet) => void;
   removeParakeet: (id: string) => void;
 
   // Recordings
@@ -38,6 +39,10 @@ export const useStore = create<AppState>((set) => ({
   setParakeets: (parakeets) => set({ parakeets }),
   addParakeet: (parakeet) =>
     set((state) => ({ parakeets: [parakeet, ...state.parakeets] })),
+  updateParakeet: (parakeet) =>
+    set((state) => ({
+      parakeets: state.parakeets.map((p) => (p.id === parakeet.id ? parakeet : p)),
+    })),
   removeParakeet: (id) =>
     set((state) => ({
       parakeets: state.parakeets.filter((p) => p.id !== id),

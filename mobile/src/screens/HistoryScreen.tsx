@@ -11,7 +11,6 @@ import { MoodIndicator } from '../components/MoodIndicator';
 import * as api from '../services/api';
 import { useStore } from '../store/useStore';
 import type { AnalysisResult } from '../types';
-import { formatDuration } from '../utils/audioHelpers';
 
 export function HistoryScreen() {
   const { parakeets } = useStore();

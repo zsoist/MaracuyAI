@@ -13,9 +13,10 @@ import { HistoryScreen } from './screens/HistoryScreen';
 import { ParakeetProfileScreen } from './screens/ParakeetProfileScreen';
 import { AddParakeetScreen } from './screens/AddParakeetScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import type { HomeTabParamList, RootStackParamList } from './types/navigation';
 
-const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator<HomeTabParamList>();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function TabIcon({ label, color }: { label: string; color: string }) {
   return <Text style={{ fontSize: 18, color }}>{label}</Text>;

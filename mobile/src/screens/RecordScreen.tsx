@@ -12,14 +12,16 @@ import {
 import { MoodIndicator } from '../components/MoodIndicator';
 import * as api from '../services/api';
 import { useStore } from '../store/useStore';
+import type { AnalysisResult } from '../types';
 import { formatDuration } from '../utils/audioHelpers';
 
-export function RecordScreen({ navigation }: { navigation: any }) {
+export function RecordScreen() {
   const { parakeets, setLatestAnalysis, addRecording } = useStore();
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [selectedParakeetId, setSelectedParakeetId] = useState<string | null>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
 
@@ -28,6 +30,17 @@ export function RecordScreen({ navigation }: { navigation: any }) {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (parakeets.length === 0) {
+      setSelectedParakeetId(null);
+      return;
+    }
+    if (selectedParakeetId && parakeets.some((p) => p.id === selectedParakeetId)) {
+      return;
+    }
+    setSelectedParakeetId(parakeets[0].id);
+  }, [parakeets, selectedParakeetId]);
 
   const startRecording = async () => {
     try {
@@ -53,7 +66,7 @@ export function RecordScreen({ navigation }: { navigation: any }) {
       timerRef.current = setInterval(() => {
         setDuration((d) => d + 1);
       }, 1000);
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'No se pudo iniciar la grabacion.');
     }
   };
@@ -72,7 +85,7 @@ export function RecordScreen({ navigation }: { navigation: any }) {
       if (uri) {
         await analyzeAudio(uri, 'recording.wav');
       }
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'No se pudo detener la grabacion.');
     }
   };
@@ -88,7 +101,7 @@ export function RecordScreen({ navigation }: { navigation: any }) {
         const asset = result.assets[0];
         await analyzeAudio(asset.uri, asset.name);
       }
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'No se pudo seleccionar el archivo.');
     }
   };
@@ -99,14 +112,14 @@ export function RecordScreen({ navigation }: { navigation: any }) {
       const recording = await api.uploadRecording(uri, filename);
       addRecording(recording);
 
-      const parakeetIds = parakeets.length > 0 ? parakeets.map((p) => p.id) : undefined;
+      const parakeetIds = selectedParakeetId ? [selectedParakeetId] : undefined;
       const results = await api.analyzeRecording(recording.id, parakeetIds);
 
       if (results.length > 0) {
         setAnalysisResult(results[0]);
         setLatestAnalysis(results[0]);
       }
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'No se pudo analizar el audio. Verifica tu conexion.');
     } finally {
       setIsAnalyzing(false);
@@ -162,6 +175,49 @@ export function RecordScreen({ navigation }: { navigation: any }) {
           </View>
         ) : (
           <View style={styles.recordContainer}>
+            {parakeets.length > 0 && (
+              <View style={styles.selectorContainer}>
+                <Text style={styles.selectorLabel}>Analizar para:</Text>
+                <View style={styles.selectorChips}>
+                  <TouchableOpacity
+                    style={[
+                      styles.selectorChip,
+                      selectedParakeetId === null && styles.selectorChipActive,
+                    ]}
+                    onPress={() => setSelectedParakeetId(null)}
+                  >
+                    <Text
+                      style={[
+                        styles.selectorChipText,
+                        selectedParakeetId === null && styles.selectorChipTextActive,
+                      ]}
+                    >
+                      General
+                    </Text>
+                  </TouchableOpacity>
+                  {parakeets.map((parakeet) => (
+                    <TouchableOpacity
+                      key={parakeet.id}
+                      style={[
+                        styles.selectorChip,
+                        selectedParakeetId === parakeet.id && styles.selectorChipActive,
+                      ]}
+                      onPress={() => setSelectedParakeetId(parakeet.id)}
+                    >
+                      <Text
+                        style={[
+                          styles.selectorChipText,
+                          selectedParakeetId === parakeet.id && styles.selectorChipTextActive,
+                        ]}
+                      >
+                        {parakeet.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+
             <Text style={styles.timerText}>{formatDuration(duration)}</Text>
 
             {isRecording && (
@@ -208,6 +264,42 @@ const styles = StyleSheet.create({
   },
   recordContainer: {
     alignItems: 'center',
+    width: '100%',
+  },
+  selectorContainer: {
+    width: '100%',
+    marginBottom: 18,
+  },
+  selectorLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+  },
+  selectorChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  selectorChip: {
+    borderWidth: 1,
+    borderColor: '#D0D7DE',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: '#fff',
+  },
+  selectorChipActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  selectorChipText: {
+    fontSize: 12,
+    color: '#455A64',
+    fontWeight: '600',
+  },
+  selectorChipTextActive: {
+    color: '#fff',
   },
   timerText: {
     fontSize: 64,

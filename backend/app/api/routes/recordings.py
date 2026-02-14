@@ -1,12 +1,13 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
+from app.models.analysis_result import AnalysisResult
 from app.models.recording import Recording
 from app.models.user import User
 from app.services.storage_service import StorageService
@@ -43,6 +44,21 @@ class RecordingResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class RecordingAnalysisResponse(BaseModel):
+    id: str
+    parakeet_id: str | None
+    mood: str
+    confidence: float
+    energy_level: float
+    vocalization_type: str
+    recommendations: str | None
+    created_at: str
+
+
+class RecordingDetailResponse(RecordingResponse):
+    analysis_results: list[RecordingAnalysisResponse] = Field(default_factory=list)
+
+
 @router.post("/upload", response_model=RecordingResponse, status_code=status.HTTP_201_CREATED)
 async def upload_recording(
     file: UploadFile,
@@ -56,17 +72,25 @@ async def upload_recording(
         )
 
     contents = await file.read()
+    if not contents:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty.",
+        )
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="File too large. Maximum size is 50MB.",
         )
 
-    file_info = await storage.save_audio(
-        contents=contents,
-        user_id=str(current_user.id),
-        original_filename=file.filename or "recording.wav",
-    )
+    try:
+        file_info = await storage.save_audio(
+            contents=contents,
+            user_id=str(current_user.id),
+            original_filename=file.filename or "recording.wav",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     recording = Recording(
         user_id=current_user.id,
@@ -84,8 +108,8 @@ async def upload_recording(
 
 @router.get("/", response_model=list[RecordingResponse])
 async def list_recordings(
-    limit: int = 20,
-    offset: int = 0,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -99,14 +123,20 @@ async def list_recordings(
     return [_to_response(r) for r in result.scalars().all()]
 
 
-@router.get("/{recording_id}", response_model=RecordingResponse)
+@router.get("/{recording_id}", response_model=RecordingDetailResponse)
 async def get_recording(
     recording_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     recording = await _get_user_recording(db, recording_id, current_user.id)
-    return _to_response(recording)
+    analysis_result = await db.execute(
+        select(AnalysisResult)
+        .where(AnalysisResult.recording_id == recording.id)
+        .order_by(AnalysisResult.created_at.desc())
+    )
+    analyses = analysis_result.scalars().all()
+    return _to_detail_response(recording, analyses)
 
 
 @router.delete("/{recording_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -145,4 +175,25 @@ def _to_response(recording: Recording) -> RecordingResponse:
         sample_rate=recording.sample_rate,
         recorded_at=recording.recorded_at.isoformat(),
         created_at=recording.created_at.isoformat(),
+    )
+
+
+def _to_detail_response(
+    recording: Recording, analyses: list[AnalysisResult]
+) -> RecordingDetailResponse:
+    return RecordingDetailResponse(
+        **_to_response(recording).model_dump(),
+        analysis_results=[
+            RecordingAnalysisResponse(
+                id=str(a.id),
+                parakeet_id=str(a.parakeet_id) if a.parakeet_id else None,
+                mood=a.mood.value,
+                confidence=a.confidence,
+                energy_level=a.energy_level,
+                vocalization_type=a.vocalization_type.value,
+                recommendations=a.recommendations,
+                created_at=a.created_at.isoformat(),
+            )
+            for a in analyses
+        ],
     )

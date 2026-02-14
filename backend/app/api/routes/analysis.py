@@ -1,13 +1,14 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.analysis_result import AnalysisResult, MoodType, VocalizationType
+from app.models.parakeet import Parakeet
 from app.models.recording import Recording
 from app.models.user import User
 from app.services.ml_service import MLService
@@ -18,8 +19,8 @@ ml_service = MLService()
 
 
 class AnalyzeRequest(BaseModel):
-    recording_id: str
-    parakeet_ids: list[str] | None = None
+    recording_id: uuid.UUID
+    parakeet_ids: list[uuid.UUID] | None = Field(default=None, max_length=10)
 
 
 class AnalysisResponse(BaseModel):
@@ -54,10 +55,9 @@ async def analyze_recording(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    recording_uuid = uuid.UUID(body.recording_id)
     result = await db.execute(
         select(Recording).where(
-            Recording.id == recording_uuid,
+            Recording.id == body.recording_id,
             Recording.user_id == current_user.id,
         )
     )
@@ -67,15 +67,39 @@ async def analyze_recording(
             status_code=status.HTTP_404_NOT_FOUND, detail="Recording not found"
         )
 
-    analysis_output = await ml_service.analyze_audio(recording.file_url)
+    requested_parakeets = _dedupe_uuids(body.parakeet_ids)
+    if requested_parakeets:
+        owned_parakeets_result = await db.execute(
+            select(Parakeet.id).where(
+                Parakeet.user_id == current_user.id,
+                Parakeet.id.in_(requested_parakeets),
+            )
+        )
+        owned_parakeets = set(owned_parakeets_result.scalars().all())
+        unauthorized = [pid for pid in requested_parakeets if pid not in owned_parakeets]
+        if unauthorized:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="One or more parakeet_ids do not belong to the current user.",
+            )
+
+    try:
+        analysis_output = await ml_service.analyze_audio(recording.file_url)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Audio analysis failed unexpectedly.",
+        ) from exc
 
     results = []
-    parakeet_ids = body.parakeet_ids or [None]
+    parakeet_ids = requested_parakeets or [None]
 
     for pid in parakeet_ids:
         analysis = AnalysisResult(
             recording_id=recording.id,
-            parakeet_id=uuid.UUID(pid) if pid else None,
+            parakeet_id=pid,
             mood=MoodType(analysis_output["mood"]),
             confidence=analysis_output["confidence"],
             energy_level=analysis_output["energy_level"],
@@ -93,7 +117,7 @@ async def analyze_recording(
 @router.get("/history/{parakeet_id}", response_model=list[AnalysisResponse])
 async def get_analysis_history(
     parakeet_id: uuid.UUID,
-    limit: int = 30,
+    limit: int = Query(30, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -116,8 +140,6 @@ async def get_wellness_summary(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from app.models.parakeet import Parakeet
-
     parakeet_result = await db.execute(
         select(Parakeet).where(
             Parakeet.id == parakeet_id,
@@ -275,3 +297,15 @@ def _to_response(analysis: AnalysisResult) -> AnalysisResponse:
         details=analysis.details,
         created_at=analysis.created_at.isoformat(),
     )
+
+
+def _dedupe_uuids(values: list[uuid.UUID] | None) -> list[uuid.UUID]:
+    if not values:
+        return []
+    seen: set[uuid.UUID] = set()
+    deduped: list[uuid.UUID] = []
+    for value in values:
+        if value not in seen:
+            deduped.append(value)
+            seen.add(value)
+    return deduped

@@ -1,212 +1,642 @@
-# Handoff Prompt - Parakeet Wellness AI
+# HANDOFF (Detailed) - Branch `codex/full-hardening-potenciacion`
 
-## What is this project?
+## 0) Executive Summary
 
-A mobile application powered by AI that analyzes Australian parakeet (budgie) vocalizations to determine their mood and wellness state. The owner has 2-3 parakeets and wants to monitor their wellbeing through audio analysis since body language reading (common for dogs) is not feasible for small birds.
+Este handoff **reemplaza** al handoff anterior para esta rama.
 
-## Repository
+Se completó una ronda integral de hardening + mejoras de producto en backend y mobile para Parakeet Wellness AI. El foco fue:
 
-- **Repo**: `zsoist/Project-MK-2`
-- **Branch**: `claude/parakeet-wellness-ai-XnJiF`
-- **Structure**: Monorepo with `backend/` (Python/FastAPI) and `mobile/` (React Native/Expo)
+1. Seguridad y robustez operativa en API.
+2. Integridad de dominio (evitar análisis mal asignados entre periquitos).
+3. Completar funcionalidad real de fotos de periquito.
+4. Mejorar UX visible (alertas y selección explícita de periquito en análisis).
+5. Subir estándar de calidad en frontend (type-safe + lint activo).
+6. Dejar documentación nivel 0 para continuidad por otro LLM o desarrollador.
 
-## Current State: MVP Complete (~90%)
+La rama está lista para revisión/QA y no se mezcló a `main`.
 
-The Sprint 1 foundation and Sprint 2 MVP completion are done. The app has a full working flow from registration to audio analysis. Here's exactly what exists:
+---
 
-### Backend (Python/FastAPI) - FULLY FUNCTIONAL
+## 1) Contexto de Trabajo
 
-**Tech stack**: FastAPI + SQLAlchemy (async) + PostgreSQL + Docker + librosa + noisereduce
+### 1.1 Origen
+- Repo remoto: `git@github.com:zsoist/Project-MK-2.git`
+- Rama de trabajo creada para esta entrega: `codex/full-hardening-potenciacion`
+- Base funcional existente: MVP con backend FastAPI + mobile Expo/React Native.
 
-**Files and what they do:**
+### 1.2 Problemas críticos detectados antes de cambios
 
+1. Seguridad base débil:
+   - CORS abierto globalmente con credenciales.
+   - Secret key por default insegura.
+   - Sin rate limiting.
+2. Integridad de análisis:
+   - Mobile enviaba por defecto todos los `parakeet_ids` en cada análisis.
+   - UI mostraba solo el primer resultado, contaminando interpretación por ave.
+3. Validación backend incompleta:
+   - `analysis/analyze` convertía UUID manualmente sin manejo consistente.
+   - Sin validación ownership de `parakeet_ids`.
+4. Gap funcional de producto:
+   - Handoff anterior decía "endpoint de foto existe" pero no había upload real.
+   - Alertas existían en API pero no estaban integradas en Home.
+5. Calidad de front:
+   - `lint` declarado pero sin ESLint funcional.
+   - Varios `any` y navegación poco tipada.
+6. API contract drift:
+   - Plan describía `GET /recordings/:id` con análisis, pero la implementación devolvía solo recording.
+
+---
+
+## 2) Cambios Implementados (High-Level)
+
+### Backend
+- Se introdujo configuración segura y validable para CORS/secret/rate-limit.
+- Se añadió middleware de rate limiting in-memory.
+- Se endureció auth dependency para token ausente.
+- Se robusteció procesamiento de audio (empty/invalid/no-signal/too-long).
+- Se mejoró `analysis/analyze` con validación de ownership de periquitos.
+- Se añadió endpoint real para foto de periquito (`POST /parakeets/{id}/photo`).
+- Se habilitó serving de media estática (`/media/...`) para fotos.
+- Se extendió detalle de recording para incluir análisis relacionados.
+- Se corrigió inconsistencia ORM (`SET NULL` vs `delete-orphan`).
+- Se ajustó Docker para separar modo dev (`--reload`) de imagen base.
+
+### Mobile
+- Token movido a `expo-secure-store`.
+- Base URL configurable por env (`EXPO_PUBLIC_API_BASE_URL`) y fallback por plataforma.
+- Record screen ahora permite seleccionar explícitamente ave (o general).
+- Home muestra alertas recientes reales desde backend.
+- Perfil permite subir foto desde galería y refresca store.
+- Tarjetas muestran foto cuando existe.
+- Se tipó navegación principal y se eliminaron `any` en pantallas tocadas.
+- Se activó ESLint real y quedó pasando junto con typecheck.
+
+### Documentación
+- `README.md` nuevo (nivel 0, onboarding completo).
+- `mobile/.env.example` nuevo.
+- `HANDOFF.md` (este) extendido y actualizado.
+
+---
+
+## 3) Cambios Backend Detallados
+
+## 3.1 Config y seguridad de runtime
+
+**Archivo**: `backend/app/core/config.py`
+
+### Añadido
+- `CORS_ORIGINS: list[str]` configurable.
+- Parser de `CORS_ORIGINS` para aceptar CSV o JSON string.
+- Flags de rate limiting:
+  - `RATE_LIMIT_ENABLED`
+  - `RATE_LIMIT_REQUESTS`
+  - `RATE_LIMIT_WINDOW_SECONDS`
+- Validador de secret:
+  - En `DEBUG=false`, exige `SECRET_KEY` fuerte (>=32 chars) y no placeholder inseguro.
+
+### Resultado
+- Evita despliegue accidental con secret débil en producción.
+- Centraliza seguridad básica en settings.
+
+---
+
+## 3.2 Rate limit middleware
+
+**Archivo nuevo**: `backend/app/core/rate_limit.py`
+
+### Implementación
+- Middleware in-memory con lock async y sliding window por IP + bucket.
+- Límites específicos por endpoint sensible:
+  - `/auth/login`
+  - `/auth/register`
+  - `/recordings/upload`
+  - `/analysis/analyze`
+- Límite global configurable para rutas restantes.
+- Respuesta `429` con `Retry-After`.
+
+### Nota técnica
+- Bucket global compartido por ruta no sensible (`__global__`) para evitar explosión de memoria por path dinámico.
+
+---
+
+## 3.3 Inicialización app: CORS + media + rate-limit
+
+**Archivo**: `backend/app/main.py`
+
+### Cambios
+- Se registra middleware de rate limit si está habilitado.
+- `CORSMiddleware` usa `settings.CORS_ORIGINS`.
+- Se monta static serving en `/media` desde `${UPLOAD_DIR}/public`.
+
+### Resultado
+- Fotos subidas pueden resolverse por URL HTTP.
+- CORS deja de ser wildcard abierto.
+
+---
+
+## 3.4 Auth dependency robusta
+
+**Archivo**: `backend/app/api/deps.py`
+
+### Cambios
+- `HTTPBearer(auto_error=False)`.
+- Mensaje explícito `401 Missing bearer token` si no hay header.
+
+### Resultado
+- Comportamiento de auth más claro y controlado.
+
+---
+
+## 3.5 StorageService robustecido (audio + image)
+
+**Archivo**: `backend/app/services/storage_service.py`
+
+### Audio: mejoras
+- Si audio inválido: elimina archivo temporal y devuelve `ValueError` claro.
+- Si duración <= 0: rechaza.
+- Si excede máximo: rechaza y limpia.
+- Conversión WAV controlada con fallback seguro.
+
+### Image: nueva capacidad
+- Nuevo método `save_image(...)`:
+  - Valida formato real vía `imghdr`.
+  - Permite JPG/PNG/GIF/WEBP.
+  - Guarda en `uploads/public/photos/{user_id}/...`.
+  - Devuelve URL relativa `/media/photos/...`.
+- Nuevo método `delete_file(...)`:
+  - Traduce correctamente `/media/...` a path físico bajo `UPLOAD_DIR/public/...`.
+
+### Resultado
+- Upload multimedia confiable + limpieza de archivos viejos.
+
+---
+
+## 3.6 Recordings API
+
+**Archivo**: `backend/app/api/routes/recordings.py`
+
+### Mejoras de input
+- Rechaza archivo vacío (`400`).
+- Mapea errores de storage (`ValueError`) a `400` con detalle.
+- Paginación con `Query` validada:
+  - `limit: 1..100`
+  - `offset: >=0`
+
+### Contrato de detalle ampliado
+- `GET /recordings/{recording_id}` ahora responde `RecordingDetailResponse` con:
+  - datos del recording
+  - `analysis_results[]` asociados (ordenados desc por fecha)
+
+### Resultado
+- Endpoint más útil y consistente con lo esperado por docs/plan.
+
+---
+
+## 3.7 Analysis API
+
+**Archivo**: `backend/app/api/routes/analysis.py`
+
+### Input schema fuerte
+- `recording_id` ahora `uuid.UUID` en Pydantic.
+- `parakeet_ids` ahora `list[uuid.UUID] | None` con `max_length=10`.
+
+### Integridad de ownership
+- Dedup de `parakeet_ids`.
+- Verificación en DB de que todos los IDs pertenecen al usuario actual.
+- Si no pertenecen: `403`.
+
+### Manejo de errores de inferencia
+- `ValueError` -> `422` (error semántico de análisis).
+- Excepciones inesperadas -> `500` controlado.
+
+### Historial
+- `limit` validado (`1..100`) en history.
+
+### Resultado
+- Evita inyección de IDs de otras cuentas.
+- Errores de análisis mejor clasificados.
+
+---
+
+## 3.8 Parakeets API (foto real)
+
+**Archivo**: `backend/app/api/routes/parakeets.py`
+
+### Nuevo endpoint
+- `POST /api/v1/parakeets/{parakeet_id}/photo`
+  - `multipart/form-data` (`file`)
+  - valida tipo imagen
+  - guarda foto
+  - actualiza `photo_url`
+  - elimina foto anterior si existía
+
+### Delete cleanup
+- Al borrar periquito, si tenía foto, se elimina del storage.
+
+### Resultado
+- Feature de foto ahora completo de backend.
+
+---
+
+## 3.9 Model consistency
+
+**Archivo**: `backend/app/models/parakeet.py`
+
+### Cambio
+- Se removió `cascade="all, delete-orphan"` en `analysis_results`.
+
+### Motivo
+- `AnalysisResult.parakeet_id` usa `ondelete="SET NULL"`.
+- Tener orphan cascade era semánticamente conflictivo con “conservar historial aunque se borre el periquito”.
+
+---
+
+## 3.10 Env y contenedores
+
+**Archivos**:
+- `backend/.env.example`
+- `backend/Dockerfile`
+- `backend/docker-compose.yml`
+
+### Cambios
+- `.env.example` actualizado con CORS/rate-limit y placeholder de secret fuerte.
+- `Dockerfile` sin `--reload` (más correcto para imagen base/prod).
+- `docker-compose.yml` fuerza `--reload` solo en dev.
+
+---
+
+## 4) Cambios Mobile Detallados
+
+## 4.1 API client y almacenamiento seguro de token
+
+**Archivo**: `mobile/src/services/api.ts`
+
+### Cambios
+- Reemplazo de `AsyncStorage` por `expo-secure-store`.
+- Nueva resolución de `API_BASE_URL`:
+  - prioriza `EXPO_PUBLIC_API_BASE_URL`.
+  - fallback dev por plataforma (`10.0.2.2` en Android emulador).
+- Nuevas funciones:
+  - `uploadParakeetPhoto(...)`
+  - `toMediaUrl(...)`
+
+### Resultado
+- Mejor seguridad local del token.
+- Menos fricción en conectividad dev real.
+
+---
+
+## 4.2 Record Screen: selección explícita de periquito
+
+**Archivo**: `mobile/src/screens/RecordScreen.tsx`
+
+### Cambios
+- Estado `selectedParakeetId`.
+- UI de chips para elegir:
+  - `General`
+  - cada periquito registrado
+- En envío a backend:
+  - si seleccionado: `[id]`
+  - si general: `undefined`
+
+### Resultado
+- Se elimina la contaminación de análisis para todos los periquitos.
+
+---
+
+## 4.3 Home: alertas reales
+
+**Archivo**: `mobile/src/screens/HomeScreen.tsx`
+
+### Cambios
+- `loadData()` ahora trae en paralelo:
+  - `getParakeets()`
+  - `getAlerts()`
+- Se renderizan top 3 alertas con estilo por prioridad.
+- Manejo de error visible (`Alert`).
+
+### Resultado
+- Home más útil operativamente.
+
+---
+
+## 4.4 Perfil de periquito: upload foto
+
+**Archivo**: `mobile/src/screens/ParakeetProfileScreen.tsx`
+
+### Cambios
+- Integración con `expo-image-picker`.
+- Botón `Actualizar foto`.
+- Subida vía `uploadParakeetPhoto()`.
+- Update del store (`updateParakeet`).
+- Render de imagen real si existe `photo_url`.
+
+### Resultado
+- Feature “foto de periquito” end-to-end funcional.
+
+---
+
+## 4.5 Avatar en lista de periquitos
+
+**Archivo**: `mobile/src/components/ParakeetCard.tsx`
+
+### Cambios
+- Si hay foto: renderiza `<Image>`.
+- Si no hay foto: fallback inicial del nombre.
+
+---
+
+## 4.6 Store y tipado de navegación
+
+**Archivos**:
+- `mobile/src/store/useStore.ts`
+- `mobile/src/types/navigation.ts`
+- `mobile/src/App.tsx`
+- pantallas tocadas
+
+### Cambios
+- Store: nueva acción `updateParakeet`.
+- Tipos de navegación centralizados.
+- Eliminación de `any` en pantallas modificadas.
+
+### Resultado
+- Menos errores de runtime por params mal tipados.
+
+---
+
+## 4.7 Linting real
+
+**Archivos**:
+- `mobile/.eslintrc.cjs`
+- `mobile/package.json`
+
+### Cambios
+- Se instaló/configuró ESLint + parser/plugin TS.
+- Script lint operativo sobre `src/**/*.{ts,tsx}`.
+- Se limpiaron warnings/errores (`unused vars`, `any`, etc.).
+
+---
+
+## 5) Documentación y onboarding
+
+## 5.1 README (nuevo)
+
+**Archivo**: `README.md`
+
+Incluye:
+- explicación nivel 0 del proyecto.
+- pasos de arranque backend/mobile.
+- variables de entorno.
+- smoke test de flujo funcional.
+- notas de seguridad/producción.
+
+## 5.2 Env ejemplo mobile
+
+**Archivo nuevo**: `mobile/.env.example`
+
+- `EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1`
+
+---
+
+## 6) Contratos API Actualizados (Resumen)
+
+## 6.1 `POST /api/v1/analysis/analyze`
+
+### Request
+```json
+{
+  "recording_id": "uuid",
+  "parakeet_ids": ["uuid"]
+}
 ```
-backend/
-├── app/
-│   ├── main.py                          # FastAPI app with lifespan, CORS, router mounting
-│   ├── core/
-│   │   ├── config.py                    # Pydantic Settings (DB URL, JWT secret, audio config)
-│   │   ├── database.py                  # Async SQLAlchemy engine + session + Base class
-│   │   └── security.py                  # bcrypt password hashing, JWT create/decode
-│   ├── api/
-│   │   ├── deps.py                      # get_current_user dependency (Bearer token → User)
-│   │   └── routes/
-│   │       ├── auth.py                  # POST /register, POST /login, GET /me
-│   │       ├── parakeets.py             # Full CRUD for parakeets (POST, GET, GET/:id, PUT, DELETE)
-│   │       ├── recordings.py            # POST /upload (multipart), GET list, GET/:id, DELETE
-│   │       └── analysis.py              # POST /analyze, GET /history/:id, GET /summary/:id, GET /alerts
-│   ├── models/
-│   │   ├── user.py                      # User (id, email, password_hash, display_name)
-│   │   ├── parakeet.py                  # Parakeet (id, user_id, name, color_description, birth_date, notes)
-│   │   ├── recording.py                 # Recording (id, user_id, file_url, duration, size, sample_rate)
-│   │   └── analysis_result.py           # AnalysisResult (mood enum, confidence, energy, vocalization_type enum)
-│   ├── services/
-│   │   ├── storage_service.py           # Saves audio files locally, converts to WAV via librosa
-│   │   ├── audio_processor.py           # Feature extraction: mel-spectrogram, MFCCs, pitch, ZCR, RMS, chroma
-│   │   └── ml_service.py               # RULE-BASED classifier (NOT a trained ML model yet)
-│   └── ml/
-│       ├── training/                    # EMPTY - no training scripts yet
-│       └── weights/                     # EMPTY - no model weights yet
-├── Dockerfile                           # Python 3.12-slim + ffmpeg + libsndfile1
-├── docker-compose.yml                   # API + PostgreSQL 16 with healthcheck
-├── requirements.txt                     # All Python dependencies
-└── .env.example                         # Environment variable template
-```
 
-**API prefix**: All routes are under `/api/v1/`
+### Reglas
+- `parakeet_ids` opcional.
+- Si viene, deben pertenecer al usuario autenticado.
+- IDs duplicados son deduplicados.
 
-**Database**: Tables auto-created via `Base.metadata.create_all()` in lifespan (no Alembic migrations yet)
+### Errores relevantes
+- `404`: recording no encontrado (o no pertenece al usuario).
+- `403`: `parakeet_ids` no autorizados.
+- `422`: audio no analizable (ej: inválido).
+- `500`: falla inesperada de motor de análisis.
 
-**ML classifier**: Currently uses a HEURISTIC rule-based system in `ml_service.py` that analyzes audio features (RMS energy, zero-crossing rate, spectral centroid, pitch mean/std) to classify mood. It is NOT a trained CNN. The plan is to replace it with a CNN trained via transfer learning on YAMNet (Google's audio classifier).
+---
 
-**Mood types**: `happy`, `relaxed`, `stressed`, `scared`, `sick`, `neutral`
-**Vocalization types**: `singing`, `chattering`, `alarm`, `silence`, `distress`, `contact_call`, `beak_grinding`
+## 6.2 `GET /api/v1/recordings/{id}`
 
-### Mobile (React Native / Expo) - FULLY FUNCTIONAL
+### Response (ahora)
+Incluye:
+- campos base de recording
+- `analysis_results[]` asociados
 
-**Tech stack**: Expo 52 + React Navigation 6 + Zustand + Axios + react-native-chart-kit + expo-av
+---
 
-**Files and what they do:**
+## 6.3 `POST /api/v1/parakeets/{id}/photo`
 
-```
-mobile/
-├── src/
-│   ├── App.tsx                          # Root: useAuth → splash/login/main navigation
-│   ├── hooks/
-│   │   └── useAuth.ts                   # Checks AsyncStorage token → calls getMe() → sets user
-│   ├── screens/
-│   │   ├── LoginScreen.tsx              # Login/Register with tab toggle, email+password form
-│   │   ├── HomeScreen.tsx               # Dashboard: latest analysis, record button, parakeet list
-│   │   ├── RecordScreen.tsx             # Audio recording (expo-av), file upload, shows analysis result
-│   │   ├── HistoryScreen.tsx            # Analysis history filtered by parakeet, FlatList
-│   │   ├── ParakeetProfileScreen.tsx    # Profile: stats, dominant mood, WellnessChart, mood distribution bars
-│   │   ├── AddParakeetScreen.tsx        # Form: name, color, notes → createParakeet API
-│   │   └── SettingsScreen.tsx           # Account info, app version, logout
-│   ├── components/
-│   │   ├── MoodIndicator.tsx            # Emoji circle + mood label + confidence %
-│   │   ├── ParakeetCard.tsx             # Touchable card with avatar, name, color description
-│   │   └── WellnessChart.tsx            # LineChart (energy + confidence over time, last 15 analyses)
-│   ├── services/
-│   │   └── api.ts                       # Axios client with Bearer interceptor, all API functions
-│   ├── store/
-│   │   └── useStore.ts                  # Zustand: user, parakeets[], recordings[], latestAnalysis, MOOD_CONFIG
-│   ├── types/
-│   │   └── index.ts                     # TypeScript interfaces: Parakeet, Recording, AnalysisResult, etc.
-│   └── utils/
-│       └── audioHelpers.ts              # formatDuration, formatFileSize, getConfidenceLabel, getEnergyLabel
-├── package.json                         # Dependencies (NOT installed yet - need npm install)
-├── app.json                             # Expo config with permissions (mic, camera)
-└── tsconfig.json                        # TypeScript config
-```
+### Request
+`multipart/form-data` con `file` imagen.
 
-**Navigation structure:**
-```
-App (useAuth check)
-├── Not authenticated → LoginScreen
-└── Authenticated → NavigationContainer
-    └── Stack.Navigator
-        ├── HomeTabs (BottomTabNavigator)
-        │   ├── Home (HomeScreen)
-        │   ├── Record (RecordScreen)
-        │   ├── History (HistoryScreen)
-        │   └── Settings (SettingsScreen)
-        ├── ParakeetProfile (ParakeetProfileScreen)
-        └── AddParakeet (AddParakeetScreen)
-```
+### Response
+`ParakeetResponse` actualizado con `photo_url`.
 
-**User flow:**
-1. App starts → useAuth checks token in AsyncStorage
-2. No token → LoginScreen (login or register)
-3. Authenticated → HomeScreen with parakeet list + record button
-4. User adds parakeets via "+" → AddParakeetScreen
-5. User records audio → RecordScreen (expo-av recording or file picker)
-6. Audio uploaded → backend processes (librosa features → heuristic classifier)
-7. Result shown: mood emoji, vocalization type, energy %, recommendations
-8. History tab shows all past analyses filtered by parakeet
-9. Parakeet profile shows: stats, dominant mood, WellnessChart (LineChart), mood distribution
+### Errores
+- `415`: tipo no imagen.
+- `400`: archivo vacío o formato no soportado.
 
-## What to run
+---
 
+## 7) Archivos Modificados / Nuevos
+
+## 7.1 Backend
+- `backend/.env.example`
+- `backend/Dockerfile`
+- `backend/docker-compose.yml`
+- `backend/app/core/config.py`
+- `backend/app/core/rate_limit.py` (new)
+- `backend/app/main.py`
+- `backend/app/api/deps.py`
+- `backend/app/api/routes/analysis.py`
+- `backend/app/api/routes/recordings.py`
+- `backend/app/api/routes/parakeets.py`
+- `backend/app/services/storage_service.py`
+- `backend/app/models/parakeet.py`
+
+## 7.2 Mobile
+- `mobile/app.json`
+- `mobile/package.json`
+- `mobile/package-lock.json` (new)
+- `mobile/.eslintrc.cjs` (new)
+- `mobile/.env.example` (new)
+- `mobile/src/App.tsx`
+- `mobile/src/services/api.ts`
+- `mobile/src/store/useStore.ts`
+- `mobile/src/types/navigation.ts` (new)
+- `mobile/src/types/expo-secure-store.d.ts` (new shim)
+- `mobile/src/components/ParakeetCard.tsx`
+- `mobile/src/components/WellnessChart.tsx`
+- `mobile/src/screens/HomeScreen.tsx`
+- `mobile/src/screens/RecordScreen.tsx`
+- `mobile/src/screens/ParakeetProfileScreen.tsx`
+- `mobile/src/screens/AddParakeetScreen.tsx`
+- `mobile/src/screens/LoginScreen.tsx`
+- `mobile/src/screens/SettingsScreen.tsx`
+- `mobile/src/screens/HistoryScreen.tsx`
+
+## 7.3 Repo root
+- `README.md` (new)
+- `HANDOFF.md` (this file rewritten)
+
+---
+
+## 8) Verificación Ejecutada
+
+Comandos corridos en esta rama:
+
+1. Python syntax check
 ```bash
-# Backend
+python3 -m py_compile $(git ls-files 'backend/app/**/*.py')
+```
+Resultado: OK
+
+2. Mobile typecheck
+```bash
+npm --prefix mobile run typecheck
+```
+Resultado: OK
+
+3. Mobile lint
+```bash
+npm --prefix mobile run lint
+```
+Resultado: OK
+
+---
+
+## 9) Estado de Seguridad / Riesgo Residual
+
+## 9.1 Mejorado
+- Secret/CORS/rate-limit implementados.
+- Ownership validation en análisis.
+- Token storage más seguro en mobile.
+
+## 9.2 Pendiente
+- `npm audit` aún reporta vulnerabilidades transitivas altas en stack Expo 52.
+- Rate limiter es in-memory (no distribuido):
+  - en despliegue multi instancia, migrar a Redis-based limiter.
+- No hay suite de tests automatizados backend/mobile todavía.
+
+---
+
+## 10) Qué debería hacer el próximo LLM (Roadmap recomendado)
+
+## P0 (Inmediato)
+1. Añadir tests backend críticos:
+   - auth
+   - upload audio
+   - analyze ownership
+   - parakeet photo upload
+2. Añadir tests de integración API con DB temporal.
+3. Completar test de UI smoke (Record/Home/Profile).
+
+## P1 (Corto plazo)
+1. Refresh token flow (access + refresh token).
+2. Migración de rate-limit a Redis.
+3. Alembic migrations formales.
+4. Mejoras de error observability (Sentry o similar).
+
+## P2 (Producto)
+1. Incorporar selector multi-ave opcional con UX clara (actualmente single/general).
+2. Audio player en historial con waveform.
+3. Push notifications reales basadas en alertas.
+
+## P3 (ML)
+1. Reemplazar heurística por pipeline model-based.
+2. Dataset strategy + feedback loop etiquetado.
+
+---
+
+## 11) Guía de arranque para nuevo LLM / dev
+
+## 11.1 Checkout rama
+```bash
+git fetch origin
+git checkout codex/full-hardening-potenciacion
+```
+
+## 11.2 Backend local (dev)
+```bash
 cd backend
-docker-compose up       # Starts API on :8000 + PostgreSQL on :5432
-# API docs at http://localhost:8000/docs
+cp .env.example .env
+docker compose up --build
+```
 
-# Mobile
+## 11.3 Mobile local (dev)
+```bash
 cd mobile
-npm install             # Dependencies NOT installed yet
-npx expo start          # Starts Expo dev server
+cp .env.example .env
+npm install
+npx expo start
 ```
 
-## What remains to be done (prioritized)
-
-### Sprint 2: Real ML Model (HIGH PRIORITY)
-The current classifier is rule-based heuristics. Needs to be replaced with an actual trained model:
-
-1. **Integrate YAMNet** as feature extractor (TensorFlow Hub model, already in requirements.txt but unused)
-   - YAMNet is pre-trained on AudioSet with 521 classes including "bird vocalization"
-   - Use it as a feature extractor: input audio → YAMNet embeddings (1024-dim vectors)
-2. **Build CNN classifier** on top of YAMNet embeddings
-   - File to create: `backend/app/ml/model.py`
-   - Architecture: YAMNet embeddings → Dense(256) → Dropout → Dense(128) → Dense(6, softmax)
-3. **Training pipeline**
-   - File to create: `backend/app/ml/training/train.py`
-   - Data sources: Xeno-canto (bird audio database), user-labeled recordings
-   - Strategy: Start with synthetic labels from heuristics, then human feedback loop
-4. **Update `ml_service.py`** to use trained model instead of heuristics
-
-### Sprint 3: Polish & Missing Features (MEDIUM PRIORITY)
-1. **Alembic migrations** - Currently tables auto-create, need proper migration tracking
-2. **Error boundaries** in React Native (app crashes on unhandled errors)
-3. **Token refresh** - JWT expires after 24h, no refresh mechanism
-4. **Push notifications** via expo-notifications for alerts
-5. **Audio player component** - Allow playback of recorded audio in history
-6. **Image picker** for parakeet profile photos (endpoint exists, UI missing)
-
-### Sprint 4: Advanced Features (LOW PRIORITY)
-1. **Per-bird acoustic profile** - Learn each bird's "normal" baseline, detect deviations
-2. **Speaker diarization** - Distinguish which bird is vocalizing (user has 2-3 birds)
-3. **Continuous monitoring mode** - Keep phone near cage, analyze audio in real-time
-4. **Environmental correlation** - Time of day, season, temperature effects
-5. **Vet report export** - PDF summary for veterinary visits
-
-## Key Design Decisions Already Made
-- **Audio-only MVP** (no video analysis for v1)
-- **Cloud processing** (not on-device, send audio to backend)
-- **React Native with Expo** (cross-platform, one codebase)
-- **Python/FastAPI backend** (native ML ecosystem)
-- **PostgreSQL** (JSON support for analysis details/metadata)
-- **Zustand** for state (lightweight, TypeScript-friendly)
-- **JWT auth** (stateless, stored in AsyncStorage)
-
-## Known Issues
-1. `SECRET_KEY` in config.py has a hardcoded default (must be overridden via .env in production)
-2. `navigation` props typed as `any` in several screens (should use proper RN navigation types)
-3. CORS is set to `allow_origins=["*"]` (must restrict in production)
-4. No rate limiting on API endpoints
-5. `docker-compose.yml` uses `--reload` flag (dev only, remove for production)
-6. No tests exist (unit or integration)
-
-## Architecture Diagram
-
+Si app en dispositivo físico no llega al backend, setear:
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://<IP_LOCAL_MAC>:8000/api/v1
 ```
-┌─────────────────┐     HTTPS/JSON      ┌──────────────────┐
-│  React Native   │ ──────────────────── │  FastAPI Backend  │
-│  (Expo)         │                      │  (Python 3.12)    │
-│                 │  multipart/form-data │                    │
-│  - Record audio │ ──────────────────── │  - JWT Auth        │
-│  - Show results │                      │  - Audio Storage   │
-│  - Charts       │                      │  - ML Pipeline     │
-│  - Alerts       │                      │  - PostgreSQL      │
-└─────────────────┘                      └──────────────────┘
-                                                │
-                                    ┌───────────┴───────────┐
-                                    │                       │
-                              ┌─────┴─────┐          ┌─────┴─────┐
-                              │ librosa   │          │ PostgreSQL │
-                              │ noisered. │          │ 16-alpine  │
-                              │ scipy     │          │            │
-                              └───────────┘          └────────────┘
-                              Audio Processing       Data Storage
-```
+
+---
+
+## 12) Troubleshooting rápido
+
+1. `401 Missing bearer token`
+- Verificar login exitoso.
+- Verificar que SecureStore contenga token (app reinstalada puede limpiar estado).
+
+2. `403 One or more parakeet_ids do not belong...`
+- Mobile está enviando un ID que no es del usuario actual.
+
+3. Foto no se ve en app
+- Revisar que backend sirva `/media/*`.
+- Revisar `toMediaUrl()` y `EXPO_PUBLIC_API_BASE_URL`.
+
+4. Lint falla por parser TS
+- correr `npm install` en `mobile` (incluye deps de eslint).
+
+---
+
+## 13) Decisiones de diseño tomadas en esta rama
+
+1. Mantener enfoque pragmático sin introducir infraestructura externa (rate limit in-memory), priorizando avance.
+2. Priorizar consistencia funcional (single/general analysis assignment) sobre multi-assign ambiguo.
+3. No tocar todavía arquitectura ML (heurística permanece), concentrando esta iteración en fiabilidad de producto.
+4. Separar comportamiento dev/prod en contenedor (reload fuera de imagen base).
+
+---
+
+## 14) Checklist de Release Candidate para esta rama
+
+- [x] Compila backend Python.
+- [x] Typecheck mobile.
+- [x] Lint mobile.
+- [x] Endpoint foto funcional backend.
+- [x] UI foto conectada mobile.
+- [x] Alertas visibles en Home.
+- [x] Selector de periquito en grabación.
+- [x] Ownership validation análisis.
+- [x] README nivel 0.
+- [ ] Tests automatizados completos.
+- [ ] Upgrade Expo para resolver vulnerabilidades transitivas.
+
+---
+
+## 15) Nota Final
+
+Este handoff está orientado a continuidad inmediata por otro LLM o desarrollador humano sin contexto previo.
+Si se abre un PR desde esta rama, sugerencia:
+
+- PR 1: "Security & API hardening"
+- PR 2: "Mobile UX + photo + alerts + secure token"
+- PR 3: "Docs & onboarding"
+
+Con eso la revisión será más simple y menor riesgo de rollback masivo.
+
