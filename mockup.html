@@ -35,6 +35,14 @@
       padding: 20px;
     }
 
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
     .wrapper {
       width: min(980px, 100%);
       display: grid;
@@ -461,12 +469,12 @@
       </div>
       <div class="controls">
         <div class="segmented" aria-label="Language selector">
-          <button id="lang-en" class="active" onclick="setLanguage('en')">English</button>
-          <button id="lang-es" onclick="setLanguage('es')">Espanol</button>
+          <button type="button" id="lang-en" class="active" aria-pressed="true" onclick="setLanguage('en')" data-i18n="lang_english">English</button>
+          <button type="button" id="lang-es" aria-pressed="false" onclick="setLanguage('es')" data-i18n="lang_spanish">Espanol</button>
         </div>
         <div class="segmented" aria-label="Identity mode selector">
-          <button id="mode-guest" class="active" onclick="setMode('guest')" data-i18n="mode_guest">Guest</button>
-          <button id="mode-account" onclick="setMode('account')" data-i18n="mode_account">Account</button>
+          <button type="button" id="mode-guest" class="active" aria-pressed="true" onclick="setMode('guest')" data-i18n="mode_guest">Guest</button>
+          <button type="button" id="mode-account" aria-pressed="false" onclick="setMode('account')" data-i18n="mode_account">Account</button>
         </div>
       </div>
     </div>
@@ -474,11 +482,11 @@
     <div class="phone">
       <div class="notch"></div>
 
-      <section class="screen active" id="screen-home">
+      <section class="screen active" id="screen-home" role="tabpanel" aria-labelledby="tab-home" aria-hidden="false">
         <div class="hero">
           <h2 data-i18n="home_title">Parakeet Wellness</h2>
           <p data-i18n="home_subtitle">Audio analysis, context alerts, and friendly guidance.</p>
-          <div class="mode-pill" id="mode-pill">Guest mode active</div>
+          <div class="mode-pill" id="mode-pill" aria-live="polite">Guest mode active</div>
         </div>
         <div class="content">
           <div class="card tip">
@@ -511,10 +519,10 @@
           <div class="card">
             <h3 data-i18n="context_title">Environmental context</h3>
             <div class="grid">
-              <div class="metric"><div class="k">Temp</div><div class="v">24 C</div></div>
-              <div class="metric"><div class="k">Humidity</div><div class="v">53%</div></div>
+              <div class="metric"><div class="k" data-i18n="context_temp">Temp</div><div class="v">24 C</div></div>
+              <div class="metric"><div class="k" data-i18n="context_humidity">Humidity</div><div class="v">53%</div></div>
               <div class="metric"><div class="k">AQI</div><div class="v">72</div></div>
-              <div class="metric"><div class="k">Wind</div><div class="v">8 km/h</div></div>
+              <div class="metric"><div class="k" data-i18n="context_wind">Wind</div><div class="v">8 km/h</div></div>
             </div>
             <div class="alert">
               <div class="title" data-i18n="risk_title">Risk event</div>
@@ -540,11 +548,11 @@
             </ul>
           </div>
 
-          <button class="button" data-i18n="cta_record" onclick="switchTab('record')">Record vocalization</button>
+          <button type="button" class="button" data-i18n="cta_record" onclick="switchTab('record')">Record vocalization</button>
         </div>
       </section>
 
-      <section class="screen" id="screen-record">
+      <section class="screen" id="screen-record" role="tabpanel" aria-labelledby="tab-record" aria-hidden="true">
         <div class="hero">
           <h2 data-i18n="record_title">Record</h2>
           <p data-i18n="record_subtitle">Capture at least 30 seconds in a quiet room for better AI confidence.</p>
@@ -558,16 +566,16 @@
           <div class="card">
             <div class="section-title" data-i18n="target_label">Analyze for</div>
             <div class="chips">
-              <button class="chip active" data-i18n="chip_general">General</button>
-              <button class="chip">Kiwi</button>
-              <button class="chip">Mango</button>
+              <button type="button" class="chip active" data-i18n="chip_general">General</button>
+              <button type="button" class="chip">Kiwi</button>
+              <button type="button" class="chip">Mango</button>
             </div>
           </div>
 
           <div class="card">
             <div class="record-timer">0:32</div>
             <div class="record-hint" data-i18n="record_hint">Tap to stop. Minimum recommended: 30s.</div>
-            <button class="button" data-i18n="record_stop">Stop recording</button>
+            <button type="button" class="button" data-i18n="record_stop">Stop recording</button>
           </div>
 
           <div class="card">
@@ -580,11 +588,11 @@
             </div>
           </div>
 
-          <button class="button secondary" data-i18n="upload_audio">Upload audio file</button>
+          <button type="button" class="button secondary" data-i18n="upload_audio">Upload audio file</button>
         </div>
       </section>
 
-      <section class="screen" id="screen-history">
+      <section class="screen" id="screen-history" role="tabpanel" aria-labelledby="tab-history" aria-hidden="true">
         <div class="hero">
           <h2 data-i18n="history_title">History</h2>
           <p data-i18n="history_subtitle">Track trend direction over weeks, not only one recording.</p>
@@ -598,8 +606,8 @@
           <div class="card">
             <div class="section-title" data-i18n="history_filters">Filters</div>
             <div class="chips">
-              <button class="chip active">Kiwi</button>
-              <button class="chip">Mango</button>
+              <button type="button" class="chip active">Kiwi</button>
+              <button type="button" class="chip">Mango</button>
             </div>
           </div>
 
@@ -608,22 +616,22 @@
             <div class="list">
               <div class="list-item">
                 <div class="title" data-i18n="metric_mood_value">Happy</div>
-                <div class="meta">84% confidence · 71% energy · 2026-02-14</div>
+                <div class="meta" data-i18n="history_meta_1">84% confidence · 71% energy · 2026-02-14</div>
               </div>
               <div class="list-item">
                 <div class="title" data-i18n="history_item_relaxed">Relaxed</div>
-                <div class="meta">73% confidence · 52% energy · 2026-02-12</div>
+                <div class="meta" data-i18n="history_meta_2">73% confidence · 52% energy · 2026-02-12</div>
               </div>
               <div class="list-item">
                 <div class="title" data-i18n="history_item_stressed">Stressed</div>
-                <div class="meta">61% confidence · 66% energy · 2026-02-09</div>
+                <div class="meta" data-i18n="history_meta_3">61% confidence · 66% energy · 2026-02-09</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="screen" id="screen-guide">
+      <section class="screen" id="screen-guide" role="tabpanel" aria-labelledby="tab-guide" aria-hidden="true">
         <div class="hero">
           <h2 data-i18n="guide_title">Australian Budgerigar Guide</h2>
           <p data-i18n="guide_subtitle">Practical care + warning signs + app usage tutorial.</p>
@@ -681,7 +689,7 @@
         </div>
       </section>
 
-      <section class="screen" id="screen-settings">
+      <section class="screen" id="screen-settings" role="tabpanel" aria-labelledby="tab-settings" aria-hidden="true">
         <div class="hero">
           <h2 data-i18n="settings_title">Settings</h2>
           <p data-i18n="settings_subtitle">Account mode, language, habitat context, and privacy actions.</p>
@@ -698,22 +706,22 @@
             <div class="settings-row"><span class="k" data-i18n="settings_email">Email</span><span class="v" id="email-label">N/A</span></div>
             <div class="settings-row"><span class="k" data-i18n="settings_guest_secret">Guest secret</span><span class="v" data-i18n="settings_guest_secret_value">Stored in SecureStore</span></div>
             <div class="settings-row"><span class="k" data-i18n="settings_merge_contract">Merge contract</span><span class="v">POST /auth/merge-guest</span></div>
-            <button class="button secondary" style="margin-top:10px;" data-i18n="settings_auth_cta">Create account or sign in</button>
+            <button type="button" class="button secondary" style="margin-top:10px;" data-i18n="settings_auth_cta">Create account or sign in</button>
           </div>
 
           <div class="card">
             <h3 data-i18n="settings_habitat">Habitat and context</h3>
-            <div class="settings-row"><span class="k" data-i18n="settings_location">Location</span><span class="v">Home</span></div>
-            <div class="settings-row"><span class="k">Lat/Lon</span><span class="v">40.7128 / -74.0060</span></div>
-            <div class="settings-row"><span class="k" data-i18n="settings_timezone">Timezone</span><span class="v">America/New_York</span></div>
-            <button class="button" style="margin-top:10px;" data-i18n="settings_save_habitat">Save habitat</button>
+            <div class="settings-row"><span class="k" data-i18n="settings_location">Location</span><span class="v" data-i18n="settings_location_value">Home</span></div>
+            <div class="settings-row"><span class="k" data-i18n="settings_latlon">Lat/Lon</span><span class="v">40.7128 / -74.0060</span></div>
+            <div class="settings-row"><span class="k" data-i18n="settings_timezone">Timezone</span><span class="v" data-i18n="settings_timezone_value">America/New_York</span></div>
+            <button type="button" class="button" style="margin-top:10px;" data-i18n="settings_save_habitat">Save habitat</button>
           </div>
 
           <div class="card">
             <h3 data-i18n="settings_privacy">Privacy lifecycle</h3>
             <div class="settings-row"><span class="k" data-i18n="settings_export">Export account data</span><span class="v">GET /auth/export-data</span></div>
             <div class="settings-row"><span class="k" data-i18n="settings_delete">Delete account</span><span class="v">DELETE /auth/me</span></div>
-            <button class="button secondary" style="margin-top:10px; border-color:#fecaca; color:#b91c1c;" data-i18n="settings_delete_cta">Delete account</button>
+            <button type="button" class="button secondary" style="margin-top:10px; border-color:#fecaca; color:#b91c1c;" data-i18n="settings_delete_cta">Delete account</button>
           </div>
 
           <div class="card">
@@ -725,12 +733,12 @@
         </div>
       </section>
 
-      <nav class="bottom-nav" aria-label="Main navigation">
-        <button class="tab active" id="tab-home" onclick="switchTab('home')"><span>🏠</span><span data-i18n="tab_home">Home</span></button>
-        <button class="tab" id="tab-record" onclick="switchTab('record')"><span>🎤</span><span data-i18n="tab_record">Record</span></button>
-        <button class="tab" id="tab-history" onclick="switchTab('history')"><span>📈</span><span data-i18n="tab_history">History</span></button>
-        <button class="tab" id="tab-guide" onclick="switchTab('guide')"><span>📚</span><span data-i18n="tab_guide">Guide</span></button>
-        <button class="tab" id="tab-settings" onclick="switchTab('settings')"><span>⚙️</span><span data-i18n="tab_settings">Settings</span></button>
+      <nav class="bottom-nav" aria-label="Main navigation" role="tablist">
+        <button type="button" class="tab active" id="tab-home" role="tab" aria-controls="screen-home" aria-selected="true" onclick="switchTab('home')"><span>🏠</span><span data-i18n="tab_home">Home</span></button>
+        <button type="button" class="tab" id="tab-record" role="tab" aria-controls="screen-record" aria-selected="false" onclick="switchTab('record')"><span>🎤</span><span data-i18n="tab_record">Record</span></button>
+        <button type="button" class="tab" id="tab-history" role="tab" aria-controls="screen-history" aria-selected="false" onclick="switchTab('history')"><span>📈</span><span data-i18n="tab_history">History</span></button>
+        <button type="button" class="tab" id="tab-guide" role="tab" aria-controls="screen-guide" aria-selected="false" onclick="switchTab('guide')"><span>📚</span><span data-i18n="tab_guide">Guide</span></button>
+        <button type="button" class="tab" id="tab-settings" role="tab" aria-controls="screen-settings" aria-selected="false" onclick="switchTab('settings')"><span>⚙️</span><span data-i18n="tab_settings">Settings</span></button>
       </nav>
     </div>
   </div>
@@ -739,8 +747,12 @@
     const translations = {
       en: {
         toolbar_subtitle: "Guide + bilingual + release-hardening iOS preview",
+        lang_english: "English",
+        lang_spanish: "Espanol",
         mode_guest: "Guest",
         mode_account: "Account",
+        mode_guest_active: "Guest mode active",
+        mode_account_active: "Account mode active",
         home_title: "Parakeet Wellness",
         home_subtitle: "Audio analysis, context alerts, and friendly guidance.",
         tip_title: "Tip:",
@@ -753,6 +765,9 @@
         metric_vocalization: "Vocalization",
         metric_vocalization_value: "Singing",
         context_title: "Environmental context",
+        context_temp: "Temp",
+        context_humidity: "Humidity",
+        context_wind: "Wind",
         risk_title: "Risk event",
         risk_desc: "Air quality is moderate. Reduce strong aerosols and keep good ventilation.",
         ai_card_title: "AI capability snapshot",
@@ -782,6 +797,9 @@
         history_recent: "Recent analyses",
         history_item_relaxed: "Relaxed",
         history_item_stressed: "Stressed",
+        history_meta_1: "84% confidence · 71% energy · 2026-02-14",
+        history_meta_2: "73% confidence · 52% energy · 2026-02-12",
+        history_meta_3: "61% confidence · 66% energy · 2026-02-09",
         guide_title: "Australian Budgerigar Guide",
         guide_subtitle: "Practical care + warning signs + app usage tutorial.",
         guide_info_title: "Species info",
@@ -812,13 +830,18 @@
         settings_account: "Account",
         settings_mode: "Mode",
         settings_email: "Email",
+        settings_email_na: "N/A",
+        settings_email_account: "owner@parakeet.app",
         settings_guest_secret: "Guest secret",
         settings_guest_secret_value: "Stored in SecureStore",
         settings_merge_contract: "Merge contract",
         settings_auth_cta: "Create account or sign in",
         settings_habitat: "Habitat and context",
         settings_location: "Location",
+        settings_location_value: "Home",
+        settings_latlon: "Lat/Lon",
         settings_timezone: "Timezone",
+        settings_timezone_value: "America/New_York",
         settings_save_habitat: "Save habitat",
         settings_privacy: "Privacy lifecycle",
         settings_export: "Export account data",
@@ -839,8 +862,12 @@
       },
       es: {
         toolbar_subtitle: "Preview iOS con guia bilingue y hardening de release",
+        lang_english: "Ingles",
+        lang_spanish: "Espanol",
         mode_guest: "Invitado",
         mode_account: "Cuenta",
+        mode_guest_active: "Modo invitado activo",
+        mode_account_active: "Cuenta activa",
         home_title: "Parakeet Wellness",
         home_subtitle: "Analisis de audio, alertas de contexto y guia amigable.",
         tip_title: "Consejo:",
@@ -853,6 +880,9 @@
         metric_vocalization: "Vocalizacion",
         metric_vocalization_value: "Canto",
         context_title: "Contexto ambiental",
+        context_temp: "Temp",
+        context_humidity: "Humedad",
+        context_wind: "Viento",
         risk_title: "Evento de riesgo",
         risk_desc: "La calidad del aire es moderada. Reduce aerosoles y mejora ventilacion.",
         ai_card_title: "Resumen de capacidad AI",
@@ -882,6 +912,9 @@
         history_recent: "Analisis recientes",
         history_item_relaxed: "Relajado",
         history_item_stressed: "Estresado",
+        history_meta_1: "84% confianza · 71% energia · 2026-02-14",
+        history_meta_2: "73% confianza · 52% energia · 2026-02-12",
+        history_meta_3: "61% confianza · 66% energia · 2026-02-09",
         guide_title: "Guia del Periquito Australiano",
         guide_subtitle: "Cuidados practicos + senales + tutorial de uso.",
         guide_info_title: "Informacion de especie",
@@ -912,13 +945,18 @@
         settings_account: "Cuenta",
         settings_mode: "Modo",
         settings_email: "Email",
+        settings_email_na: "No aplica",
+        settings_email_account: "owner@parakeet.app",
         settings_guest_secret: "Secreto de invitado",
         settings_guest_secret_value: "Guardado en SecureStore",
         settings_merge_contract: "Contrato de merge",
         settings_auth_cta: "Crear cuenta o iniciar sesion",
         settings_habitat: "Habitat y contexto",
         settings_location: "Ubicacion",
+        settings_location_value: "Casa",
+        settings_latlon: "Lat/Lon",
         settings_timezone: "Zona horaria",
+        settings_timezone_value: "America/New_York",
         settings_save_habitat: "Guardar habitat",
         settings_privacy: "Ciclo de vida de privacidad",
         settings_export: "Exportar datos de cuenta",
@@ -928,7 +966,7 @@
         settings_release_status: "Estado",
         settings_release_status_value: "Lista condicionalmente",
         settings_release_checks: "Checks",
-        settings_release_checks_value: "Compile/Lint/Typecheck/Audit",
+        settings_release_checks_value: "Compilacion/Lint/Typecheck/Audit",
         settings_release_blocker: "Pendiente operativo",
         settings_release_blocker_value: "Ejecutar alembic upgrade head en entorno destino",
         tab_home: "Inicio",
@@ -939,8 +977,40 @@
       }
     };
 
+    const STORAGE_KEY = "parakeet_mockup_ui_state_v1";
     let currentLanguage = "en";
     let currentMode = "guest";
+    let currentTab = "home";
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed.language === "en" || parsed.language === "es") {
+          currentLanguage = parsed.language;
+        }
+        if (parsed.mode === "guest" || parsed.mode === "account") {
+          currentMode = parsed.mode;
+        }
+        if (["home", "record", "history", "guide", "settings"].includes(parsed.tab)) {
+          currentTab = parsed.tab;
+        }
+      } catch {
+        // Keep defaults when storage is unavailable.
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ language: currentLanguage, mode: currentMode, tab: currentTab })
+        );
+      } catch {
+        // Ignore persistence failures in static preview mode.
+      }
+    }
 
     function applyTranslations() {
       const dict = translations[currentLanguage];
@@ -958,48 +1028,58 @@
       currentLanguage = language;
       document.getElementById("lang-en").classList.toggle("active", language === "en");
       document.getElementById("lang-es").classList.toggle("active", language === "es");
+      document.getElementById("lang-en").setAttribute("aria-pressed", String(language === "en"));
+      document.getElementById("lang-es").setAttribute("aria-pressed", String(language === "es"));
       applyTranslations();
+      saveState();
     }
 
     function setMode(mode) {
       currentMode = mode;
       document.getElementById("mode-guest").classList.toggle("active", mode === "guest");
       document.getElementById("mode-account").classList.toggle("active", mode === "account");
+      document.getElementById("mode-guest").setAttribute("aria-pressed", String(mode === "guest"));
+      document.getElementById("mode-account").setAttribute("aria-pressed", String(mode === "account"));
       updateModeUI();
+      saveState();
     }
 
     function updateModeUI() {
       const modePill = document.getElementById("mode-pill");
       const modeLabel = document.getElementById("mode-label");
       const emailLabel = document.getElementById("email-label");
-
-      const isSpanish = currentLanguage === "es";
-      const modeGuestText = isSpanish ? "Modo invitado activo" : "Guest mode active";
-      const modeAccountText = isSpanish ? "Cuenta activa" : "Account mode active";
+      const dict = translations[currentLanguage];
 
       if (currentMode === "guest") {
-        modePill.textContent = modeGuestText;
-        modeLabel.textContent = translations[currentLanguage].mode_guest;
-        emailLabel.textContent = isSpanish ? "No aplica" : "N/A";
+        modePill.textContent = dict.mode_guest_active;
+        modeLabel.textContent = dict.mode_guest;
+        emailLabel.textContent = dict.settings_email_na;
       } else {
-        modePill.textContent = modeAccountText;
-        modeLabel.textContent = translations[currentLanguage].mode_account;
-        emailLabel.textContent = "owner@parakeet.app";
+        modePill.textContent = dict.mode_account_active;
+        modeLabel.textContent = dict.mode_account;
+        emailLabel.textContent = dict.settings_email_account;
       }
     }
 
     function switchTab(tab) {
       const tabs = ["home", "record", "history", "guide", "settings"];
+      currentTab = tab;
       tabs.forEach((name) => {
         const screen = document.getElementById(`screen-${name}`);
         const button = document.getElementById(`tab-${name}`);
         const isActive = name === tab;
         screen.classList.toggle("active", isActive);
+        screen.setAttribute("aria-hidden", String(!isActive));
         button.classList.toggle("active", isActive);
+        button.setAttribute("aria-selected", String(isActive));
       });
+      saveState();
     }
 
-    applyTranslations();
+    loadState();
+    setLanguage(currentLanguage);
+    setMode(currentMode);
+    switchTab(currentTab);
   </script>
 </body>
 </html>
