@@ -76,7 +76,7 @@ function HomeTabs() {
 }
 
 export default function App() {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -85,15 +85,6 @@ export default function App() {
         <ActivityIndicator size="large" color="#fff" />
         <Text style={{ color: '#fff', marginTop: 12, fontSize: 16 }}>Parakeet Wellness</Text>
       </View>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <>
-        <StatusBar style="light" />
-        <LoginScreen />
-      </>
     );
   }
 
@@ -119,6 +110,14 @@ export default function App() {
           component={AddParakeetScreen}
           options={{
             title: 'Nuevo periquito',
+            headerTintColor: '#4CAF50',
+          }}
+        />
+        <Stack.Screen
+          name="Auth"
+          component={LoginScreen}
+          options={{
+            title: 'Cuenta',
             headerTintColor: '#4CAF50',
           }}
         />

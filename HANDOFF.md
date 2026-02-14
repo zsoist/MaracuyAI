@@ -835,3 +835,42 @@ Resultado: OK
 2. Agregar tests del hook `useRecordAnalysis` (mocks de `expo-av` y `api`).
 3. Si se amplía análisis multi-ave, usar `ParakeetTargetSelector` como base para modo multi-select.
 4. Mantener la regla: rutas FastAPI solo HTTP contract; reglas de negocio siempre en `services/`.
+
+---
+
+## 17) Update Guest-First Auth (2026-02-14)
+
+Se eliminó el bloqueo de login obligatorio y se implementó modo invitado persistente.
+
+### 17.1 Qué cambió
+
+1. Backend ahora acepta dos formas de identidad:
+   - Cuenta autenticada (`Authorization: Bearer ...`)
+   - Invitado (`X-Guest-Id: <uuid>`)
+2. Rutas de dominio (`parakeets`, `recordings`, `analysis`) dejaron de depender de `get_current_user` obligatorio y ahora usan contexto de auth opcional.
+3. Mobile genera y guarda `guest_id` en `SecureStore` automáticamente y lo envía en todas las requests.
+4. App mobile abre directo al producto sin pantalla de login forzada.
+5. Login/Register se mantiene como opción desde `Settings`.
+
+### 17.2 Archivos principales tocados
+
+- `backend/app/api/deps.py`
+- `backend/app/api/routes/parakeets.py`
+- `backend/app/api/routes/recordings.py`
+- `backend/app/api/routes/analysis.py`
+- `mobile/src/services/api.ts`
+- `mobile/src/hooks/useAuth.ts`
+- `mobile/src/App.tsx`
+- `mobile/src/screens/SettingsScreen.tsx`
+- `mobile/src/screens/LoginScreen.tsx`
+- `mobile/src/types/navigation.ts`
+- `mobile/src/config/env.ts`
+
+### 17.3 Consideraciones operativas
+
+1. Invitado persistente por dispositivo:
+   - datos quedan ligados a `guest_id` local.
+2. Costo:
+   - no introduce servicios pagos extra; usa storage local + DB actual.
+3. Riesgo residual:
+   - hoy no hay flujo de migración de datos invitado -> cuenta (future enhancement).

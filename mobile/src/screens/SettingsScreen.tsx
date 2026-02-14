@@ -2,8 +2,9 @@ import React from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as api from '../services/api';
 import { useStore } from '../store/useStore';
+import type { SettingsScreenProps } from '../types/navigation';
 
-export function SettingsScreen() {
+export function SettingsScreen({ navigation }: SettingsScreenProps) {
   const { user, setUser, setParakeets, setRecordings } = useStore();
 
   const handleLogout = async () => {
@@ -27,14 +28,26 @@ export function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Cuenta</Text>
         <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Modo</Text>
+          <Text style={styles.infoValue}>{user ? 'Con cuenta' : 'Invitado'}</Text>
+        </View>
+        <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Email</Text>
-          <Text style={styles.infoValue}>{user?.email || 'No disponible'}</Text>
+          <Text style={styles.infoValue}>{user?.email || 'No aplica (invitado)'}</Text>
         </View>
         {user?.display_name && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Nombre</Text>
             <Text style={styles.infoValue}>{user.display_name}</Text>
           </View>
+        )}
+        {!user && (
+          <TouchableOpacity
+            style={styles.accountButton}
+            onPress={() => navigation.navigate('Auth')}
+          >
+            <Text style={styles.accountButtonText}>Crear cuenta o iniciar sesion</Text>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -50,9 +63,11 @@ export function SettingsScreen() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Cerrar sesion</Text>
-      </TouchableOpacity>
+      {user && (
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Cerrar sesion</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -90,6 +105,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     fontWeight: '500',
+  },
+  accountButton: {
+    marginTop: 14,
+    backgroundColor: '#4CAF50',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  accountButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   logoutButton: {
     backgroundColor: '#fff',

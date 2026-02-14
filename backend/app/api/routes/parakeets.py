@@ -6,10 +6,9 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
+from app.api.deps import AuthContext, get_auth_context
 from app.core.database import get_db
 from app.models.parakeet import Parakeet
-from app.models.user import User
 from app.services.parakeet_service import get_user_parakeet
 from app.services.storage_service import StorageService
 
@@ -48,10 +47,10 @@ class ParakeetResponse(BaseModel):
 async def create_parakeet(
     body: ParakeetCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
     parakeet = Parakeet(
-        user_id=current_user.id,
+        user_id=auth_context.owner_id,
         name=body.name,
         color_description=body.color_description,
         birth_date=body.birth_date,
@@ -65,11 +64,11 @@ async def create_parakeet(
 @router.get("/", response_model=list[ParakeetResponse])
 async def list_parakeets(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
     result = await db.execute(
         select(Parakeet)
-        .where(Parakeet.user_id == current_user.id)
+        .where(Parakeet.user_id == auth_context.owner_id)
         .order_by(Parakeet.created_at.desc())
     )
     return [_to_response(p) for p in result.scalars().all()]
@@ -79,9 +78,9 @@ async def list_parakeets(
 async def get_parakeet(
     parakeet_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
-    parakeet = await get_user_parakeet(db, parakeet_id, current_user.id)
+    parakeet = await get_user_parakeet(db, parakeet_id, auth_context.owner_id)
     return _to_response(parakeet)
 
 
@@ -90,9 +89,9 @@ async def update_parakeet(
     parakeet_id: uuid.UUID,
     body: ParakeetUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
-    parakeet = await get_user_parakeet(db, parakeet_id, current_user.id)
+    parakeet = await get_user_parakeet(db, parakeet_id, auth_context.owner_id)
     update_data = body.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(parakeet, key, value)
@@ -104,9 +103,9 @@ async def update_parakeet(
 async def delete_parakeet(
     parakeet_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
-    parakeet = await get_user_parakeet(db, parakeet_id, current_user.id)
+    parakeet = await get_user_parakeet(db, parakeet_id, auth_context.owner_id)
     if parakeet.photo_url:
         await storage.delete_file(parakeet.photo_url)
     await db.delete(parakeet)
@@ -117,7 +116,7 @@ async def upload_parakeet_photo(
     parakeet_id: uuid.UUID,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(
@@ -132,12 +131,12 @@ async def upload_parakeet_photo(
             detail="Uploaded image is empty.",
         )
 
-    parakeet = await get_user_parakeet(db, parakeet_id, current_user.id)
+    parakeet = await get_user_parakeet(db, parakeet_id, auth_context.owner_id)
     previous_photo = parakeet.photo_url
     try:
         parakeet.photo_url = await storage.save_image(
             contents=contents,
-            user_id=str(current_user.id),
+            user_id=str(auth_context.owner_id),
             original_filename=file.filename or "photo.jpg",
         )
     except ValueError as exc:

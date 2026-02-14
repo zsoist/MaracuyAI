@@ -12,8 +12,9 @@ import {
 } from 'react-native';
 import * as api from '../services/api';
 import { useStore } from '../store/useStore';
+import type { AuthScreenProps } from '../types/navigation';
 
-export function LoginScreen() {
+export function LoginScreen({ navigation }: AuthScreenProps) {
   const { setUser } = useStore();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -40,6 +41,9 @@ export function LoginScreen() {
       }
       const user = await api.getMe();
       setUser(user);
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
     } catch (err: unknown) {
       const message =
         (typeof err === 'object' &&

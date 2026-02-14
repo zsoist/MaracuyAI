@@ -13,6 +13,7 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<HomeTabParamList>;
   ParakeetProfile: { parakeetId: string };
   AddParakeet: undefined;
+  Auth: undefined;
 };
 
 export type HomeScreenProps = CompositeScreenProps<
@@ -32,6 +33,7 @@ export type HistoryScreenProps = CompositeScreenProps<
   NativeStackScreenProps<RootStackParamList>
 >;
 export type AddParakeetScreenProps = NativeStackScreenProps<RootStackParamList, 'AddParakeet'>;
+export type AuthScreenProps = NativeStackScreenProps<RootStackParamList, 'Auth'>;
 export type ParakeetProfileScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'ParakeetProfile'

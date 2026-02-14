@@ -7,11 +7,12 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
+    void checkAuth();
   }, []);
 
   const checkAuth = async () => {
     try {
+      await api.ensureGuestIdentity();
       const user = await api.getMe();
       setUser(user);
     } catch {

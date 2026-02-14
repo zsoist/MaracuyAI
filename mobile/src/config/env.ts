@@ -10,3 +10,4 @@ export const API_BASE_URL =
   configuredBaseUrl || (__DEV__ ? defaultDevBaseUrl : 'https://api.parakeetwellness.com/api/v1');
 
 export const AUTH_TOKEN_KEY = 'auth_token';
+export const GUEST_ID_KEY = 'guest_id';

@@ -5,11 +5,10 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
+from app.api.deps import AuthContext, get_auth_context
 from app.core.database import get_db
 from app.models.analysis_result import AnalysisResult
 from app.models.recording import Recording
-from app.models.user import User
 from app.services.recording_service import get_user_recording
 from app.services.storage_service import StorageService
 
@@ -64,7 +63,7 @@ class RecordingDetailResponse(RecordingResponse):
 async def upload_recording(
     file: UploadFile,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
     if file.content_type and file.content_type not in ALLOWED_AUDIO_TYPES:
         raise HTTPException(
@@ -87,14 +86,14 @@ async def upload_recording(
     try:
         file_info = await storage.save_audio(
             contents=contents,
-            user_id=str(current_user.id),
+            user_id=str(auth_context.owner_id),
             original_filename=file.filename or "recording.wav",
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     recording = Recording(
-        user_id=current_user.id,
+        user_id=auth_context.owner_id,
         file_url=file_info["file_url"],
         original_filename=file.filename or "recording.wav",
         duration_seconds=file_info["duration_seconds"],
@@ -112,11 +111,11 @@ async def list_recordings(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
     result = await db.execute(
         select(Recording)
-        .where(Recording.user_id == current_user.id)
+        .where(Recording.user_id == auth_context.owner_id)
         .order_by(Recording.created_at.desc())
         .limit(limit)
         .offset(offset)
@@ -128,9 +127,9 @@ async def list_recordings(
 async def get_recording(
     recording_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
-    recording = await get_user_recording(db, recording_id, current_user.id)
+    recording = await get_user_recording(db, recording_id, auth_context.owner_id)
     analysis_result = await db.execute(
         select(AnalysisResult)
         .where(AnalysisResult.recording_id == recording.id)
@@ -144,9 +143,9 @@ async def get_recording(
 async def delete_recording(
     recording_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
-    recording = await get_user_recording(db, recording_id, current_user.id)
+    recording = await get_user_recording(db, recording_id, auth_context.owner_id)
     await storage.delete_audio(recording.file_url)
     await db.delete(recording)
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { API_BASE_URL, AUTH_TOKEN_KEY } from '../config/env';
+import { API_BASE_URL, AUTH_TOKEN_KEY, GUEST_ID_KEY } from '../config/env';
 import type { AnalysisResult, Parakeet, Recording, User, WellnessSummary } from '../types';
 
 const api = axios.create({
@@ -12,6 +12,28 @@ async function getAuthToken() {
   return SecureStore.getItemAsync(AUTH_TOKEN_KEY);
 }
 
+function createGuestId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = char === 'x' ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
+}
+
+async function getOrCreateGuestId() {
+  const existing = await SecureStore.getItemAsync(GUEST_ID_KEY);
+  if (existing) {
+    return existing;
+  }
+  const created = createGuestId();
+  await SecureStore.setItemAsync(GUEST_ID_KEY, created);
+  return created;
+}
+
+export async function ensureGuestIdentity() {
+  await getOrCreateGuestId();
+}
+
 async function setAuthToken(token: string) {
   await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
 }
@@ -21,6 +43,9 @@ async function clearAuthToken() {
 }
 
 api.interceptors.request.use(async (config) => {
+  const guestId = await getOrCreateGuestId();
+  config.headers['X-Guest-Id'] = guestId;
+
   const token = await getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

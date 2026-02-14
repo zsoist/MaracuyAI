@@ -5,12 +5,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
+from app.api.deps import AuthContext, get_auth_context
 from app.core.database import get_db
 from app.models.analysis_result import AnalysisResult, MoodType, VocalizationType
 from app.models.parakeet import Parakeet
 from app.models.recording import Recording
-from app.models.user import User
 from app.services.analysis_service import build_alerts, calculate_wellness_metrics
 from app.services.ml_service import MLService
 from app.services.parakeet_service import validate_user_parakeet_ids
@@ -56,11 +55,11 @@ class WellnessSummary(BaseModel):
 async def analyze_recording(
     body: AnalyzeRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
-    recording = await get_user_recording(db, body.recording_id, current_user.id)
+    recording = await get_user_recording(db, body.recording_id, auth_context.owner_id)
     requested_parakeets = await validate_user_parakeet_ids(
-        db, current_user.id, body.parakeet_ids
+        db, auth_context.owner_id, body.parakeet_ids
     )
 
     try:
@@ -99,14 +98,14 @@ async def get_analysis_history(
     parakeet_id: uuid.UUID,
     limit: int = Query(30, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
     result = await db.execute(
         select(AnalysisResult)
         .join(Recording)
         .where(
             AnalysisResult.parakeet_id == parakeet_id,
-            Recording.user_id == current_user.id,
+            Recording.user_id == auth_context.owner_id,
         )
         .order_by(AnalysisResult.created_at.desc())
         .limit(limit)
@@ -118,12 +117,12 @@ async def get_analysis_history(
 async def get_wellness_summary(
     parakeet_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
     parakeet_result = await db.execute(
         select(Parakeet).where(
             Parakeet.id == parakeet_id,
-            Parakeet.user_id == current_user.id,
+            Parakeet.user_id == auth_context.owner_id,
         )
     )
     parakeet = parakeet_result.scalar_one_or_none()
@@ -135,7 +134,7 @@ async def get_wellness_summary(
         .join(Recording)
         .where(
             AnalysisResult.parakeet_id == parakeet_id,
-            Recording.user_id == current_user.id,
+            Recording.user_id == auth_context.owner_id,
         )
         .order_by(AnalysisResult.created_at.desc())
         .limit(100)
@@ -167,17 +166,17 @@ class AlertResponse(BaseModel):
 @router.get("/alerts", response_model=list[AlertResponse])
 async def get_alerts(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
     parakeets_result = await db.execute(
-        select(Parakeet).where(Parakeet.user_id == current_user.id)
+        select(Parakeet).where(Parakeet.user_id == auth_context.owner_id)
     )
     parakeets = {p.id: p for p in parakeets_result.scalars().all()}
 
     result = await db.execute(
         select(AnalysisResult)
         .join(Recording)
-        .where(Recording.user_id == current_user.id)
+        .where(Recording.user_id == auth_context.owner_id)
         .order_by(AnalysisResult.created_at.desc())
         .limit(50)
     )
