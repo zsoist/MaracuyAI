@@ -1,238 +1,62 @@
-import { Audio } from 'expo-av';
-import * as DocumentPicker from 'expo-document-picker';
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { MoodIndicator } from '../components/MoodIndicator';
-import * as api from '../services/api';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+import { AnalysisLoadingState } from '../components/AnalysisLoadingState';
+import { AnalysisResultCard } from '../components/AnalysisResultCard';
+import { ParakeetTargetSelector } from '../components/ParakeetTargetSelector';
+import { useRecordAnalysis } from '../hooks/useRecordAnalysis';
 import { useStore } from '../store/useStore';
-import type { AnalysisResult } from '../types';
 import { formatDuration } from '../utils/audioHelpers';
 
 export function RecordScreen() {
-  const { parakeets, setLatestAnalysis, addRecording } = useStore();
-  const [isRecording, setIsRecording] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-  const [selectedParakeetId, setSelectedParakeetId] = useState<string | null>(null);
-  const recordingRef = useRef<Audio.Recording | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const parakeets = useStore((state) => state.parakeets);
+  const {
+    isRecording,
+    duration,
+    isAnalyzing,
+    analysisResult,
+    selectedParakeetId,
+    setSelectedParakeetId,
+    startRecording,
+    stopRecording,
+    pickAudioFile,
+    resetAnalysis,
+  } = useRecordAnalysis(parakeets);
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (parakeets.length === 0) {
-      setSelectedParakeetId(null);
+  const toggleRecording = () => {
+    if (isRecording) {
+      void stopRecording();
       return;
     }
-    if (selectedParakeetId && parakeets.some((p) => p.id === selectedParakeetId)) {
-      return;
-    }
-    setSelectedParakeetId(parakeets[0].id);
-  }, [parakeets, selectedParakeetId]);
-
-  const startRecording = async () => {
-    try {
-      const permission = await Audio.requestPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Permiso requerido', 'Necesitamos acceso al microfono para grabar.');
-        return;
-      }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      recordingRef.current = recording;
-      setIsRecording(true);
-      setDuration(0);
-      setAnalysisResult(null);
-
-      timerRef.current = setInterval(() => {
-        setDuration((d) => d + 1);
-      }, 1000);
-    } catch {
-      Alert.alert('Error', 'No se pudo iniciar la grabacion.');
-    }
-  };
-
-  const stopRecording = async () => {
-    if (!recordingRef.current) return;
-
-    if (timerRef.current) clearInterval(timerRef.current);
-    setIsRecording(false);
-
-    try {
-      await recordingRef.current.stopAndUnloadAsync();
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
-
-      if (uri) {
-        await analyzeAudio(uri, 'recording.wav');
-      }
-    } catch {
-      Alert.alert('Error', 'No se pudo detener la grabacion.');
-    }
-  };
-
-  const pickFile = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: 'audio/*',
-        copyToCacheDirectory: true,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        await analyzeAudio(asset.uri, asset.name);
-      }
-    } catch {
-      Alert.alert('Error', 'No se pudo seleccionar el archivo.');
-    }
-  };
-
-  const analyzeAudio = async (uri: string, filename: string) => {
-    setIsAnalyzing(true);
-    try {
-      const recording = await api.uploadRecording(uri, filename);
-      addRecording(recording);
-
-      const parakeetIds = selectedParakeetId ? [selectedParakeetId] : undefined;
-      const results = await api.analyzeRecording(recording.id, parakeetIds);
-
-      if (results.length > 0) {
-        setAnalysisResult(results[0]);
-        setLatestAnalysis(results[0]);
-      }
-    } catch {
-      Alert.alert('Error', 'No se pudo analizar el audio. Verifica tu conexion.');
-    } finally {
-      setIsAnalyzing(false);
-    }
+    void startRecording();
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
         {isAnalyzing ? (
-          <View style={styles.analyzingContainer}>
-            <ActivityIndicator size="large" color="#4CAF50" />
-            <Text style={styles.analyzingText}>Analizando vocalizaciones...</Text>
-            <Text style={styles.analyzingSubtext}>
-              Procesando espectrograma y clasificando patrones
-            </Text>
-          </View>
+          <AnalysisLoadingState />
         ) : analysisResult ? (
-          <View style={styles.resultContainer}>
-            <Text style={styles.resultTitle}>Resultado del analisis</Text>
-            <MoodIndicator
-              mood={analysisResult.mood}
-              confidence={analysisResult.confidence}
-              size="large"
-            />
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Vocalizacion:</Text>
-              <Text style={styles.detailValue}>{analysisResult.vocalization_type}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Energia:</Text>
-              <Text style={styles.detailValue}>
-                {Math.round(analysisResult.energy_level * 100)}%
-              </Text>
-            </View>
-            {analysisResult.recommendations && (
-              <View style={styles.recommendationBox}>
-                <Text style={styles.recommendationTitle}>Recomendacion</Text>
-                <Text style={styles.recommendationText}>
-                  {analysisResult.recommendations}
-                </Text>
-              </View>
-            )}
-            <TouchableOpacity
-              style={styles.newRecordingButton}
-              onPress={() => {
-                setAnalysisResult(null);
-                setDuration(0);
-              }}
-            >
-              <Text style={styles.newRecordingText}>Nueva grabacion</Text>
-            </TouchableOpacity>
-          </View>
+          <AnalysisResultCard analysisResult={analysisResult} onNewRecording={resetAnalysis} />
         ) : (
           <View style={styles.recordContainer}>
-            {parakeets.length > 0 && (
-              <View style={styles.selectorContainer}>
-                <Text style={styles.selectorLabel}>Analizar para:</Text>
-                <View style={styles.selectorChips}>
-                  <TouchableOpacity
-                    style={[
-                      styles.selectorChip,
-                      selectedParakeetId === null && styles.selectorChipActive,
-                    ]}
-                    onPress={() => setSelectedParakeetId(null)}
-                  >
-                    <Text
-                      style={[
-                        styles.selectorChipText,
-                        selectedParakeetId === null && styles.selectorChipTextActive,
-                      ]}
-                    >
-                      General
-                    </Text>
-                  </TouchableOpacity>
-                  {parakeets.map((parakeet) => (
-                    <TouchableOpacity
-                      key={parakeet.id}
-                      style={[
-                        styles.selectorChip,
-                        selectedParakeetId === parakeet.id && styles.selectorChipActive,
-                      ]}
-                      onPress={() => setSelectedParakeetId(parakeet.id)}
-                    >
-                      <Text
-                        style={[
-                          styles.selectorChipText,
-                          selectedParakeetId === parakeet.id && styles.selectorChipTextActive,
-                        ]}
-                      >
-                        {parakeet.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            )}
+            <ParakeetTargetSelector
+              parakeets={parakeets}
+              selectedParakeetId={selectedParakeetId}
+              onSelect={setSelectedParakeetId}
+            />
 
             <Text style={styles.timerText}>{formatDuration(duration)}</Text>
 
             {isRecording && (
-              <Text style={styles.recordingHint}>
-                Minimo 30 segundos recomendados
-              </Text>
+              <Text style={styles.recordingHint}>Minimo 30 segundos recomendados</Text>
             )}
 
             <TouchableOpacity
               style={[styles.recordBtn, isRecording && styles.recordBtnActive]}
-              onPress={isRecording ? stopRecording : startRecording}
+              onPress={toggleRecording}
             >
-              <View
-                style={[styles.recordInner, isRecording && styles.recordInnerActive]}
-              />
+              <View style={[styles.recordInner, isRecording && styles.recordInnerActive]} />
             </TouchableOpacity>
 
             <Text style={styles.recordLabel}>
@@ -240,7 +64,7 @@ export function RecordScreen() {
             </Text>
 
             {!isRecording && (
-              <TouchableOpacity style={styles.uploadButton} onPress={pickFile}>
+              <TouchableOpacity style={styles.uploadButton} onPress={() => void pickAudioFile()}>
                 <Text style={styles.uploadText}>Subir archivo de audio</Text>
               </TouchableOpacity>
             )}
@@ -265,41 +89,6 @@ const styles = StyleSheet.create({
   recordContainer: {
     alignItems: 'center',
     width: '100%',
-  },
-  selectorContainer: {
-    width: '100%',
-    marginBottom: 18,
-  },
-  selectorLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
-  },
-  selectorChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  selectorChip: {
-    borderWidth: 1,
-    borderColor: '#D0D7DE',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    backgroundColor: '#fff',
-  },
-  selectorChipActive: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
-  },
-  selectorChipText: {
-    fontSize: 12,
-    color: '#455A64',
-    fontWeight: '600',
-  },
-  selectorChipTextActive: {
-    color: '#fff',
   },
   timerText: {
     fontSize: 64,
@@ -352,76 +141,5 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontSize: 15,
     fontWeight: '500',
-  },
-  analyzingContainer: {
-    alignItems: 'center',
-  },
-  analyzingText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginTop: 20,
-  },
-  analyzingSubtext: {
-    fontSize: 13,
-    color: '#999',
-    marginTop: 8,
-  },
-  resultContainer: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  resultTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 16,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '80%',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  detailLabel: {
-    fontSize: 15,
-    color: '#666',
-  },
-  detailValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-  },
-  recommendationBox: {
-    backgroundColor: '#E8F5E9',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 20,
-    width: '100%',
-  },
-  recommendationTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#2E7D32',
-    marginBottom: 6,
-  },
-  recommendationText: {
-    fontSize: 13,
-    color: '#333',
-    lineHeight: 20,
-  },
-  newRecordingButton: {
-    marginTop: 24,
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  newRecordingText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
   },
 });

@@ -1,46 +1,15 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import {
-  Alert,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AlertFeed } from '../components/AlertFeed';
 import { MoodIndicator } from '../components/MoodIndicator';
 import { ParakeetCard } from '../components/ParakeetCard';
-import * as api from '../services/api';
+import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import { useStore } from '../store/useStore';
 import type { HomeScreenProps } from '../types/navigation';
 
 export function HomeScreen({ navigation }: HomeScreenProps) {
-  const { parakeets, setParakeets, latestAnalysis } = useStore();
-  const [alerts, setAlerts] = useState<api.Alert[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const loadData = useCallback(async () => {
-    try {
-      const [parakeetData, alertData] = await Promise.all([
-        api.getParakeets(),
-        api.getAlerts(),
-      ]);
-      setParakeets(parakeetData);
-      setAlerts(alertData);
-    } catch {
-      Alert.alert('Error', 'No se pudo actualizar el tablero.');
-    }
-  }, [setParakeets]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  };
+  const { parakeets, latestAnalysis } = useStore();
+  const { alerts, refreshing, onRefresh } = useHomeDashboard();
 
   return (
     <ScrollView
@@ -66,26 +35,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
       )}
 
-      {alerts.length > 0 && (
-        <View style={styles.alertsSection}>
-          <Text style={styles.sectionTitle}>Alertas recientes</Text>
-          {alerts.slice(0, 3).map((alert) => (
-            <View
-              key={`${alert.created_at}-${alert.parakeet_id ?? 'general'}`}
-              style={[
-                styles.alertCard,
-                alert.priority === 'high' ? styles.alertHigh : styles.alertMedium,
-              ]}
-            >
-              <Text style={styles.alertMessage}>{alert.message}</Text>
-              <Text style={styles.alertMeta}>
-                {alert.parakeet_name || 'General'} •{' '}
-                {new Date(alert.created_at).toLocaleString('es')}
-              </Text>
-            </View>
-          ))}
-        </View>
-      )}
+      <AlertFeed alerts={alerts} />
 
       <TouchableOpacity
         style={styles.recordButton}
@@ -162,34 +112,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 12,
     lineHeight: 18,
-  },
-  alertsSection: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-  },
-  alertCard: {
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-  },
-  alertHigh: {
-    backgroundColor: '#FFF1F1',
-    borderColor: '#FFCDD2',
-  },
-  alertMedium: {
-    backgroundColor: '#FFF8E1',
-    borderColor: '#FFE0B2',
-  },
-  alertMessage: {
-    fontSize: 13,
-    color: '#333',
-    lineHeight: 18,
-  },
-  alertMeta: {
-    fontSize: 11,
-    color: '#666',
-    marginTop: 6,
   },
   recordButton: {
     flexDirection: 'row',

@@ -10,6 +10,7 @@ from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.parakeet import Parakeet
 from app.models.user import User
+from app.services.parakeet_service import get_user_parakeet
 from app.services.storage_service import StorageService
 
 router = APIRouter(prefix="/parakeets", tags=["parakeets"])
@@ -80,7 +81,7 @@ async def get_parakeet(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    parakeet = await _get_user_parakeet(db, parakeet_id, current_user.id)
+    parakeet = await get_user_parakeet(db, parakeet_id, current_user.id)
     return _to_response(parakeet)
 
 
@@ -91,7 +92,7 @@ async def update_parakeet(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    parakeet = await _get_user_parakeet(db, parakeet_id, current_user.id)
+    parakeet = await get_user_parakeet(db, parakeet_id, current_user.id)
     update_data = body.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(parakeet, key, value)
@@ -105,7 +106,7 @@ async def delete_parakeet(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    parakeet = await _get_user_parakeet(db, parakeet_id, current_user.id)
+    parakeet = await get_user_parakeet(db, parakeet_id, current_user.id)
     if parakeet.photo_url:
         await storage.delete_file(parakeet.photo_url)
     await db.delete(parakeet)
@@ -131,7 +132,7 @@ async def upload_parakeet_photo(
             detail="Uploaded image is empty.",
         )
 
-    parakeet = await _get_user_parakeet(db, parakeet_id, current_user.id)
+    parakeet = await get_user_parakeet(db, parakeet_id, current_user.id)
     previous_photo = parakeet.photo_url
     try:
         parakeet.photo_url = await storage.save_image(
@@ -147,21 +148,6 @@ async def upload_parakeet_photo(
         await storage.delete_file(previous_photo)
 
     return _to_response(parakeet)
-
-
-async def _get_user_parakeet(
-    db: AsyncSession, parakeet_id: uuid.UUID, user_id: uuid.UUID
-) -> Parakeet:
-    result = await db.execute(
-        select(Parakeet).where(
-            Parakeet.id == parakeet_id,
-            Parakeet.user_id == user_id,
-        )
-    )
-    parakeet = result.scalar_one_or_none()
-    if not parakeet:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parakeet not found")
-    return parakeet
 
 
 def _to_response(parakeet: Parakeet) -> ParakeetResponse:

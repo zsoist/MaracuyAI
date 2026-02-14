@@ -11,7 +11,10 @@ from app.models.analysis_result import AnalysisResult, MoodType, VocalizationTyp
 from app.models.parakeet import Parakeet
 from app.models.recording import Recording
 from app.models.user import User
+from app.services.analysis_service import build_alerts, calculate_wellness_metrics
 from app.services.ml_service import MLService
+from app.services.parakeet_service import validate_user_parakeet_ids
+from app.services.recording_service import get_user_recording
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -55,33 +58,10 @@ async def analyze_recording(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(Recording).where(
-            Recording.id == body.recording_id,
-            Recording.user_id == current_user.id,
-        )
+    recording = await get_user_recording(db, body.recording_id, current_user.id)
+    requested_parakeets = await validate_user_parakeet_ids(
+        db, current_user.id, body.parakeet_ids
     )
-    recording = result.scalar_one_or_none()
-    if not recording:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Recording not found"
-        )
-
-    requested_parakeets = _dedupe_uuids(body.parakeet_ids)
-    if requested_parakeets:
-        owned_parakeets_result = await db.execute(
-            select(Parakeet.id).where(
-                Parakeet.user_id == current_user.id,
-                Parakeet.id.in_(requested_parakeets),
-            )
-        )
-        owned_parakeets = set(owned_parakeets_result.scalars().all())
-        unauthorized = [pid for pid in requested_parakeets if pid not in owned_parakeets]
-        if unauthorized:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="One or more parakeet_ids do not belong to the current user.",
-            )
 
     try:
         analysis_output = await ml_service.analyze_audio(recording.file_url)
@@ -161,50 +141,17 @@ async def get_wellness_summary(
         .limit(100)
     )
     analyses = result.scalars().all()
-
-    if not analyses:
-        return WellnessSummary(
-            parakeet_id=str(parakeet_id),
-            parakeet_name=parakeet.name,
-            total_analyses=0,
-            average_confidence=0.0,
-            average_energy=0.0,
-            dominant_mood="neutral",
-            mood_distribution={},
-            recent_trend="stable",
-        )
-
-    mood_counts: dict[str, int] = {}
-    total_confidence = 0.0
-    total_energy = 0.0
-
-    for a in analyses:
-        mood_counts[a.mood.value] = mood_counts.get(a.mood.value, 0) + 1
-        total_confidence += a.confidence
-        total_energy += a.energy_level
-
-    n = len(analyses)
-    dominant_mood = max(mood_counts, key=mood_counts.get)  # type: ignore[arg-type]
-
-    recent = analyses[:5]
-    older = analyses[5:15]
-    if recent and older:
-        recent_energy = sum(a.energy_level for a in recent) / len(recent)
-        older_energy = sum(a.energy_level for a in older) / len(older)
-        diff = recent_energy - older_energy
-        trend = "improving" if diff > 0.1 else ("declining" if diff < -0.1 else "stable")
-    else:
-        trend = "stable"
+    metrics = calculate_wellness_metrics(analyses)
 
     return WellnessSummary(
         parakeet_id=str(parakeet_id),
         parakeet_name=parakeet.name,
-        total_analyses=n,
-        average_confidence=round(total_confidence / n, 3),
-        average_energy=round(total_energy / n, 3),
-        dominant_mood=dominant_mood,
-        mood_distribution=mood_counts,
-        recent_trend=trend,
+        total_analyses=metrics.total_analyses,
+        average_confidence=metrics.average_confidence,
+        average_energy=metrics.average_energy,
+        dominant_mood=metrics.dominant_mood,
+        mood_distribution=metrics.mood_distribution,
+        recent_trend=metrics.recent_trend,
     )
 
 
@@ -222,8 +169,6 @@ async def get_alerts(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from app.models.parakeet import Parakeet
-
     parakeets_result = await db.execute(
         select(Parakeet).where(Parakeet.user_id == current_user.id)
     )
@@ -237,51 +182,18 @@ async def get_alerts(
         .limit(50)
     )
     analyses = result.scalars().all()
-
-    alerts: list[AlertResponse] = []
-
-    for a in analyses:
-        p_name = parakeets[a.parakeet_id].name if a.parakeet_id and a.parakeet_id in parakeets else None
-        p_id = str(a.parakeet_id) if a.parakeet_id else None
-
-        if a.mood == MoodType.SICK:
-            alerts.append(AlertResponse(
-                priority="high",
-                parakeet_id=p_id,
-                parakeet_name=p_name,
-                message=f"Se detectaron vocalizaciones inusuales que pueden indicar enfermedad{f' en {p_name}' if p_name else ''}. Monitorea otros sintomas y considera visitar un veterinario aviar.",
-                mood=a.mood.value,
-                created_at=a.created_at.isoformat(),
-            ))
-        elif a.mood == MoodType.SCARED and a.vocalization_type == VocalizationType.ALARM:
-            alerts.append(AlertResponse(
-                priority="high",
-                parakeet_id=p_id,
-                parakeet_name=p_name,
-                message=f"Llamadas de alarma detectadas{f' de {p_name}' if p_name else ''}. Verifica que no haya depredadores o amenazas cerca.",
-                mood=a.mood.value,
-                created_at=a.created_at.isoformat(),
-            ))
-        elif a.mood == MoodType.STRESSED:
-            alerts.append(AlertResponse(
-                priority="medium",
-                parakeet_id=p_id,
-                parakeet_name=p_name,
-                message=f"Signos de estres detectados{f' en {p_name}' if p_name else ''}. Revisa el ambiente, ruidos fuertes o cambios recientes.",
-                mood=a.mood.value,
-                created_at=a.created_at.isoformat(),
-            ))
-        elif a.vocalization_type == VocalizationType.SILENCE and a.energy_level < 0.1:
-            alerts.append(AlertResponse(
-                priority="medium",
-                parakeet_id=p_id,
-                parakeet_name=p_name,
-                message=f"Silencio prolongado detectado{f' de {p_name}' if p_name else ''}. Verifica que este comiendo y bebiendo normalmente.",
-                mood=a.mood.value,
-                created_at=a.created_at.isoformat(),
-            ))
-
-    return alerts[:20]
+    alert_payloads = build_alerts(analyses, parakeets, max_alerts=20)
+    return [
+        AlertResponse(
+            priority=alert.priority,
+            parakeet_id=alert.parakeet_id,
+            parakeet_name=alert.parakeet_name,
+            message=alert.message,
+            mood=alert.mood,
+            created_at=alert.created_at,
+        )
+        for alert in alert_payloads
+    ]
 
 
 def _to_response(analysis: AnalysisResult) -> AnalysisResponse:
@@ -297,15 +209,3 @@ def _to_response(analysis: AnalysisResult) -> AnalysisResponse:
         details=analysis.details,
         created_at=analysis.created_at.isoformat(),
     )
-
-
-def _dedupe_uuids(values: list[uuid.UUID] | None) -> list[uuid.UUID]:
-    if not values:
-        return []
-    seen: set[uuid.UUID] = set()
-    deduped: list[uuid.UUID] = []
-    for value in values:
-        if value not in seen:
-            deduped.append(value)
-            seen.add(value)
-    return deduped

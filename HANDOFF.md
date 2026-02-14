@@ -640,3 +640,198 @@ Si se abre un PR desde esta rama, sugerencia:
 
 Con eso la revisión será más simple y menor riesgo de rollback masivo.
 
+---
+
+## 16) Update de Modularización (2026-02-14)
+
+Esta sección documenta una segunda pasada enfocada en **modularidad, mantenibilidad y estabilidad** sobre la misma rama `codex/full-hardening-potenciacion`.
+
+### 16.1 Objetivo
+
+Reducir acoplamiento en dos zonas con complejidad creciente:
+
+1. Backend `analysis.py` (lógica de negocio embebida en ruta).
+2. Mobile `RecordScreen.tsx` (orquestación + UI + side effects en un solo archivo).
+
+Resultado esperado:
+- Cambios futuros más fáciles y con menor riesgo de regresiones.
+- Mejor separación por capas (route/service/UI/hook).
+- Reutilización de piezas para nuevas funcionalidades.
+
+---
+
+### 16.2 Backend: extracción de lógica de dominio
+
+#### 16.2.1 Nuevo servicio `analysis_service.py`
+
+**Archivo nuevo**: `backend/app/services/analysis_service.py`
+
+Se introdujeron utilidades de dominio:
+
+1. `calculate_wellness_metrics(analyses)`
+   - Calcula:
+     - total
+     - promedio de confidence
+     - promedio de energy
+     - mood dominante
+     - distribución de moods
+     - tendencia reciente (`improving` / `stable` / `declining`)
+2. `build_alerts(analyses, parakeets_by_id, max_alerts=20)`
+   - Genera payloads de alertas con reglas de negocio:
+     - `SICK` -> prioridad `high`
+     - `SCARED + ALARM` -> `high`
+     - `STRESSED` -> `medium`
+     - `SILENCE + low energy` -> `medium`
+3. Dataclasses explícitas:
+   - `WellnessMetrics`
+   - `AlertPayload`
+
+Beneficio:
+- reglas centralizadas y testeables fuera del router;
+- menos duplicación y menos lógica procedural en endpoints.
+
+#### 16.2.2 `analysis.py` simplificado
+
+**Archivo modificado**: `backend/app/api/routes/analysis.py`
+
+Cambios:
+
+1. Reuso de servicios cross-route:
+   - `get_user_recording(...)` (de `recording_service.py`)
+   - `validate_user_parakeet_ids(...)` (de `parakeet_service.py`)
+2. Eliminación de lógica inline duplicada:
+   - lookup manual de recording
+   - validación ownership inline
+   - dedupe UUID local
+3. Extracción de cómputo de summary y alertas a `analysis_service.py`.
+
+Beneficio:
+- el router queda orientado a contrato HTTP;
+- la lógica de negocio vive en servicios reutilizables.
+
+---
+
+### 16.3 Mobile: `RecordScreen` desacoplado
+
+#### 16.3.1 Hook de orquestación
+
+**Archivo nuevo**: `mobile/src/hooks/useRecordAnalysis.ts`
+
+Responsabilidades del hook:
+
+1. Estado de sesión:
+   - `isRecording`
+   - `duration`
+   - `isAnalyzing`
+   - `analysisResult`
+   - `selectedParakeetId`
+2. Ciclo de grabación:
+   - permisos de micrófono
+   - inicio/parada de grabación
+   - cleanup de timers y recorder
+3. Flujo de análisis:
+   - upload de audio
+   - llamada de análisis
+   - actualización de store (`addRecording`, `setLatestAnalysis`)
+4. Manejo de errores:
+   - mensajes consistentes usando `getErrorMessage(...)`
+
+Beneficio:
+- lógica asíncrona encapsulada;
+- `RecordScreen` deja de mezclar estado de infraestructura con render.
+
+#### 16.3.2 Componentes reutilizables de UI
+
+**Archivos nuevos**:
+
+1. `mobile/src/components/ParakeetTargetSelector.tsx`
+   - selector de chips (`General` + aves).
+2. `mobile/src/components/AnalysisLoadingState.tsx`
+   - estado visual de procesamiento.
+3. `mobile/src/components/AnalysisResultCard.tsx`
+   - tarjeta de resultado + CTA "Nueva grabación".
+
+Beneficio:
+- UI segmentada por responsabilidad;
+- más fácil cambiar diseño sin tocar lógica de negocio.
+
+#### 16.3.3 `RecordScreen.tsx` liviano
+
+**Archivo modificado**: `mobile/src/screens/RecordScreen.tsx`
+
+Ahora es principalmente un "container de composición":
+
+1. consume `useRecordAnalysis(...)`;
+2. renderiza uno de tres estados (`loading`, `result`, `record controls`);
+3. delega selector y resultado a componentes dedicados.
+
+Beneficio:
+- menor tamaño y complejidad cognitiva;
+- punto de entrada claro para nuevos cambios.
+
+---
+
+### 16.4 Estado de modularización adicional (de esta rama)
+
+También quedan introducidos (de la iteración inmediatamente anterior) estos bloques, relevantes para arquitectura modular:
+
+1. `backend/app/services/parakeet_service.py`
+   - `dedupe_uuids`, `get_user_parakeet`, `validate_user_parakeet_ids`.
+2. `backend/app/services/recording_service.py`
+   - `get_user_recording`.
+3. `mobile/src/config/env.ts`
+   - configuración central de `API_BASE_URL` y key de auth.
+4. `mobile/src/utils/errorMessage.ts`
+   - parser de errores API reutilizable.
+5. `mobile/src/hooks/useHomeDashboard.ts`
+   - carga/refresco de Home aislados.
+6. `mobile/src/components/AlertFeed.tsx`
+   - render de alertas separado del Home screen.
+
+---
+
+### 16.5 Verificación ejecutada en esta pasada
+
+Se ejecutó sobre la rama actual:
+
+1. Backend compile check
+```bash
+python3 -m compileall backend/app
+```
+Resultado: OK
+
+2. Mobile typecheck
+```bash
+npm --prefix mobile run typecheck
+```
+Resultado: OK
+
+3. Mobile lint
+```bash
+npm --prefix mobile run lint
+```
+Resultado: OK
+
+---
+
+### 16.6 Archivos nuevos/modificados por esta pasada modular
+
+#### Backend
+- `backend/app/services/analysis_service.py` (new)
+- `backend/app/api/routes/analysis.py` (mod)
+
+#### Mobile
+- `mobile/src/hooks/useRecordAnalysis.ts` (new)
+- `mobile/src/components/ParakeetTargetSelector.tsx` (new)
+- `mobile/src/components/AnalysisLoadingState.tsx` (new)
+- `mobile/src/components/AnalysisResultCard.tsx` (new)
+- `mobile/src/screens/RecordScreen.tsx` (mod)
+
+---
+
+### 16.7 Recomendaciones para el próximo LLM/dev
+
+1. Agregar tests unitarios para `analysis_service.py` (reglas de alertas/tendencias).
+2. Agregar tests del hook `useRecordAnalysis` (mocks de `expo-av` y `api`).
+3. Si se amplía análisis multi-ave, usar `ParakeetTargetSelector` como base para modo multi-select.
+4. Mantener la regla: rutas FastAPI solo HTTP contract; reglas de negocio siempre en `services/`.

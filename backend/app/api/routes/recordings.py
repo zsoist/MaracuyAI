@@ -10,6 +10,7 @@ from app.core.database import get_db
 from app.models.analysis_result import AnalysisResult
 from app.models.recording import Recording
 from app.models.user import User
+from app.services.recording_service import get_user_recording
 from app.services.storage_service import StorageService
 
 router = APIRouter(prefix="/recordings", tags=["recordings"])
@@ -129,7 +130,7 @@ async def get_recording(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    recording = await _get_user_recording(db, recording_id, current_user.id)
+    recording = await get_user_recording(db, recording_id, current_user.id)
     analysis_result = await db.execute(
         select(AnalysisResult)
         .where(AnalysisResult.recording_id == recording.id)
@@ -145,24 +146,9 @@ async def delete_recording(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    recording = await _get_user_recording(db, recording_id, current_user.id)
+    recording = await get_user_recording(db, recording_id, current_user.id)
     await storage.delete_audio(recording.file_url)
     await db.delete(recording)
-
-
-async def _get_user_recording(
-    db: AsyncSession, recording_id: uuid.UUID, user_id: uuid.UUID
-) -> Recording:
-    result = await db.execute(
-        select(Recording).where(
-            Recording.id == recording_id,
-            Recording.user_id == user_id,
-        )
-    )
-    recording = result.scalar_one_or_none()
-    if not recording:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recording not found")
-    return recording
 
 
 def _to_response(recording: Recording) -> RecordingResponse:
