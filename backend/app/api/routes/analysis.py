@@ -186,6 +186,82 @@ async def get_wellness_summary(
     )
 
 
+class AlertResponse(BaseModel):
+    priority: str  # "high", "medium", "low"
+    parakeet_id: str | None
+    parakeet_name: str | None
+    message: str
+    mood: str
+    created_at: str
+
+
+@router.get("/alerts", response_model=list[AlertResponse])
+async def get_alerts(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.models.parakeet import Parakeet
+
+    parakeets_result = await db.execute(
+        select(Parakeet).where(Parakeet.user_id == current_user.id)
+    )
+    parakeets = {p.id: p for p in parakeets_result.scalars().all()}
+
+    result = await db.execute(
+        select(AnalysisResult)
+        .join(Recording)
+        .where(Recording.user_id == current_user.id)
+        .order_by(AnalysisResult.created_at.desc())
+        .limit(50)
+    )
+    analyses = result.scalars().all()
+
+    alerts: list[AlertResponse] = []
+
+    for a in analyses:
+        p_name = parakeets[a.parakeet_id].name if a.parakeet_id and a.parakeet_id in parakeets else None
+        p_id = str(a.parakeet_id) if a.parakeet_id else None
+
+        if a.mood == MoodType.SICK:
+            alerts.append(AlertResponse(
+                priority="high",
+                parakeet_id=p_id,
+                parakeet_name=p_name,
+                message=f"Se detectaron vocalizaciones inusuales que pueden indicar enfermedad{f' en {p_name}' if p_name else ''}. Monitorea otros sintomas y considera visitar un veterinario aviar.",
+                mood=a.mood.value,
+                created_at=a.created_at.isoformat(),
+            ))
+        elif a.mood == MoodType.SCARED and a.vocalization_type == VocalizationType.ALARM:
+            alerts.append(AlertResponse(
+                priority="high",
+                parakeet_id=p_id,
+                parakeet_name=p_name,
+                message=f"Llamadas de alarma detectadas{f' de {p_name}' if p_name else ''}. Verifica que no haya depredadores o amenazas cerca.",
+                mood=a.mood.value,
+                created_at=a.created_at.isoformat(),
+            ))
+        elif a.mood == MoodType.STRESSED:
+            alerts.append(AlertResponse(
+                priority="medium",
+                parakeet_id=p_id,
+                parakeet_name=p_name,
+                message=f"Signos de estres detectados{f' en {p_name}' if p_name else ''}. Revisa el ambiente, ruidos fuertes o cambios recientes.",
+                mood=a.mood.value,
+                created_at=a.created_at.isoformat(),
+            ))
+        elif a.vocalization_type == VocalizationType.SILENCE and a.energy_level < 0.1:
+            alerts.append(AlertResponse(
+                priority="medium",
+                parakeet_id=p_id,
+                parakeet_name=p_name,
+                message=f"Silencio prolongado detectado{f' de {p_name}' if p_name else ''}. Verifica que este comiendo y bebiendo normalmente.",
+                mood=a.mood.value,
+                created_at=a.created_at.isoformat(),
+            ))
+
+    return alerts[:20]
+
+
 def _to_response(analysis: AnalysisResult) -> AnalysisResponse:
     return AnalysisResponse(
         id=str(analysis.id),

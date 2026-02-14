@@ -130,4 +130,18 @@ export async function getWellnessSummary(parakeetId: string): Promise<WellnessSu
   return data;
 }
 
+export interface Alert {
+  priority: 'high' | 'medium' | 'low';
+  parakeet_id: string | null;
+  parakeet_name: string | null;
+  message: string;
+  mood: string;
+  created_at: string;
+}
+
+export async function getAlerts(): Promise<Alert[]> {
+  const { data } = await api.get<Alert[]>('/analysis/alerts');
+  return data;
+}
+
 export default api;

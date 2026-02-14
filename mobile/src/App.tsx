@@ -2,16 +2,24 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
+import { useAuth } from './hooks/useAuth';
+import { LoginScreen } from './screens/LoginScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { RecordScreen } from './screens/RecordScreen';
 import { HistoryScreen } from './screens/HistoryScreen';
 import { ParakeetProfileScreen } from './screens/ParakeetProfileScreen';
+import { AddParakeetScreen } from './screens/AddParakeetScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+function TabIcon({ label, color }: { label: string; color: string }) {
+  return <Text style={{ fontSize: 18, color }}>{label}</Text>;
+}
 
 function HomeTabs() {
   return (
@@ -35,7 +43,7 @@ function HomeTabs() {
         component={HomeScreen}
         options={{
           tabBarLabel: 'Inicio',
-          tabBarIcon: ({ color }) => <TabIcon label="I" color={color} />,
+          tabBarIcon: ({ color }) => <TabIcon label={'\u{1F3E0}'} color={color} />,
         }}
       />
       <Tab.Screen
@@ -43,7 +51,7 @@ function HomeTabs() {
         component={RecordScreen}
         options={{
           tabBarLabel: 'Grabar',
-          tabBarIcon: ({ color }) => <TabIcon label="G" color={color} />,
+          tabBarIcon: ({ color }) => <TabIcon label={'\u{1F3A4}'} color={color} />,
         }}
       />
       <Tab.Screen
@@ -51,7 +59,7 @@ function HomeTabs() {
         component={HistoryScreen}
         options={{
           tabBarLabel: 'Historial',
-          tabBarIcon: ({ color }) => <TabIcon label="H" color={color} />,
+          tabBarIcon: ({ color }) => <TabIcon label={'\u{1F4CA}'} color={color} />,
         }}
       />
       <Tab.Screen
@@ -59,23 +67,35 @@ function HomeTabs() {
         component={SettingsScreen}
         options={{
           tabBarLabel: 'Ajustes',
-          tabBarIcon: ({ color }) => <TabIcon label="A" color={color} />,
+          tabBarIcon: ({ color }) => <TabIcon label={'\u{2699}'} color={color} />,
         }}
       />
     </Tab.Navigator>
   );
 }
 
-function TabIcon({ label, color }: { label: string; color: string }) {
-  return (
-    <React.Fragment>
-      {/* Replace with actual icons (e.g., @expo/vector-icons) */}
-      <>{/* Placeholder */}</>
-    </React.Fragment>
-  );
-}
-
 export default function App() {
+  const { isLoading, isAuthenticated } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#4CAF50' }}>
+        <Text style={{ fontSize: 64, marginBottom: 16 }}>{'\u{1F99C}'}</Text>
+        <ActivityIndicator size="large" color="#fff" />
+        <Text style={{ color: '#fff', marginTop: 12, fontSize: 16 }}>Parakeet Wellness</Text>
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <StatusBar style="light" />
+        <LoginScreen />
+      </>
+    );
+  }
+
   return (
     <NavigationContainer>
       <StatusBar style="auto" />
@@ -90,6 +110,14 @@ export default function App() {
           component={ParakeetProfileScreen}
           options={{
             title: 'Perfil',
+            headerTintColor: '#4CAF50',
+          }}
+        />
+        <Stack.Screen
+          name="AddParakeet"
+          component={AddParakeetScreen}
+          options={{
+            title: 'Nuevo periquito',
             headerTintColor: '#4CAF50',
           }}
         />

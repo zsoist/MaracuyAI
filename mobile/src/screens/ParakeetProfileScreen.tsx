@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Dimensions } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
 import { MoodIndicator } from '../components/MoodIndicator';
+import { WellnessChart } from '../components/WellnessChart';
 import * as api from '../services/api';
 import { MOOD_CONFIG, useStore } from '../store/useStore';
-import type { MoodType, WellnessSummary } from '../types';
-
-const screenWidth = Dimensions.get('window').width;
+import type { AnalysisResult, MoodType, WellnessSummary } from '../types';
 
 export function ParakeetProfileScreen({ route }: { route: any }) {
   const { parakeetId } = route.params;
@@ -15,16 +12,21 @@ export function ParakeetProfileScreen({ route }: { route: any }) {
   const parakeet = parakeets.find((p) => p.id === parakeetId);
 
   const [summary, setSummary] = useState<WellnessSummary | null>(null);
+  const [analyses, setAnalyses] = useState<AnalysisResult[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadSummary();
+    loadData();
   }, [parakeetId]);
 
-  const loadSummary = async () => {
+  const loadData = async () => {
     try {
-      const data = await api.getWellnessSummary(parakeetId);
-      setSummary(data);
+      const [summaryData, historyData] = await Promise.all([
+        api.getWellnessSummary(parakeetId),
+        api.getAnalysisHistory(parakeetId),
+      ]);
+      setSummary(summaryData);
+      setAnalyses(historyData);
     } catch {
       // silent
     } finally {
@@ -107,6 +109,8 @@ export function ParakeetProfileScreen({ route }: { route: any }) {
               size="large"
             />
           </View>
+
+          <WellnessChart analyses={analyses} />
 
           <View style={styles.distributionSection}>
             <Text style={styles.sectionTitle}>Distribucion de estados</Text>
@@ -239,6 +243,7 @@ const styles = StyleSheet.create({
     marginTop: 0,
     borderRadius: 12,
     padding: 20,
+    marginBottom: 40,
   },
   barRow: {
     flexDirection: 'row',
