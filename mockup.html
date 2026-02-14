@@ -186,6 +186,34 @@
     border-radius: 10px;
   }
 
+  .alerts-wrap {
+    margin: 0 16px 6px;
+  }
+  .alert-chip {
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border: 1px solid transparent;
+  }
+  .alert-chip.high {
+    background: #FFF1F1;
+    border-color: #FFD1D1;
+  }
+  .alert-chip.medium {
+    background: #FFF8E1;
+    border-color: #FFE0A8;
+  }
+  .alert-chip .msg {
+    font-size: 12px;
+    color: #333;
+    line-height: 1.4;
+  }
+  .alert-chip .meta {
+    font-size: 10px;
+    color: #666;
+    margin-top: 6px;
+  }
+
   .record-btn-home {
     display: flex;
     align-items: center;
@@ -249,6 +277,11 @@
     font-weight: 700;
     flex-shrink: 0;
   }
+  .parakeet-avatar.photo {
+    background-size: cover;
+    background-position: center;
+    color: transparent;
+  }
   .parakeet-info { flex: 1; margin-left: 12px; }
   .parakeet-info .name { font-size: 16px; font-weight: 600; color: #333; }
   .parakeet-info .desc { font-size: 12px; color: #888; margin-top: 2px; }
@@ -263,6 +296,36 @@
     justify-content: center;
     flex: 1;
     padding: 40px 20px;
+  }
+  .record-bird-selector {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  .record-bird-selector .lbl {
+    font-size: 12px;
+    color: #666;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .record-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .record-chip {
+    border: 1px solid #D0D7DE;
+    border-radius: 16px;
+    padding: 7px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #455A64;
+    background: #fff;
+    cursor: pointer;
+  }
+  .record-chip.active {
+    background: #4CAF50;
+    border-color: #4CAF50;
+    color: #fff;
   }
   .timer { font-size: 64px; font-weight: 200; color: #333; margin-bottom: 8px; }
   .record-hint { font-size: 13px; color: #999; margin-bottom: 40px; }
@@ -425,8 +488,25 @@
     font-weight: 700;
     color: #fff;
   }
+  .profile-avatar.photo {
+    background-size: cover;
+    background-position: center;
+    color: transparent;
+    border: 2px solid rgba(255,255,255,0.55);
+  }
   .profile-header .name { font-size: 22px; font-weight: 700; color: #fff; }
   .profile-header .desc { font-size: 13px; color: rgba(255,255,255,0.85); margin-top: 4px; }
+  .profile-photo-btn {
+    margin-top: 10px;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
 
   .stats-row {
     display: flex;
@@ -645,6 +725,21 @@
         </div>
       </div>
 
+      <div class="alerts-wrap">
+        <div class="section-header" style="padding:0;margin:0 0 8px;">
+          <h3 style="font-size:16px;">Alertas recientes</h3>
+          <span style="font-size:11px;color:#999;font-weight:600;">Top 3</span>
+        </div>
+        <div class="alert-chip high">
+          <div class="msg">Llamadas de alarma detectadas de Kiwi. Verifica amenazas o ruido fuerte cerca de la jaula.</div>
+          <div class="meta">Kiwi • Hoy 10:32</div>
+        </div>
+        <div class="alert-chip medium">
+          <div class="msg">Signos de estres en Coco. Revisa cambios recientes de ambiente y horas de descanso.</div>
+          <div class="meta">Coco • Ayer 20:18</div>
+        </div>
+      </div>
+
       <button class="record-btn-home" onclick="switchTab('record')">
         <span class="icon">&#x1F3A4;</span>
         Grabar vocalizacion
@@ -656,7 +751,7 @@
       </div>
 
       <div class="parakeet-card" onclick="showScreen('screen-profile')">
-        <div class="parakeet-avatar" style="background:#4CAF50;">K</div>
+        <div class="parakeet-avatar photo" style="background-image:linear-gradient(130deg,#9BE15D,#00E3AE);">K</div>
         <div class="parakeet-info">
           <div class="name">Kiwi</div>
           <div class="desc">Verde con amarillo</div>
@@ -665,8 +760,8 @@
         <span class="arrow">&#x203A;</span>
       </div>
 
-      <div class="parakeet-card" onclick="showScreen('screen-profile-2')">
-        <div class="parakeet-avatar" style="background:#2196F3;">C</div>
+      <div class="parakeet-card" onclick="showScreen('screen-profile')">
+        <div class="parakeet-avatar photo" style="background-image:linear-gradient(130deg,#89F7FE,#66A6FF);">C</div>
         <div class="parakeet-info">
           <div class="name">Coco</div>
           <div class="desc">Azul cielo con blanco</div>
@@ -701,6 +796,14 @@
   <div class="screen" id="screen-record">
     <div class="screen-content">
       <div class="record-container" id="record-idle">
+        <div class="record-bird-selector">
+          <div class="lbl">Analizar para:</div>
+          <div class="record-chip-row">
+            <button class="record-chip active" data-bird="general" onclick="selectBirdChip(this)">General</button>
+            <button class="record-chip" data-bird="kiwi" onclick="selectBirdChip(this)">Kiwi</button>
+            <button class="record-chip" data-bird="coco" onclick="selectBirdChip(this)">Coco</button>
+          </div>
+        </div>
         <div class="timer" id="timer-display">0:00</div>
         <div class="record-hint">Minimo 30 segundos recomendados</div>
         <button class="record-button" id="rec-btn" onclick="toggleRecording()">
@@ -757,6 +860,10 @@
           <div class="detail-row">
             <span class="label">Vocalizacion:</span>
             <span class="value">Singing</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Periquito:</span>
+            <span class="value" id="selected-bird-value">General</span>
           </div>
           <div class="detail-row">
             <span class="label">Energia:</span>
@@ -949,9 +1056,10 @@
         <h2>Perfil</h2>
       </div>
       <div class="profile-header">
-        <div class="profile-avatar">K</div>
+        <div class="profile-avatar photo" style="background-image:linear-gradient(130deg,#9BE15D,#00E3AE);">K</div>
         <div class="name">Kiwi</div>
         <div class="desc">Verde con amarillo</div>
+        <button class="profile-photo-btn">Actualizar foto</button>
       </div>
       <div class="stats-row">
         <div class="stat-box">
@@ -1092,6 +1200,14 @@
   let isRecording = false;
   let seconds = 0;
   let timerInterval;
+  let selectedBird = 'general';
+
+  function selectBirdChip(btn) {
+    const row = btn.closest('.record-chip-row');
+    row.querySelectorAll('.record-chip').forEach(chip => chip.classList.remove('active'));
+    btn.classList.add('active');
+    selectedBird = btn.dataset.bird || 'general';
+  }
 
   function toggleRecording() {
     if (!isRecording) {
@@ -1120,6 +1236,12 @@
     setTimeout(() => {
       document.getElementById('analyzing-view').style.display = 'none';
       document.getElementById('result-view').style.display = 'block';
+      const target = document.getElementById('selected-bird-value');
+      if (target) {
+        target.textContent = selectedBird === 'general'
+          ? 'General'
+          : selectedBird.charAt(0).toUpperCase() + selectedBird.slice(1);
+      }
     }, 2500);
   }
 
