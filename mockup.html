@@ -83,7 +83,7 @@
     display: flex;
     background: #fff;
     border-top: none;
-    padding: 6px 0 20px;
+    padding: 6px 0 calc(20px + env(safe-area-inset-bottom));
     box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
     position: relative;
     z-index: 10;
@@ -337,6 +337,7 @@
   .parakeet-card {
     display: flex;
     align-items: center;
+    width: calc(100% - 32px);
     background: #fff;
     border-radius: 12px;
     padding: 14px 16px;
@@ -344,6 +345,10 @@
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     cursor: pointer;
     transition: transform 0.15s;
+    border: none;
+    text-align: left;
+    font: inherit;
+    appearance: none;
   }
   .parakeet-card:hover { transform: translateX(2px); }
   .parakeet-avatar {
@@ -776,6 +781,14 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+    align-items: start;
+  }
+  .settings-field-label {
+    display: block;
+    font-size: 11px;
+    color: #64748B;
+    font-weight: 600;
+    margin: 2px 0 4px;
   }
   .flag-grid {
     display: grid;
@@ -892,16 +905,19 @@
       </div>
       <div class="login-form">
         <div class="tab-switch">
-          <button class="active" onclick="switchLoginTab(this, 'login')">Iniciar sesion</button>
-          <button onclick="switchLoginTab(this, 'register')">Registrarse</button>
+          <button type="button" class="active" onclick="switchLoginTab(this, 'login')">Iniciar sesion</button>
+          <button type="button" onclick="switchLoginTab(this, 'register')">Registrarse</button>
         </div>
         <div id="name-field" style="display:none">
-          <input class="input-field" placeholder="Nombre (opcional)">
+          <label class="sr-only" for="auth-name">Nombre (opcional)</label>
+          <input id="auth-name" class="input-field" placeholder="Nombre (opcional)" autocomplete="name">
         </div>
-        <input class="input-field" placeholder="Email" value="maria@ejemplo.com">
-        <input class="input-field" type="password" placeholder="Contrasena" value="********">
-        <button class="btn-primary" onclick="goToHome(true)">Entrar</button>
-        <button class="mini-btn secondary" onclick="goToHome(false)">Continuar como invitado</button>
+        <label class="sr-only" for="auth-email">Email</label>
+        <input id="auth-email" class="input-field" placeholder="Email" value="maria@ejemplo.com" autocomplete="email">
+        <label class="sr-only" for="auth-password">Contrasena</label>
+        <input id="auth-password" class="input-field" type="password" placeholder="Contrasena" value="********" autocomplete="current-password">
+        <button type="button" class="btn-primary" onclick="goToHome(true)">Entrar</button>
+        <button type="button" class="mini-btn secondary" onclick="goToHome(false)">Continuar como invitado</button>
       </div>
     </div>
   </div>
@@ -957,17 +973,17 @@
         </div>
       </div>
 
-      <button class="record-btn-home" onclick="switchTab('record')">
+      <button type="button" class="record-btn-home" onclick="switchTab('record')">
         <span class="icon">&#x1F3A4;</span>
         Grabar vocalizacion
       </button>
 
       <div class="section-header">
         <h3>Mis periquitos</h3>
-        <button class="add-btn" onclick="showScreen('screen-add')">+ Agregar</button>
+        <button type="button" class="add-btn" onclick="showScreen('screen-add')">+ Agregar</button>
       </div>
 
-      <div class="parakeet-card" onclick="showScreen('screen-profile')">
+      <button type="button" class="parakeet-card" onclick="showScreen('screen-profile')" aria-label="Abrir perfil de Kiwi">
         <div class="parakeet-avatar photo" style="background-image:linear-gradient(130deg,#9BE15D,#00E3AE);">K</div>
         <div class="parakeet-info">
           <div class="name">Kiwi</div>
@@ -975,9 +991,9 @@
           <div class="mood-tag">Feliz - hace 2 horas</div>
         </div>
         <span class="arrow">&#x203A;</span>
-      </div>
+      </button>
 
-      <div class="parakeet-card" onclick="showScreen('screen-profile')">
+      <button type="button" class="parakeet-card" onclick="showScreen('screen-profile')" aria-label="Abrir perfil de Coco">
         <div class="parakeet-avatar photo" style="background-image:linear-gradient(130deg,#89F7FE,#66A6FF);">C</div>
         <div class="parakeet-info">
           <div class="name">Coco</div>
@@ -985,24 +1001,24 @@
           <div class="mood-tag">Relajado - hace 2 horas</div>
         </div>
         <span class="arrow">&#x203A;</span>
-      </div>
+      </button>
 
       <div style="height:20px"></div>
     </div>
-    <div class="tab-bar" id="main-tabs">
-      <button class="tab-item active" onclick="switchTab('home')">
+    <div class="tab-bar" id="main-tabs" role="navigation" aria-label="Navegacion principal">
+      <button type="button" class="tab-item active" onclick="switchTab('home')" aria-current="page">
         <span class="icon">&#x1F3E0;</span>
         <span class="label">Inicio</span>
       </button>
-      <button class="tab-item" onclick="switchTab('record')">
+      <button type="button" class="tab-item" onclick="switchTab('record')">
         <span class="icon">&#x1F3A4;</span>
         <span class="label">Grabar</span>
       </button>
-      <button class="tab-item" onclick="switchTab('history')">
+      <button type="button" class="tab-item" onclick="switchTab('history')">
         <span class="icon">&#x1F4CA;</span>
         <span class="label">Historial</span>
       </button>
-      <button class="tab-item" onclick="switchTab('settings')">
+      <button type="button" class="tab-item" onclick="switchTab('settings')">
         <span class="icon">&#x2699;&#xFE0F;</span>
         <span class="label">Ajustes</span>
       </button>
@@ -1016,9 +1032,9 @@
         <div class="record-bird-selector">
           <div class="lbl">Analizar para:</div>
           <div class="record-chip-row">
-            <button class="record-chip active" data-bird="general" onclick="selectBirdChip(this)">General</button>
-            <button class="record-chip" data-bird="kiwi" onclick="selectBirdChip(this)">Kiwi</button>
-            <button class="record-chip" data-bird="coco" onclick="selectBirdChip(this)">Coco</button>
+            <button type="button" class="record-chip active" data-bird="general" onclick="selectBirdChip(this)">General</button>
+            <button type="button" class="record-chip" data-bird="kiwi" onclick="selectBirdChip(this)">Kiwi</button>
+            <button type="button" class="record-chip" data-bird="coco" onclick="selectBirdChip(this)">Coco</button>
           </div>
         </div>
         <div class="quality-box" id="quality-box">
@@ -1037,11 +1053,11 @@
         </div>
         <div class="timer" id="timer-display">0:00</div>
         <div class="record-hint">Minimo 30 segundos recomendados</div>
-        <button class="record-button" id="rec-btn" onclick="toggleRecording()" aria-label="Iniciar grabacion">
+        <button type="button" class="record-button" id="rec-btn" onclick="toggleRecording()" aria-label="Iniciar grabacion">
           <div class="record-inner"></div>
         </button>
         <div class="record-label" id="rec-label">Toca para grabar</div>
-        <button class="upload-btn" onclick="showAnalyzing()">Subir archivo de audio</button>
+        <button type="button" class="upload-btn" onclick="showAnalyzing()">Subir archivo de audio</button>
       </div>
 
       <div id="recording-waveform" style="display:none;">
@@ -1065,7 +1081,7 @@
             <div class="wave-bar" style="animation-delay:0.02s;height:20px;"></div>
           </div>
           <div class="record-hint" style="margin-top:20px">Grabando vocalizaciones...</div>
-          <button class="record-button recording" onclick="showAnalyzing()" style="margin:20px auto;">
+          <button type="button" class="record-button recording" onclick="showAnalyzing()" style="margin:20px auto;" aria-label="Detener grabacion">
             <div class="record-inner"></div>
           </button>
           <div class="record-label">Toca para detener</div>
@@ -1104,24 +1120,24 @@
             <h4>Recomendacion</h4>
             <p>Tu periquito suena feliz y activo. Sigue manteniendo un buen ambiente con juguetes e interaccion social.</p>
           </div>
-          <button class="new-recording-btn" onclick="resetRecording()">Nueva grabacion</button>
+          <button type="button" class="new-recording-btn" onclick="resetRecording()">Nueva grabacion</button>
         </div>
       </div>
     </div>
-    <div class="tab-bar">
-      <button class="tab-item" onclick="switchTab('home')">
+    <div class="tab-bar" role="navigation" aria-label="Navegacion principal">
+      <button type="button" class="tab-item" onclick="switchTab('home')">
         <span class="icon">&#x1F3E0;</span>
         <span class="label">Inicio</span>
       </button>
-      <button class="tab-item active" onclick="switchTab('record')">
+      <button type="button" class="tab-item active" onclick="switchTab('record')" aria-current="page">
         <span class="icon">&#x1F3A4;</span>
         <span class="label">Grabar</span>
       </button>
-      <button class="tab-item" onclick="switchTab('history')">
+      <button type="button" class="tab-item" onclick="switchTab('history')">
         <span class="icon">&#x1F4CA;</span>
         <span class="label">Historial</span>
       </button>
-      <button class="tab-item" onclick="switchTab('settings')">
+      <button type="button" class="tab-item" onclick="switchTab('settings')">
         <span class="icon">&#x2699;&#xFE0F;</span>
         <span class="label">Ajustes</span>
       </button>
@@ -1133,8 +1149,8 @@
     <div class="screen-content">
       <div style="padding-top:50px;">
         <div class="filter-row">
-          <button class="filter-chip active">Kiwi</button>
-          <button class="filter-chip" onclick="this.classList.toggle('active');this.previousElementSibling.classList.toggle('active')">Coco</button>
+          <button type="button" class="filter-chip active" data-filter="kiwi" onclick="setHistoryFilter(this)" aria-pressed="true">Kiwi</button>
+          <button type="button" class="filter-chip" data-filter="coco" onclick="setHistoryFilter(this)" aria-pressed="false">Coco</button>
         </div>
         <div class="history-list">
 
@@ -1201,20 +1217,20 @@
         </div>
       </div>
     </div>
-    <div class="tab-bar">
-      <button class="tab-item" onclick="switchTab('home')">
+    <div class="tab-bar" role="navigation" aria-label="Navegacion principal">
+      <button type="button" class="tab-item" onclick="switchTab('home')">
         <span class="icon">&#x1F3E0;</span>
         <span class="label">Inicio</span>
       </button>
-      <button class="tab-item" onclick="switchTab('record')">
+      <button type="button" class="tab-item" onclick="switchTab('record')">
         <span class="icon">&#x1F3A4;</span>
         <span class="label">Grabar</span>
       </button>
-      <button class="tab-item active" onclick="switchTab('history')">
+      <button type="button" class="tab-item active" onclick="switchTab('history')" aria-current="page">
         <span class="icon">&#x1F4CA;</span>
         <span class="label">Historial</span>
       </button>
-      <button class="tab-item" onclick="switchTab('settings')">
+      <button type="button" class="tab-item" onclick="switchTab('settings')">
         <span class="icon">&#x2699;&#xFE0F;</span>
         <span class="label">Ajustes</span>
       </button>
@@ -1234,18 +1250,27 @@
           <span class="lbl">Email</span>
           <span class="val" id="settings-email">No aplica (invitado)</span>
         </div>
-        <button class="mini-btn primary" onclick="showScreen('screen-login')">Crear cuenta o iniciar sesion</button>
+        <button type="button" class="mini-btn primary" onclick="showScreen('screen-login')">Crear cuenta o iniciar sesion</button>
       </div>
       <div class="settings-section">
         <h3>Habitat y contexto</h3>
+        <label class="settings-field-label" for="habitat-name">Nombre de ubicacion</label>
         <input class="settings-input" id="habitat-name" placeholder="Nombre ubicacion" value="Casa">
         <div class="settings-input-row">
-          <input class="settings-input" id="habitat-lat" placeholder="Latitude" value="40.7128">
-          <input class="settings-input" id="habitat-lon" placeholder="Longitude" value="-74.0060">
+          <div>
+            <label class="settings-field-label" for="habitat-lat">Latitud</label>
+            <input class="settings-input" id="habitat-lat" placeholder="Latitude" value="40.7128">
+          </div>
+          <div>
+            <label class="settings-field-label" for="habitat-lon">Longitud</label>
+            <input class="settings-input" id="habitat-lon" placeholder="Longitude" value="-74.0060">
+          </div>
         </div>
+        <label class="settings-field-label" for="habitat-tz">Timezone</label>
         <input class="settings-input" id="habitat-tz" placeholder="Timezone" value="America/New_York">
+        <label class="settings-field-label" for="habitat-type">Tipo de habitat</label>
         <input class="settings-input" id="habitat-type" placeholder="Habitat type" value="urban">
-        <button class="mini-btn primary" onclick="mockSaveHabitat()">Guardar habitat</button>
+        <button type="button" class="mini-btn primary" onclick="mockSaveHabitat()">Guardar habitat</button>
         <div class="context-meta" id="settings-save-status" role="status" aria-live="polite"></div>
       </div>
       <div class="settings-section">
@@ -1270,22 +1295,22 @@
           <span class="val">Heuristico v1 + Quality Layer</span>
         </div>
       </div>
-      <button class="logout-btn" id="logout-btn" onclick="mockLogout()">Cerrar sesion</button>
+      <button type="button" class="logout-btn" id="logout-btn" onclick="mockLogout()">Cerrar sesion</button>
     </div>
-    <div class="tab-bar">
-      <button class="tab-item" onclick="switchTab('home')">
+    <div class="tab-bar" role="navigation" aria-label="Navegacion principal">
+      <button type="button" class="tab-item" onclick="switchTab('home')">
         <span class="icon">&#x1F3E0;</span>
         <span class="label">Inicio</span>
       </button>
-      <button class="tab-item" onclick="switchTab('record')">
+      <button type="button" class="tab-item" onclick="switchTab('record')">
         <span class="icon">&#x1F3A4;</span>
         <span class="label">Grabar</span>
       </button>
-      <button class="tab-item" onclick="switchTab('history')">
+      <button type="button" class="tab-item" onclick="switchTab('history')">
         <span class="icon">&#x1F4CA;</span>
         <span class="label">Historial</span>
       </button>
-      <button class="tab-item active" onclick="switchTab('settings')">
+      <button type="button" class="tab-item active" onclick="switchTab('settings')" aria-current="page">
         <span class="icon">&#x2699;&#xFE0F;</span>
         <span class="label">Ajustes</span>
       </button>
@@ -1296,14 +1321,14 @@
   <div class="screen" id="screen-profile">
     <div class="screen-content">
       <div class="screen-header-bar">
-        <button class="back-btn" onclick="showScreen('screen-home')">&larr; Atras</button>
+        <button type="button" class="back-btn" onclick="showScreen('screen-home')">&larr; Atras</button>
         <h2>Perfil</h2>
       </div>
       <div class="profile-header">
         <div class="profile-avatar photo" style="background-image:linear-gradient(130deg,#9BE15D,#00E3AE);">K</div>
         <div class="name">Kiwi</div>
         <div class="desc">Verde con amarillo</div>
-        <button class="profile-photo-btn">Actualizar foto</button>
+        <button type="button" class="profile-photo-btn">Actualizar foto</button>
       </div>
       <div class="stats-row">
         <div class="stat-box">
@@ -1398,7 +1423,7 @@
   <div class="screen" id="screen-add">
     <div class="screen-content">
       <div class="screen-header-bar">
-        <button class="back-btn" onclick="showScreen('screen-home')">&larr; Atras</button>
+        <button type="button" class="back-btn" onclick="showScreen('screen-home')">&larr; Atras</button>
         <h2>Nuevo periquito</h2>
       </div>
       <div class="add-form">
@@ -1406,13 +1431,13 @@
           <span>&#x1F99C;</span>
           <h2>Nuevo periquito</h2>
         </div>
-        <div class="form-label">Nombre *</div>
-        <input class="input-field" placeholder="Ej: Kiwi, Coco, Mango...">
-        <div class="form-label">Color / Descripcion</div>
-        <input class="input-field" placeholder="Ej: Verde con amarillo, azul cielo...">
-        <div class="form-label">Notas</div>
-        <textarea class="input-field" placeholder="Notas adicionales: personalidad, comportamiento..." style="height:90px;resize:none;font-family:inherit;"></textarea>
-        <button class="btn-primary" onclick="showScreen('screen-home')">Guardar periquito</button>
+        <label class="form-label" for="new-bird-name">Nombre *</label>
+        <input id="new-bird-name" class="input-field" placeholder="Ej: Kiwi, Coco, Mango..." autocomplete="off">
+        <label class="form-label" for="new-bird-color">Color / Descripcion</label>
+        <input id="new-bird-color" class="input-field" placeholder="Ej: Verde con amarillo, azul cielo..." autocomplete="off">
+        <label class="form-label" for="new-bird-notes">Notas</label>
+        <textarea id="new-bird-notes" class="input-field" placeholder="Notas adicionales: personalidad, comportamiento..." style="height:90px;resize:none;font-family:inherit;"></textarea>
+        <button type="button" class="btn-primary" onclick="showScreen('screen-home')">Guardar periquito</button>
       </div>
     </div>
   </div>
@@ -1505,6 +1530,7 @@
     el.habitatType = byId('habitat-type');
     el.settingsSaveStatus = byId('settings-save-status');
     el.flagChips = Array.from(document.querySelectorAll('.flag-chip[data-flag]'));
+    el.historyFilterChips = Array.from(document.querySelectorAll('.filter-chip[data-filter]'));
   }
 
   function showSettingsStatus(message) {
@@ -1602,7 +1628,21 @@
   function switchLoginTab(btn, mode) {
     btn.parentElement.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
-    byId('name-field').style.display = mode === 'register' ? 'block' : 'none';
+    const nameField = byId('name-field');
+    if (nameField) {
+      nameField.style.display = mode === 'register' ? 'block' : 'none';
+    }
+  }
+
+  function setHistoryFilter(btn) {
+    if (!btn) return;
+    const row = btn.closest('.filter-row');
+    if (!row) return;
+    row.querySelectorAll('.filter-chip[data-filter]').forEach((chip) => {
+      const isActive = chip === btn;
+      chip.classList.toggle('active', isActive);
+      chip.setAttribute('aria-pressed', String(isActive));
+    });
   }
 
   function toggleFlag(chip) {
@@ -1717,6 +1757,10 @@
     hydrateHabitatInputs();
     updateFlagsUI();
     applyFeatureFlags();
+    if (el.historyFilterChips.length > 0) {
+      const activeChip = el.historyFilterChips.find((chip) => chip.classList.contains('active')) || el.historyFilterChips[0];
+      setHistoryFilter(activeChip);
+    }
     initializeBirdSelector();
     resetRecording();
   }
