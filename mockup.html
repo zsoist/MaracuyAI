@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Parakeet Wellness AI - Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .phone-frame {
+    width: 375px;
+    height: 812px;
+    background: #F5F7FA;
+    border-radius: 40px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 8px #222, 0 0 0 10px #444, 0 30px 60px rgba(0,0,0,0.5);
+  }
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 30px;
+    background: #222;
+    border-radius: 0 0 20px 20px;
+    z-index: 100;
+  }
+  .screen {
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .screen.active { display: flex; }
+  .screen-content {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .screen-content::-webkit-scrollbar { display: none; }
+
+  /* Tab Bar */
+  .tab-bar {
+    display: flex;
+    background: #fff;
+    border-top: none;
+    padding: 6px 0 20px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+    position: relative;
+    z-index: 10;
+  }
+  .tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    padding: 4px 0;
+    border: none;
+    background: none;
+    transition: all 0.2s;
+  }
+  .tab-item span.icon { font-size: 20px; }
+  .tab-item span.label { font-size: 10px; color: #999; font-weight: 500; }
+  .tab-item.active span.label { color: #4CAF50; font-weight: 700; }
+
+  /* Login Screen */
+  .login-header {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    padding: 60px 30px 40px;
+    text-align: center;
+    border-radius: 0 0 30px 30px;
+  }
+  .login-header .logo { font-size: 64px; margin-bottom: 10px; }
+  .login-header h1 { color: #fff; font-size: 26px; font-weight: 800; }
+  .login-header p { color: rgba(255,255,255,0.85); font-size: 13px; margin-top: 8px; }
+  .login-form { padding: 24px; margin-top: 10px; }
+  .tab-switch {
+    display: flex;
+    background: #E8E8E8;
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 24px;
+  }
+  .tab-switch button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-switch button.active {
+    background: #fff;
+    color: #4CAF50;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .input-field {
+    width: 100%;
+    background: #fff;
+    border: 1px solid #E0E0E0;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 15px;
+    margin-bottom: 14px;
+    outline: none;
+    color: #333;
+    transition: border-color 0.2s;
+  }
+  .input-field:focus { border-color: #4CAF50; }
+  .input-field::placeholder { color: #bbb; }
+  .btn-primary {
+    width: 100%;
+    background: linear-gradient(135deg, #4CAF50, #43A047);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    box-shadow: 0 4px 12px rgba(76,175,80,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(76,175,80,0.4); }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* Home Screen */
+  .home-header {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    padding: 50px 20px 20px;
+  }
+  .home-header h1 { color: #fff; font-size: 24px; font-weight: 800; }
+  .home-header p { color: rgba(255,255,255,0.85); font-size: 13px; margin-top: 4px; }
+
+  .latest-card {
+    background: #fff;
+    margin: 16px;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .latest-card h3 { font-size: 16px; color: #333; font-weight: 700; margin-bottom: 12px; }
+
+  .mood-indicator { text-align: center; }
+  .mood-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    font-size: 40px;
+  }
+  .mood-circle.small { width: 44px; height: 44px; font-size: 22px; }
+  .mood-label { font-size: 20px; font-weight: 700; }
+  .mood-confidence { font-size: 12px; color: #999; margin-top: 4px; }
+
+  .recommendation-text {
+    font-size: 12px;
+    color: #666;
+    margin-top: 12px;
+    line-height: 1.6;
+    background: #E8F5E9;
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .record-btn-home {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #4CAF50, #43A047);
+    margin: 0 16px;
+    border-radius: 16px;
+    padding: 18px;
+    color: #fff;
+    border: none;
+    width: calc(100% - 32px);
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(76,175,80,0.35);
+    transition: transform 0.15s;
+  }
+  .record-btn-home:hover { transform: translateY(-1px); }
+  .record-btn-home .icon { font-size: 22px; }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    margin: 24px 0 12px;
+  }
+  .section-header h3 { font-size: 17px; font-weight: 700; color: #333; }
+  .section-header .add-btn {
+    font-size: 14px;
+    color: #4CAF50;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: none;
+  }
+
+  .parakeet-card {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 0 16px 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .parakeet-card:hover { transform: translateX(2px); }
+  .parakeet-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+    background: #4CAF50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .parakeet-info { flex: 1; margin-left: 12px; }
+  .parakeet-info .name { font-size: 16px; font-weight: 600; color: #333; }
+  .parakeet-info .desc { font-size: 12px; color: #888; margin-top: 2px; }
+  .parakeet-info .mood-tag { font-size: 11px; color: #4CAF50; margin-top: 3px; font-weight: 500; }
+  .parakeet-card .arrow { font-size: 20px; color: #ccc; }
+
+  /* Record Screen */
+  .record-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 40px 20px;
+  }
+  .timer { font-size: 64px; font-weight: 200; color: #333; margin-bottom: 8px; }
+  .record-hint { font-size: 13px; color: #999; margin-bottom: 40px; }
+  .record-button {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 4px solid #F44336;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-bottom: 16px;
+    background: transparent;
+    transition: all 0.2s;
+  }
+  .record-button:hover { transform: scale(1.05); }
+  .record-inner {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #F44336;
+    transition: all 0.3s;
+  }
+  .record-button.recording .record-inner {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+  }
+  .record-label { font-size: 14px; color: #666; margin-bottom: 40px; }
+  .upload-btn {
+    padding: 12px 24px;
+    border: 1px solid #4CAF50;
+    border-radius: 8px;
+    color: #4CAF50;
+    font-size: 14px;
+    font-weight: 500;
+    background: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .upload-btn:hover { background: rgba(76,175,80,0.05); }
+
+  /* Analysis Result */
+  .analysis-result {
+    text-align: center;
+    padding: 20px;
+  }
+  .analysis-result h2 { font-size: 22px; font-weight: 700; color: #333; margin-bottom: 16px; }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    width: 80%;
+    margin: 0 auto;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+  }
+  .detail-row .label { font-size: 14px; color: #666; }
+  .detail-row .value { font-size: 14px; font-weight: 600; color: #333; }
+  .rec-box {
+    background: #E8F5E9;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 20px;
+    text-align: left;
+  }
+  .rec-box h4 { font-size: 13px; font-weight: 700; color: #2E7D32; margin-bottom: 6px; }
+  .rec-box p { font-size: 12px; color: #333; line-height: 1.6; }
+  .new-recording-btn {
+    margin-top: 24px;
+    background: #4CAF50;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Analyzing animation */
+  .analyzing-container { text-align: center; padding: 40px 20px; }
+  .analyzing-container h3 { font-size: 18px; font-weight: 600; color: #333; margin-top: 20px; }
+  .analyzing-container p { font-size: 13px; color: #999; margin-top: 8px; }
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #E0E0E0;
+    border-top-color: #4CAF50;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+  }
+
+  /* History Screen */
+  .filter-row {
+    display: flex;
+    padding: 16px;
+    gap: 8px;
+    overflow-x: auto;
+  }
+  .filter-chip {
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: #E0E0E0;
+    font-size: 13px;
+    color: #666;
+    cursor: pointer;
+    border: none;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .filter-chip.active { background: #4CAF50; color: #fff; font-weight: 600; }
+  .history-list { padding: 0 16px 16px; }
+  .history-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .history-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .history-card-info { flex: 1; }
+  .history-card-info .voc { font-size: 14px; font-weight: 600; color: #333; text-transform: capitalize; }
+  .history-card-info .date { font-size: 11px; color: #999; margin-top: 2px; }
+  .history-card-info .energy { font-size: 11px; color: #666; margin-top: 3px; }
+  .history-card .rec-text {
+    font-size: 11px;
+    color: #666;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+  }
+
+  /* Profile Screen */
+  .profile-header {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    padding: 20px 24px 32px;
+    text-align: center;
+  }
+  .profile-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 36px;
+    background: rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .profile-header .name { font-size: 22px; font-weight: 700; color: #fff; }
+  .profile-header .desc { font-size: 13px; color: rgba(255,255,255,0.85); margin-top: 4px; }
+
+  .stats-row {
+    display: flex;
+    margin: -16px 16px 0;
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    position: relative;
+    z-index: 2;
+  }
+  .stat-box { flex: 1; text-align: center; }
+  .stat-box .val { font-size: 18px; font-weight: 700; color: #333; }
+  .stat-box .lbl { font-size: 10px; color: #999; margin-top: 3px; }
+
+  .card-section {
+    background: #fff;
+    margin: 16px;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .card-section h3 { font-size: 15px; font-weight: 700; color: #333; margin-bottom: 12px; }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .bar-label { width: 75px; font-size: 12px; font-weight: 600; }
+  .bar-track {
+    flex: 1;
+    height: 8px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    margin: 0 8px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.8s ease;
+  }
+  .bar-value { width: 32px; font-size: 11px; color: #666; text-align: right; }
+
+  /* Chart mockup */
+  .chart-container {
+    background: #fff;
+    margin: 0 16px;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .chart-container h3 { font-size: 15px; font-weight: 700; color: #333; margin-bottom: 12px; }
+  .chart-svg { width: 100%; }
+  .chart-legend {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .chart-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #666;
+  }
+  .chart-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+  }
+
+  /* Settings */
+  .settings-section {
+    background: #fff;
+    border-radius: 12px;
+    margin: 16px;
+    padding: 16px;
+  }
+  .settings-section h3 { font-size: 15px; font-weight: 700; color: #333; margin-bottom: 10px; }
+  .settings-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+  }
+  .settings-row .lbl { color: #666; }
+  .settings-row .val { color: #333; font-weight: 500; }
+  .logout-btn {
+    width: calc(100% - 32px);
+    margin: 16px;
+    background: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 15px;
+    color: #F44336;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .logout-btn:hover { background: #FFF5F5; }
+
+  /* Add Parakeet */
+  .add-form { padding: 24px; }
+  .add-form .icon-top { text-align: center; margin-bottom: 24px; }
+  .add-form .icon-top span { font-size: 56px; }
+  .add-form .icon-top h2 { font-size: 20px; font-weight: 700; color: #333; margin-top: 6px; }
+  .form-label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; margin-left: 4px; }
+
+  /* Screen header bar */
+  .screen-header-bar {
+    display: flex;
+    align-items: center;
+    padding: 50px 16px 12px;
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .back-btn {
+    font-size: 16px;
+    color: #4CAF50;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-weight: 600;
+    padding: 4px 8px;
+  }
+  .screen-header-bar h2 {
+    flex: 1;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 600;
+    color: #333;
+    margin-right: 40px;
+  }
+
+  /* Animations */
+  .fade-in {
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .recording-pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  /* Waveform animation */
+  .waveform {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 60px;
+    margin: 20px 0;
+  }
+  .wave-bar {
+    width: 4px;
+    background: #4CAF50;
+    border-radius: 2px;
+    animation: wave 0.8s ease-in-out infinite;
+  }
+  @keyframes wave {
+    0%, 100% { height: 8px; }
+    50% { height: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="notch"></div>
+
+  <!-- LOGIN SCREEN -->
+  <div class="screen active" id="screen-login">
+    <div class="screen-content">
+      <div class="login-header">
+        <div class="logo">&#x1F99C;</div>
+        <h1>Parakeet Wellness</h1>
+        <p>Monitorea el bienestar de tus periquitos con IA</p>
+      </div>
+      <div class="login-form">
+        <div class="tab-switch">
+          <button class="active" onclick="switchLoginTab(this, 'login')">Iniciar sesion</button>
+          <button onclick="switchLoginTab(this, 'register')">Registrarse</button>
+        </div>
+        <div id="name-field" style="display:none">
+          <input class="input-field" placeholder="Nombre (opcional)">
+        </div>
+        <input class="input-field" placeholder="Email" value="maria@ejemplo.com">
+        <input class="input-field" type="password" placeholder="Contrasena" value="********">
+        <button class="btn-primary" onclick="goToHome()">Entrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME SCREEN -->
+  <div class="screen" id="screen-home">
+    <div class="screen-content">
+      <div class="home-header">
+        <h1>Parakeet Wellness</h1>
+        <p>Monitor de bienestar para tus periquitos</p>
+      </div>
+
+      <div class="latest-card fade-in">
+        <h3>Ultimo analisis</h3>
+        <div class="mood-indicator">
+          <div class="mood-circle" style="background:#4CAF50;">&#x1F99C;</div>
+          <div class="mood-label" style="color:#4CAF50;">Feliz</div>
+          <div class="mood-confidence">72% confianza</div>
+        </div>
+        <div class="recommendation-text">
+          Tu periquito suena feliz y activo. Sigue manteniendo un buen ambiente con juguetes e interaccion social.
+        </div>
+      </div>
+
+      <button class="record-btn-home" onclick="switchTab('record')">
+        <span class="icon">&#x1F3A4;</span>
+        Grabar vocalizacion
+      </button>
+
+      <div class="section-header">
+        <h3>Mis periquitos</h3>
+        <button class="add-btn" onclick="showScreen('screen-add')">+ Agregar</button>
+      </div>
+
+      <div class="parakeet-card" onclick="showScreen('screen-profile')">
+        <div class="parakeet-avatar" style="background:#4CAF50;">K</div>
+        <div class="parakeet-info">
+          <div class="name">Kiwi</div>
+          <div class="desc">Verde con amarillo</div>
+          <div class="mood-tag">Feliz - hace 2 horas</div>
+        </div>
+        <span class="arrow">&#x203A;</span>
+      </div>
+
+      <div class="parakeet-card" onclick="showScreen('screen-profile-2')">
+        <div class="parakeet-avatar" style="background:#2196F3;">C</div>
+        <div class="parakeet-info">
+          <div class="name">Coco</div>
+          <div class="desc">Azul cielo con blanco</div>
+          <div class="mood-tag">Relajado - hace 2 horas</div>
+        </div>
+        <span class="arrow">&#x203A;</span>
+      </div>
+
+      <div style="height:20px"></div>
+    </div>
+    <div class="tab-bar" id="main-tabs">
+      <button class="tab-item active" onclick="switchTab('home')">
+        <span class="icon">&#x1F3E0;</span>
+        <span class="label">Inicio</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('record')">
+        <span class="icon">&#x1F3A4;</span>
+        <span class="label">Grabar</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('history')">
+        <span class="icon">&#x1F4CA;</span>
+        <span class="label">Historial</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('settings')">
+        <span class="icon">&#x2699;&#xFE0F;</span>
+        <span class="label">Ajustes</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- RECORD SCREEN -->
+  <div class="screen" id="screen-record">
+    <div class="screen-content">
+      <div class="record-container" id="record-idle">
+        <div class="timer" id="timer-display">0:00</div>
+        <div class="record-hint">Minimo 30 segundos recomendados</div>
+        <button class="record-button" id="rec-btn" onclick="toggleRecording()">
+          <div class="record-inner"></div>
+        </button>
+        <div class="record-label" id="rec-label">Toca para grabar</div>
+        <button class="upload-btn" onclick="showAnalyzing()">Subir archivo de audio</button>
+      </div>
+
+      <div id="recording-waveform" style="display:none;">
+        <div style="text-align:center;padding-top:100px;">
+          <div class="timer recording-pulse" id="timer-display-2" style="color:#F44336;">0:00</div>
+          <div class="waveform">
+            <div class="wave-bar" style="animation-delay:0s;height:12px;"></div>
+            <div class="wave-bar" style="animation-delay:0.1s;height:20px;"></div>
+            <div class="wave-bar" style="animation-delay:0.2s;height:35px;"></div>
+            <div class="wave-bar" style="animation-delay:0.15s;height:28px;"></div>
+            <div class="wave-bar" style="animation-delay:0.3s;height:15px;"></div>
+            <div class="wave-bar" style="animation-delay:0.05s;height:38px;"></div>
+            <div class="wave-bar" style="animation-delay:0.25s;height:22px;"></div>
+            <div class="wave-bar" style="animation-delay:0.35s;height:30px;"></div>
+            <div class="wave-bar" style="animation-delay:0.12s;height:18px;"></div>
+            <div class="wave-bar" style="animation-delay:0.08s;height:42px;"></div>
+            <div class="wave-bar" style="animation-delay:0.28s;height:25px;"></div>
+            <div class="wave-bar" style="animation-delay:0.18s;height:33px;"></div>
+            <div class="wave-bar" style="animation-delay:0.22s;height:12px;"></div>
+            <div class="wave-bar" style="animation-delay:0.4s;height:28px;"></div>
+            <div class="wave-bar" style="animation-delay:0.02s;height:20px;"></div>
+          </div>
+          <div class="record-hint" style="margin-top:20px">Grabando vocalizaciones...</div>
+          <button class="record-button recording" onclick="showAnalyzing()" style="margin:20px auto;">
+            <div class="record-inner"></div>
+          </button>
+          <div class="record-label">Toca para detener</div>
+        </div>
+      </div>
+
+      <div id="analyzing-view" style="display:none;">
+        <div class="analyzing-container">
+          <div class="spinner"></div>
+          <h3>Analizando vocalizaciones...</h3>
+          <p>Procesando espectrograma y clasificando patrones</p>
+        </div>
+      </div>
+
+      <div id="result-view" style="display:none;">
+        <div class="analysis-result fade-in" style="padding-top:60px;">
+          <h2>Resultado del analisis</h2>
+          <div class="mood-indicator">
+            <div class="mood-circle" style="background:#4CAF50;">&#x1F99C;</div>
+            <div class="mood-label" style="color:#4CAF50;">Feliz</div>
+            <div class="mood-confidence">72% confianza</div>
+          </div>
+          <div class="detail-row">
+            <span class="label">Vocalizacion:</span>
+            <span class="value">Singing</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Energia:</span>
+            <span class="value">68%</span>
+          </div>
+          <div class="rec-box">
+            <h4>Recomendacion</h4>
+            <p>Tu periquito suena feliz y activo. Sigue manteniendo un buen ambiente con juguetes e interaccion social.</p>
+          </div>
+          <button class="new-recording-btn" onclick="resetRecording()">Nueva grabacion</button>
+        </div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-item" onclick="switchTab('home')">
+        <span class="icon">&#x1F3E0;</span>
+        <span class="label">Inicio</span>
+      </button>
+      <button class="tab-item active" onclick="switchTab('record')">
+        <span class="icon">&#x1F3A4;</span>
+        <span class="label">Grabar</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('history')">
+        <span class="icon">&#x1F4CA;</span>
+        <span class="label">Historial</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('settings')">
+        <span class="icon">&#x2699;&#xFE0F;</span>
+        <span class="label">Ajustes</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- HISTORY SCREEN -->
+  <div class="screen" id="screen-history">
+    <div class="screen-content">
+      <div style="padding-top:50px;">
+        <div class="filter-row">
+          <button class="filter-chip active">Kiwi</button>
+          <button class="filter-chip" onclick="this.classList.toggle('active');this.previousElementSibling.classList.toggle('active')">Coco</button>
+        </div>
+        <div class="history-list">
+
+          <div class="history-card fade-in">
+            <div class="history-card-header">
+              <div class="mood-circle small" style="background:#4CAF50;">&#x1F99C;</div>
+              <div class="history-card-info">
+                <div class="voc">Singing</div>
+                <div class="date">14 feb, 10:30</div>
+                <div class="energy">Energia: 68%</div>
+              </div>
+            </div>
+            <div class="rec-text">Tu periquito suena feliz y activo.</div>
+          </div>
+
+          <div class="history-card">
+            <div class="history-card-header">
+              <div class="mood-circle small" style="background:#2196F3;">&#x1F54A;</div>
+              <div class="history-card-info">
+                <div class="voc">Chattering</div>
+                <div class="date">13 feb, 16:45</div>
+                <div class="energy">Energia: 42%</div>
+              </div>
+            </div>
+            <div class="rec-text">Tu periquito parece calmado y contento.</div>
+          </div>
+
+          <div class="history-card">
+            <div class="history-card-header">
+              <div class="mood-circle small" style="background:#FF9800;">&#x26A0;</div>
+              <div class="history-card-info">
+                <div class="voc">Distress</div>
+                <div class="date">12 feb, 09:15</div>
+                <div class="energy">Energia: 78%</div>
+              </div>
+            </div>
+            <div class="rec-text">Signos de estres detectados. Revisa el ambiente.</div>
+          </div>
+
+          <div class="history-card">
+            <div class="history-card-header">
+              <div class="mood-circle small" style="background:#4CAF50;">&#x1F99C;</div>
+              <div class="history-card-info">
+                <div class="voc">Singing</div>
+                <div class="date">11 feb, 14:20</div>
+                <div class="energy">Energia: 71%</div>
+              </div>
+            </div>
+            <div class="rec-text">Tu periquito suena feliz y activo.</div>
+          </div>
+
+          <div class="history-card">
+            <div class="history-card-header">
+              <div class="mood-circle small" style="background:#607D8B;">&#x1F426;</div>
+              <div class="history-card-info">
+                <div class="voc">Contact call</div>
+                <div class="date">10 feb, 11:00</div>
+                <div class="energy">Energia: 35%</div>
+              </div>
+            </div>
+            <div class="rec-text">Actividad normal detectada.</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-item" onclick="switchTab('home')">
+        <span class="icon">&#x1F3E0;</span>
+        <span class="label">Inicio</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('record')">
+        <span class="icon">&#x1F3A4;</span>
+        <span class="label">Grabar</span>
+      </button>
+      <button class="tab-item active" onclick="switchTab('history')">
+        <span class="icon">&#x1F4CA;</span>
+        <span class="label">Historial</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('settings')">
+        <span class="icon">&#x2699;&#xFE0F;</span>
+        <span class="label">Ajustes</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SETTINGS SCREEN -->
+  <div class="screen" id="screen-settings">
+    <div class="screen-content" style="padding-top:50px;">
+      <div class="settings-section">
+        <h3>Cuenta</h3>
+        <div class="settings-row">
+          <span class="lbl">Email</span>
+          <span class="val">maria@ejemplo.com</span>
+        </div>
+        <div class="settings-row">
+          <span class="lbl">Nombre</span>
+          <span class="val">Maria</span>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>Mis periquitos</h3>
+        <div class="settings-row">
+          <span class="lbl">Registrados</span>
+          <span class="val">2 periquitos</span>
+        </div>
+        <div class="settings-row">
+          <span class="lbl">Analisis totales</span>
+          <span class="val">23</span>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>Acerca de</h3>
+        <div class="settings-row">
+          <span class="lbl">Version</span>
+          <span class="val">0.1.0 (MVP)</span>
+        </div>
+        <div class="settings-row">
+          <span class="lbl">Modelo IA</span>
+          <span class="val">Heuristico v1 + YAMNet</span>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="showScreen('screen-login')">Cerrar sesion</button>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-item" onclick="switchTab('home')">
+        <span class="icon">&#x1F3E0;</span>
+        <span class="label">Inicio</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('record')">
+        <span class="icon">&#x1F3A4;</span>
+        <span class="label">Grabar</span>
+      </button>
+      <button class="tab-item" onclick="switchTab('history')">
+        <span class="icon">&#x1F4CA;</span>
+        <span class="label">Historial</span>
+      </button>
+      <button class="tab-item active" onclick="switchTab('settings')">
+        <span class="icon">&#x2699;&#xFE0F;</span>
+        <span class="label">Ajustes</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- PROFILE SCREEN -->
+  <div class="screen" id="screen-profile">
+    <div class="screen-content">
+      <div class="screen-header-bar">
+        <button class="back-btn" onclick="showScreen('screen-home')">&larr; Atras</button>
+        <h2>Perfil</h2>
+      </div>
+      <div class="profile-header">
+        <div class="profile-avatar">K</div>
+        <div class="name">Kiwi</div>
+        <div class="desc">Verde con amarillo</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="val">12</div>
+          <div class="lbl">Analisis</div>
+        </div>
+        <div class="stat-box">
+          <div class="val">65%</div>
+          <div class="lbl">Energia prom.</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" style="color:#4CAF50;">Mejorando</div>
+          <div class="lbl">Tendencia</div>
+        </div>
+      </div>
+
+      <div class="card-section">
+        <h3>Estado dominante</h3>
+        <div class="mood-indicator">
+          <div class="mood-circle" style="background:#4CAF50;">&#x1F99C;</div>
+          <div class="mood-label" style="color:#4CAF50;">Feliz</div>
+          <div class="mood-confidence">64% confianza promedio</div>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <h3>Tendencia de bienestar</h3>
+        <svg class="chart-svg" viewBox="0 0 300 150" preserveAspectRatio="xMidYMid meet">
+          <!-- Grid -->
+          <line x1="30" y1="10" x2="30" y2="120" stroke="#f0f0f0" stroke-width="0.5"/>
+          <line x1="30" y1="120" x2="290" y2="120" stroke="#f0f0f0" stroke-width="0.5"/>
+          <line x1="30" y1="90" x2="290" y2="90" stroke="#f0f0f0" stroke-width="0.5"/>
+          <line x1="30" y1="60" x2="290" y2="60" stroke="#f0f0f0" stroke-width="0.5"/>
+          <line x1="30" y1="30" x2="290" y2="30" stroke="#f0f0f0" stroke-width="0.5"/>
+          <!-- Y axis labels -->
+          <text x="24" y="123" fill="#999" font-size="8" text-anchor="end">0%</text>
+          <text x="24" y="93" fill="#999" font-size="8" text-anchor="end">25%</text>
+          <text x="24" y="63" fill="#999" font-size="8" text-anchor="end">50%</text>
+          <text x="24" y="33" fill="#999" font-size="8" text-anchor="end">75%</text>
+          <!-- X axis labels -->
+          <text x="55" y="135" fill="#999" font-size="7" text-anchor="middle">8/2</text>
+          <text x="107" y="135" fill="#999" font-size="7" text-anchor="middle">10/2</text>
+          <text x="160" y="135" fill="#999" font-size="7" text-anchor="middle">11/2</text>
+          <text x="212" y="135" fill="#999" font-size="7" text-anchor="middle">12/2</text>
+          <text x="265" y="135" fill="#999" font-size="7" text-anchor="middle">14/2</text>
+          <!-- Energy line (green) -->
+          <polyline points="55,80 107,72 160,50 212,38 265,46" fill="none" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="55" cy="80" r="3" fill="#4CAF50"/>
+          <circle cx="107" cy="72" r="3" fill="#4CAF50"/>
+          <circle cx="160" cy="50" r="3" fill="#FF9800"/>
+          <circle cx="212" cy="38" r="3" fill="#4CAF50"/>
+          <circle cx="265" cy="46" r="3" fill="#4CAF50"/>
+          <!-- Confidence line (blue) -->
+          <polyline points="55,75 107,68 160,58 212,52 265,48" fill="none" stroke="#2196F3" stroke-width="1.5" stroke-dasharray="4,2" stroke-linecap="round"/>
+        </svg>
+        <div class="chart-legend">
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#4CAF50;"></div>Energia %</div>
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#2196F3;"></div>Confianza %</div>
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#FF9800;"></div>Estresado</div>
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#4CAF50;"></div>Feliz</div>
+        </div>
+      </div>
+
+      <div class="card-section" style="margin-top:0;">
+        <h3>Distribucion de estados</h3>
+        <div class="bar-row">
+          <div class="bar-label" style="color:#4CAF50;">Feliz</div>
+          <div class="bar-track"><div class="bar-fill" style="width:58%;background:#4CAF50;"></div></div>
+          <div class="bar-value">58%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="color:#2196F3;">Relajado</div>
+          <div class="bar-track"><div class="bar-fill" style="width:25%;background:#2196F3;"></div></div>
+          <div class="bar-value">25%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="color:#FF9800;">Estresado</div>
+          <div class="bar-track"><div class="bar-fill" style="width:8%;background:#FF9800;"></div></div>
+          <div class="bar-value">8%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="color:#607D8B;">Normal</div>
+          <div class="bar-track"><div class="bar-fill" style="width:9%;background:#607D8B;"></div></div>
+          <div class="bar-value">9%</div>
+        </div>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
+  <!-- ADD PARAKEET SCREEN -->
+  <div class="screen" id="screen-add">
+    <div class="screen-content">
+      <div class="screen-header-bar">
+        <button class="back-btn" onclick="showScreen('screen-home')">&larr; Atras</button>
+        <h2>Nuevo periquito</h2>
+      </div>
+      <div class="add-form">
+        <div class="icon-top">
+          <span>&#x1F99C;</span>
+          <h2>Nuevo periquito</h2>
+        </div>
+        <div class="form-label">Nombre *</div>
+        <input class="input-field" placeholder="Ej: Kiwi, Coco, Mango...">
+        <div class="form-label">Color / Descripcion</div>
+        <input class="input-field" placeholder="Ej: Verde con amarillo, azul cielo...">
+        <div class="form-label">Notas</div>
+        <textarea class="input-field" placeholder="Notas adicionales: personalidad, comportamiento..." style="height:90px;resize:none;font-family:inherit;"></textarea>
+        <button class="btn-primary" onclick="showScreen('screen-home')">Guardar periquito</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    resetRecording();
+  }
+
+  function goToHome() {
+    showScreen('screen-home');
+  }
+
+  function switchTab(tab) {
+    const map = { home:'screen-home', record:'screen-record', history:'screen-history', settings:'screen-settings' };
+    showScreen(map[tab]);
+  }
+
+  function switchLoginTab(btn, mode) {
+    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('name-field').style.display = mode === 'register' ? 'block' : 'none';
+  }
+
+  let isRecording = false;
+  let seconds = 0;
+  let timerInterval;
+
+  function toggleRecording() {
+    if (!isRecording) {
+      isRecording = true;
+      seconds = 0;
+      document.getElementById('record-idle').style.display = 'none';
+      document.getElementById('recording-waveform').style.display = 'block';
+      timerInterval = setInterval(() => {
+        seconds++;
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        document.getElementById('timer-display-2').textContent = m + ':' + String(s).padStart(2, '0');
+      }, 1000);
+    } else {
+      showAnalyzing();
+    }
+  }
+
+  function showAnalyzing() {
+    isRecording = false;
+    clearInterval(timerInterval);
+    document.getElementById('record-idle').style.display = 'none';
+    document.getElementById('recording-waveform').style.display = 'none';
+    document.getElementById('analyzing-view').style.display = 'block';
+    document.getElementById('result-view').style.display = 'none';
+    setTimeout(() => {
+      document.getElementById('analyzing-view').style.display = 'none';
+      document.getElementById('result-view').style.display = 'block';
+    }, 2500);
+  }
+
+  function resetRecording() {
+    isRecording = false;
+    seconds = 0;
+    clearInterval(timerInterval);
+    document.getElementById('record-idle').style.display = 'flex';
+    document.getElementById('recording-waveform').style.display = 'none';
+    document.getElementById('analyzing-view').style.display = 'none';
+    document.getElementById('result-view').style.display = 'none';
+    document.getElementById('timer-display').textContent = '0:00';
+  }
+</script>
+
+</body>
+</html>
