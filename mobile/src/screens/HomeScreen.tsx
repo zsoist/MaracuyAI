@@ -36,6 +36,20 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
       {latestAnalysis && (
         <View style={styles.latestCard}>
           <Text style={styles.sectionTitle}>{t('homeLatestAnalysis')}</Text>
+          {latestAnalysis.details?.bird_detected === false && (
+            <View style={styles.birdWarning}>
+              <Text style={styles.birdWarningText}>{t('analysisBirdNotDetected')}</Text>
+            </View>
+          )}
+          {latestAnalysis.details?.bird_detected === true && (
+            <View style={styles.birdOk}>
+              <Text style={styles.birdOkText}>
+                {t('analysisBirdConfidence', {
+                  value: Math.round((latestAnalysis.details?.bird_confidence ?? 0) * 100),
+                })}
+              </Text>
+            </View>
+          )}
           <MoodIndicator
             mood={latestAnalysis.mood}
             confidence={latestAnalysis.confidence}
@@ -197,5 +211,33 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 12,
     textAlign: 'center',
+  },
+  birdWarning: {
+    backgroundColor: '#FFF8E1',
+    borderWidth: 1,
+    borderColor: '#FFE082',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 8,
+  },
+  birdWarningText: {
+    fontSize: 12,
+    color: '#F57F17',
+    fontWeight: '600',
+  },
+  birdOk: {
+    backgroundColor: '#E8F5E9',
+    borderWidth: 1,
+    borderColor: '#A5D6A7',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 8,
+  },
+  birdOkText: {
+    fontSize: 12,
+    color: '#2E7D32',
+    fontWeight: '600',
   },
 });

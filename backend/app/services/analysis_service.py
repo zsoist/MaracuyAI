@@ -109,8 +109,13 @@ def _get_parakeet_context(
 def _build_alert_payload(
     analysis: AnalysisResult, parakeet_id: str | None, parakeet_name: str | None
 ) -> AlertPayload | None:
-    location_suffix = f" en {parakeet_name}" if parakeet_name else ""
-    source_suffix = f" de {parakeet_name}" if parakeet_name else ""
+    location_suffix = f" for {parakeet_name}" if parakeet_name else ""
+    source_suffix = f" from {parakeet_name}" if parakeet_name else ""
+
+    # Also flag when the analysis detected no bird but an anomalous mood
+    bird_detected = True
+    if analysis.details and isinstance(analysis.details, dict):
+        bird_detected = analysis.details.get("bird_detected", True)
 
     if analysis.mood == MoodType.SICK:
         return AlertPayload(
@@ -118,9 +123,9 @@ def _build_alert_payload(
             parakeet_id=parakeet_id,
             parakeet_name=parakeet_name,
             message=(
-                "Se detectaron vocalizaciones inusuales que pueden indicar enfermedad"
-                f"{location_suffix}. Monitorea otros sintomas y considera visitar un "
-                "veterinario aviar."
+                f"Unusual vocalizations detected that may indicate illness"
+                f"{location_suffix}. Monitor for other symptoms and consider "
+                "consulting an avian veterinarian."
             ),
             mood=analysis.mood.value,
             created_at=analysis.created_at.isoformat(),
@@ -132,8 +137,8 @@ def _build_alert_payload(
             parakeet_id=parakeet_id,
             parakeet_name=parakeet_name,
             message=(
-                f"Llamadas de alarma detectadas{source_suffix}. "
-                "Verifica que no haya depredadores o amenazas cerca."
+                f"Alarm calls detected{source_suffix}. "
+                "Check for predators or threats nearby."
             ),
             mood=analysis.mood.value,
             created_at=analysis.created_at.isoformat(),
@@ -145,8 +150,8 @@ def _build_alert_payload(
             parakeet_id=parakeet_id,
             parakeet_name=parakeet_name,
             message=(
-                f"Signos de estres detectados{location_suffix}. "
-                "Revisa el ambiente, ruidos fuertes o cambios recientes."
+                f"Signs of stress detected{location_suffix}. "
+                "Check the environment for loud noises or recent changes."
             ),
             mood=analysis.mood.value,
             created_at=analysis.created_at.isoformat(),
@@ -158,8 +163,22 @@ def _build_alert_payload(
             parakeet_id=parakeet_id,
             parakeet_name=parakeet_name,
             message=(
-                f"Silencio prolongado detectado{source_suffix}. "
-                "Verifica que este comiendo y bebiendo normalmente."
+                f"Prolonged silence detected{source_suffix}. "
+                "Verify the bird is eating and drinking normally."
+            ),
+            mood=analysis.mood.value,
+            created_at=analysis.created_at.isoformat(),
+        )
+
+    if not bird_detected and analysis.confidence > 0.3:
+        return AlertPayload(
+            priority="medium",
+            parakeet_id=parakeet_id,
+            parakeet_name=parakeet_name,
+            message=(
+                f"Bird vocalizations were not clearly detected in the latest recording"
+                f"{location_suffix}. Try recording in a quieter environment closer "
+                "to the cage."
             ),
             mood=analysis.mood.value,
             created_at=analysis.created_at.isoformat(),

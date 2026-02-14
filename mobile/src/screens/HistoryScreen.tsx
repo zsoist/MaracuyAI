@@ -65,29 +65,46 @@ export function HistoryScreen() {
     setRefreshing(false);
   };
 
-  const renderItem = ({ item }: { item: AnalysisResult }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-          <MoodIndicator mood={item.mood} confidence={item.confidence} />
-          <View style={styles.cardInfo}>
-            <Text style={styles.vocType}>
-              {t(VOCALIZATION_LABELS[item.vocalization_type] || 'vocalizationUnknown')}
+  const renderItem = ({ item }: { item: AnalysisResult }) => {
+    const birdDetected = item.details?.bird_detected;
+    const birdConf = item.details?.bird_confidence ?? 0;
+    const segments = item.details?.segment_count ?? 0;
+
+    return (
+      <View style={styles.card}>
+        {birdDetected === false && (
+          <View style={styles.birdWarningBadge}>
+            <Text style={styles.birdWarningBadgeText}>{t('analysisBirdNotDetected')}</Text>
+          </View>
+        )}
+        <View style={styles.cardHeader}>
+            <MoodIndicator mood={item.mood} confidence={item.confidence} />
+            <View style={styles.cardInfo}>
+              <Text style={styles.vocType}>
+                {t(VOCALIZATION_LABELS[item.vocalization_type] || 'vocalizationUnknown')}
+              </Text>
+              <Text style={styles.date}>
+                {formatDateTime(item.created_at)}
+              </Text>
+            <Text style={styles.energy}>
+              {t('historyEnergy', { value: Math.round(item.energy_level * 100) })}
             </Text>
-            <Text style={styles.date}>
-              {formatDateTime(item.created_at)}
-            </Text>
-          <Text style={styles.energy}>
-            {t('historyEnergy', { value: Math.round(item.energy_level * 100) })}
-          </Text>
+            {segments > 0 && (
+              <Text style={styles.meta}>
+                {t('analysisSegments', { value: segments })}
+                {birdDetected != null && ` · ${t('analysisBirdConfidence', { value: Math.round(birdConf * 100) })}`}
+              </Text>
+            )}
+          </View>
         </View>
+        {item.recommendations && (
+          <Text style={styles.recommendation} numberOfLines={2}>
+            {item.recommendations}
+          </Text>
+        )}
       </View>
-      {item.recommendations && (
-        <Text style={styles.recommendation} numberOfLines={2}>
-          {item.recommendations}
-        </Text>
-      )}
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -217,6 +234,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
+  },
+  meta: {
+    fontSize: 10,
+    color: '#aaa',
+    marginTop: 2,
+  },
+  birdWarningBadge: {
+    backgroundColor: '#FFF8E1',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+  },
+  birdWarningBadgeText: {
+    fontSize: 10,
+    color: '#F57F17',
+    fontWeight: '600',
   },
   emptyText: {
     fontSize: 15,

@@ -72,7 +72,7 @@ export const es: TranslationMessages = {
   settingsSectionAbout: 'Acerca de',
   settingsVersion: 'Versión',
   settingsModel: 'Modelo IA',
-  settingsModelValue: 'Heurístico v1 + Capa de calidad',
+  settingsModelValue: 'Ensemble v2 (CNN + Estadístico + Temporal)',
   settingsLogout: 'Cerrar sesión',
   settingsLogoutTitle: 'Cerrar sesión',
   settingsLogoutConfirm: '¿Estás seguro?',
@@ -155,6 +155,16 @@ export const es: TranslationMessages = {
 
   analysisLoadingTitle: 'Analizando vocalizaciones...',
   analysisLoadingSubtitle: 'Procesando espectrograma y clasificando patrones',
+
+  analysisBirdDetected: 'Ave detectada',
+  analysisBirdNotDetected: 'Ave no detectada claramente',
+  analysisBirdConfidence: 'Confianza de ave: {value}%',
+  analysisTemporalConsistency: 'Consistencia: {value}%',
+  analysisVocalActivity: 'Actividad vocal: {value}%',
+  analysisModelVersion: 'Modelo IA: {value}',
+  analysisSegments: '{value} segmentos analizados',
+  analysisMoodProbabilities: 'Desglose de estado',
+  analysisVocProbabilities: 'Desglose de vocalización',
 
   chartTitle: 'Tendencia de bienestar',
   chartNeedMore: 'Se necesitan al menos 2 análisis para mostrar la gráfica',
