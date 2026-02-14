@@ -70,7 +70,7 @@ export const en = {
   settingsSectionAbout: 'About',
   settingsVersion: 'Version',
   settingsModel: 'AI model',
-  settingsModelValue: 'Heuristic v1 + Quality Layer',
+  settingsModelValue: 'Ensemble v2 (CNN + Statistical + Temporal)',
   settingsLogout: 'Sign out',
   settingsLogoutTitle: 'Sign out',
   settingsLogoutConfirm: 'Are you sure?',
@@ -153,6 +153,16 @@ export const en = {
 
   analysisLoadingTitle: 'Analyzing vocalizations...',
   analysisLoadingSubtitle: 'Processing spectrogram and classifying patterns',
+
+  analysisBirdDetected: 'Bird detected',
+  analysisBirdNotDetected: 'Bird not clearly detected',
+  analysisBirdConfidence: 'Bird confidence: {value}%',
+  analysisTemporalConsistency: 'Consistency: {value}%',
+  analysisVocalActivity: 'Vocal activity: {value}%',
+  analysisModelVersion: 'AI model: {value}',
+  analysisSegments: '{value} segments analyzed',
+  analysisMoodProbabilities: 'Mood breakdown',
+  analysisVocProbabilities: 'Vocalization breakdown',
 
   chartTitle: 'Wellness trend',
   chartNeedMore: 'At least 2 analyses are needed to show the chart',

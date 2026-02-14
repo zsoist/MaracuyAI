@@ -1,156 +1,196 @@
+"""Orchestrator for the enhanced ML analysis pipeline.
+
+Pipeline flow:
+  1. Full audio preprocessing (noise reduction, bandpass, HPSS, VAD)
+  2. Segment extraction (preferring vocal-active regions)
+  3. Per-segment analysis:
+     a. Mel spectrogram -> CNN classifier
+     b. Feature extraction -> Statistical classifier
+     c. Ensemble blending
+  4. Cross-segment aggregation with temporal analysis
+  5. Bird detection gating
+  6. Rich output generation with probabilities, metadata, and recommendations
+"""
+
+from __future__ import annotations
+
+import logging
+
 import numpy as np
 
+from app.ml.bird_classifier import BirdCNN
+from app.ml.ensemble import EnsemblePredictor, SegmentPrediction
+from app.ml.feature_engine import FeatureEngine
+from app.ml.statistical_classifier import StatisticalClassifier
 from app.services.audio_processor import AudioProcessor
 
+logger = logging.getLogger(__name__)
+
+# Localized recommendations keyed by mood
 RECOMMENDATIONS = {
-    "happy": "Your parakeet sounds happy and active! Keep up the good environment with toys and social interaction.",
-    "relaxed": "Your parakeet seems calm and content. This is a sign of a comfortable, safe environment.",
-    "stressed": "Signs of stress detected. Check for loud noises, other pets nearby, or sudden changes in the environment. Ensure the cage is in a calm area.",
-    "scared": "Your parakeet seems frightened. Look for potential threats: sudden movements, unfamiliar objects, or predator-like shadows. Speak softly and avoid sudden changes.",
-    "sick": "Unusual vocalizations detected that may indicate illness. Monitor for other symptoms (fluffed feathers, loss of appetite, lethargy). Consider consulting an avian veterinarian.",
-    "neutral": "Normal activity detected. Keep monitoring regularly to build a baseline profile for your parakeet.",
+    "happy": (
+        "Your parakeet sounds happy and active! Keep up the good environment "
+        "with toys and social interaction."
+    ),
+    "relaxed": (
+        "Your parakeet seems calm and content. This is a sign of a comfortable, "
+        "safe environment."
+    ),
+    "stressed": (
+        "Signs of stress detected. Check for loud noises, other pets nearby, "
+        "or sudden changes in the environment. Ensure the cage is in a calm area."
+    ),
+    "scared": (
+        "Your parakeet seems frightened. Look for potential threats: sudden "
+        "movements, unfamiliar objects, or predator-like shadows. Speak softly "
+        "and avoid sudden changes."
+    ),
+    "sick": (
+        "Unusual vocalizations detected that may indicate illness. Monitor for "
+        "other symptoms (fluffed feathers, loss of appetite, lethargy). Consider "
+        "consulting an avian veterinarian."
+    ),
+    "neutral": (
+        "Normal activity detected. Keep monitoring regularly to build a baseline "
+        "profile for your parakeet."
+    ),
 }
 
 
 class MLService:
-    """ML service for parakeet vocalization analysis.
+    """Orchestrates the full ML analysis pipeline.
 
-    Currently uses a rule-based heuristic system as the initial classifier.
-    This will be replaced with a trained CNN model in Sprint 2.
-    The heuristic approach uses audio features (pitch, energy, spectral
-    characteristics) to approximate mood classification based on known
-    budgerigar vocalization patterns from avian behavior research.
+    Components:
+      - AudioProcessor: preprocessing, bandpass, HPSS, VAD, segmentation
+      - BirdCNN: dual-head CNN classifier on mel spectrograms
+      - FeatureEngine: 100+ feature extraction for statistical classifier
+      - StatisticalClassifier: Gaussian-distance scorer
+      - EnsemblePredictor: blends CNN + statistical + temporal predictions
     """
 
     def __init__(self):
         self.processor = AudioProcessor()
+        self.feature_engine = FeatureEngine(sr=self.processor.sr)
+        self.stat_classifier = StatisticalClassifier()
+        self._cnn: BirdCNN | None = None
+        self._ensemble: EnsemblePredictor | None = None
+
+    @property
+    def cnn(self) -> BirdCNN:
+        if self._cnn is None:
+            self._cnn = BirdCNN()
+        return self._cnn
+
+    @property
+    def ensemble(self) -> EnsemblePredictor:
+        if self._ensemble is None:
+            self._ensemble = EnsemblePredictor(
+                cnn_has_weights=self.cnn.has_trained_weights
+            )
+        return self._ensemble
 
     async def analyze_audio(self, file_path: str) -> dict:
-        y = self.processor.load_and_preprocess(file_path)
-        segments = self.processor.segment_audio(y)
+        """Run the complete analysis pipeline on an audio file.
+
+        Returns a rich dict with mood, vocalization, confidence, probabilities,
+        bird detection status, energy, segment details, and recommendations.
+        """
+        # Step 1: Full preprocessing
+        processed = self.processor.full_preprocess(file_path)
+
+        # Step 2: Segment extraction (prefer vocal regions)
+        segments = self.processor.segment_vocal_regions(
+            processed.bird_isolated, processed.vocal_mask
+        )
 
         if not segments:
             return self._silent_result()
 
-        segment_results = []
-        for segment in segments:
-            features = self.processor.extract_features(segment)
-            result = self._classify_segment(features)
-            segment_results.append(result)
+        # Step 3: Per-segment analysis
+        segment_predictions: list[SegmentPrediction] = []
 
-        aggregated = self._aggregate_results(segment_results)
+        # Batch CNN predictions for efficiency
+        mel_patches = [
+            self.processor.compute_mel_spectrogram(seg)
+            for seg in segments
+        ]
 
-        full_features = self.processor.extract_features(y)
-        quality = self.processor.get_signal_quality(full_features)
-        aggregated["details"] = {
-            **self.processor.get_feature_summary(full_features),
-            "segment_count": len(segments),
-            "segment_moods": [r["mood"] for r in segment_results],
-            "signal_quality": quality["signal_quality"],
-            "noise_profile": quality["noise_profile"],
-        }
+        try:
+            cnn_results = self.cnn.predict_batch(mel_patches)
+        except Exception:
+            logger.warning("CNN batch prediction failed, falling back to statistical only")
+            cnn_results = [None] * len(segments)
 
-        return aggregated
+        for i, segment in enumerate(segments):
+            # Statistical features
+            fv = self.feature_engine.extract(segment)
+            stat_result = self.stat_classifier.classify(fv)
 
-    def _classify_segment(self, features) -> dict:
-        """Rule-based classifier using audio features.
+            # Inject RMS for energy computation in ensemble
+            stat_result["rms_mean"] = fv.rms_mean
 
-        Budgerigar vocalization patterns:
-        - Happy/singing: high pitch variability, moderate-high energy, rich spectral content
-        - Chattering: moderate pitch, rhythmic energy patterns, moderate spectral centroid
-        - Alarm calls: very high pitch, high energy spikes, high spectral centroid
-        - Distress: irregular pitch, high energy, high zero-crossing rate
-        - Silence/sick: very low energy, minimal pitch activity
-        - Contact calls: brief, moderate pitch, consistent energy
-        """
-        rms_mean = float(np.mean(features.rms_energy))
-        zcr_mean = float(np.mean(features.zero_crossing_rate))
-        centroid_mean = float(np.mean(features.spectral_centroid))
-        pitch_mean = features.pitch_mean
-        pitch_std = features.pitch_std
+            # CNN result for this segment
+            cnn_result = cnn_results[i] if cnn_results[i] is not None else None
 
-        if rms_mean < 0.01:
-            return {
-                "mood": "neutral",
-                "vocalization_type": "silence",
-                "confidence": 0.7,
-                "energy_level": rms_mean * 10,
-            }
+            # Blend
+            seg_pred = self.ensemble.blend_segment(
+                cnn_result=cnn_result,
+                stat_result=stat_result,
+                segment_index=i,
+            )
+            # Override energy from feature vector (more accurate)
+            seg_pred.energy_level = fv.rms_mean
 
-        if rms_mean < 0.03 and pitch_mean < 500:
-            return {
-                "mood": "sick",
-                "vocalization_type": "silence",
-                "confidence": 0.4,
-                "energy_level": rms_mean * 10,
-            }
+            segment_predictions.append(seg_pred)
 
-        if centroid_mean > 4000 and rms_mean > 0.15:
-            return {
-                "mood": "scared",
-                "vocalization_type": "alarm",
-                "confidence": 0.65,
-                "energy_level": min(rms_mean * 5, 1.0),
-            }
+        # Step 4: Aggregate across segments
+        final = self.ensemble.aggregate(segment_predictions)
 
-        if zcr_mean > 0.15 and rms_mean > 0.1 and pitch_std > 500:
-            return {
-                "mood": "stressed",
-                "vocalization_type": "distress",
-                "confidence": 0.55,
-                "energy_level": min(rms_mean * 5, 1.0),
-            }
+        # Step 5: Legacy feature summary for backward compatibility
+        legacy_features = self.processor.extract_features(processed.cleaned)
+        quality = self.processor.get_signal_quality(legacy_features)
 
-        if pitch_std > 300 and rms_mean > 0.05 and centroid_mean > 2000:
-            return {
-                "mood": "happy",
-                "vocalization_type": "singing",
-                "confidence": 0.6,
-                "energy_level": min(rms_mean * 5, 1.0),
-            }
-
-        if 0.03 < rms_mean < 0.1 and pitch_mean > 1000:
-            return {
-                "mood": "relaxed",
-                "vocalization_type": "chattering",
-                "confidence": 0.5,
-                "energy_level": min(rms_mean * 5, 1.0),
-            }
-
+        # Step 6: Build rich output
         return {
-            "mood": "neutral",
-            "vocalization_type": "contact_call",
-            "confidence": 0.4,
-            "energy_level": min(rms_mean * 5, 1.0),
-        }
+            "mood": final.mood,
+            "vocalization_type": final.vocalization_type,
+            "confidence": final.mood_confidence,
+            "energy_level": final.energy_level,
+            "recommendations": final.recommendations,
+            "details": {
+                # Core analysis metadata
+                "bird_detected": final.bird_detected,
+                "bird_confidence": final.bird_confidence,
+                "temporal_consistency": final.temporal_consistency,
+                "vocal_activity_ratio": round(processed.vocal_ratio, 3),
 
-    def _aggregate_results(self, segment_results: list[dict]) -> dict:
-        mood_votes: dict[str, float] = {}
-        total_confidence = 0.0
-        total_energy = 0.0
+                # Probability distributions
+                "mood_probabilities": final.mood_probabilities,
+                "vocalization_probabilities": final.vocalization_probabilities,
 
-        for r in segment_results:
-            mood = r["mood"]
-            conf = r["confidence"]
-            mood_votes[mood] = mood_votes.get(mood, 0) + conf
-            total_confidence += conf
-            total_energy += r["energy_level"]
+                # Classifier info
+                "classifier_weights": final.classifier_weights,
+                "cnn_weights_loaded": self.cnn.has_trained_weights,
+                "model_version": "v2-ensemble",
 
-        n = len(segment_results)
-        dominant_mood = max(mood_votes, key=mood_votes.get)  # type: ignore[arg-type]
+                # Segment breakdown
+                "segment_count": len(segments),
+                "segment_predictions": final.segment_predictions,
 
-        dominant_results = [r for r in segment_results if r["mood"] == dominant_mood]
-        dominant_voc = max(
-            set(r["vocalization_type"] for r in dominant_results),
-            key=lambda v: sum(1 for r in dominant_results if r["vocalization_type"] == v),
-        )
+                # Signal quality
+                "signal_quality": quality["signal_quality"],
+                "noise_profile": quality["noise_profile"],
 
-        return {
-            "mood": dominant_mood,
-            "vocalization_type": dominant_voc,
-            "confidence": round(total_confidence / n, 3),
-            "energy_level": round(total_energy / n, 3),
-            "recommendations": RECOMMENDATIONS.get(dominant_mood, ""),
+                # Audio metadata
+                "duration": round(processed.duration, 2),
+                "sample_rate": processed.sample_rate,
+
+                # Legacy feature summary
+                "spectral_centroid_mean": float(np.mean(legacy_features.spectral_centroid)),
+                "pitch_mean": legacy_features.pitch_mean,
+                "pitch_std": legacy_features.pitch_std,
+                "rms_mean": float(np.mean(legacy_features.rms_energy)),
+            },
         }
 
     def _silent_result(self) -> dict:
@@ -160,5 +200,21 @@ class MLService:
             "confidence": 0.5,
             "energy_level": 0.0,
             "recommendations": RECOMMENDATIONS["neutral"],
-            "details": {},
+            "details": {
+                "bird_detected": False,
+                "bird_confidence": 0.0,
+                "temporal_consistency": 1.0,
+                "vocal_activity_ratio": 0.0,
+                "mood_probabilities": {"neutral": 1.0},
+                "vocalization_probabilities": {"silence": 1.0},
+                "classifier_weights": {},
+                "cnn_weights_loaded": False,
+                "model_version": "v2-ensemble",
+                "segment_count": 0,
+                "segment_predictions": [],
+                "signal_quality": {"score": 0.1, "label": "low"},
+                "noise_profile": {"label": "low_noise", "zcr_mean": 0.0, "rms_mean": 0.0},
+                "duration": 0,
+                "sample_rate": self.processor.sr,
+            },
         }

@@ -34,6 +34,30 @@ export interface Recording {
   created_at: string;
 }
 
+export interface AnalysisDetails {
+  bird_detected?: boolean;
+  bird_confidence?: number;
+  temporal_consistency?: number;
+  vocal_activity_ratio?: number;
+  mood_probabilities?: Record<string, number>;
+  vocalization_probabilities?: Record<string, number>;
+  classifier_weights?: Record<string, number>;
+  cnn_weights_loaded?: boolean;
+  model_version?: string;
+  segment_count?: number;
+  segment_predictions?: Array<{
+    segment: number;
+    vocalization: string;
+    mood: string;
+    bird_confidence: number;
+  }>;
+  signal_quality?: { score: number; label: string };
+  noise_profile?: { label: string; zcr_mean: number; rms_mean: number };
+  duration?: number;
+  sample_rate?: number;
+  [key: string]: unknown;
+}
+
 export interface AnalysisResult {
   id: string;
   recording_id: string;
@@ -43,7 +67,7 @@ export interface AnalysisResult {
   energy_level: number;
   vocalization_type: VocalizationType;
   recommendations: string | null;
-  details: Record<string, unknown> | null;
+  details: AnalysisDetails | null;
   created_at: string;
 }
 
