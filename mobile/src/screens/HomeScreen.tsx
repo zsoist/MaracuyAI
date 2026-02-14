@@ -4,14 +4,16 @@ import { AlertFeed } from '../components/AlertFeed';
 import { ContextCard } from '../components/ContextCard';
 import { MoodIndicator } from '../components/MoodIndicator';
 import { ParakeetCard } from '../components/ParakeetCard';
+import { TipBanner } from '../components/TipBanner';
 import { FEATURES } from '../config/env';
 import { useHomeDashboard } from '../hooks/useHomeDashboard';
+import { useI18n } from '../i18n/useI18n';
 import { useStore } from '../store/useStore';
-import { accessibilityLabels } from '../theme/accessibility';
 import { colors, spacing, typography } from '../theme/tokens';
 import type { HomeScreenProps } from '../types/navigation';
 
 export function HomeScreen({ navigation }: HomeScreenProps) {
+  const { t } = useI18n();
   const { parakeets, latestAnalysis } = useStore();
   const { alerts, contextSnapshot, riskEvents, refreshing, onRefresh } = useHomeDashboard();
 
@@ -22,18 +24,18 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          accessibilityLabel={accessibilityLabels.refreshHome}
+          accessibilityLabel={t('a11yRefreshHome')}
         />
       }
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Parakeet Wellness</Text>
-        <Text style={styles.subtitle}>Monitor de bienestar para tus periquitos</Text>
+        <Text style={styles.title}>{t('homeTitle')}</Text>
+        <Text style={styles.subtitle}>{t('homeSubtitle')}</Text>
       </View>
 
       {latestAnalysis && (
         <View style={styles.latestCard}>
-          <Text style={styles.sectionTitle}>Ultimo analisis</Text>
+          <Text style={styles.sectionTitle}>{t('homeLatestAnalysis')}</Text>
           <MoodIndicator
             mood={latestAnalysis.mood}
             confidence={latestAnalysis.confidence}
@@ -59,17 +61,20 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         style={styles.recordButton}
         onPress={() => navigation.navigate('Record')}
         accessibilityRole="button"
-        accessibilityLabel="Abrir pantalla de grabacion"
+        accessibilityLabel={t('homeOpenRecordA11y')}
       >
         <Text style={styles.recordButtonIcon}>{'\u{1F3A4}'}</Text>
-        <Text style={styles.recordButtonText}>Grabar vocalizacion</Text>
+        <Text style={styles.recordButtonText}>{t('homeRecordCta')}</Text>
       </TouchableOpacity>
 
       <View style={styles.section}>
+        <View style={styles.tipWrapper}>
+          <TipBanner text={t('tipHowToHome')} />
+        </View>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Mis periquitos</Text>
+          <Text style={styles.sectionTitle}>{t('homeParakeetsSection')}</Text>
           <TouchableOpacity onPress={() => navigation.navigate('AddParakeet')}>
-            <Text style={styles.addButton}>+ Agregar</Text>
+            <Text style={styles.addButton}>{t('homeAddParakeet')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -77,7 +82,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>{'\u{1F99C}'}</Text>
             <Text style={styles.emptyText}>
-              Agrega tu primer periquito para comenzar
+              {t('homeEmptyParakeets')}
             </Text>
           </View>
         ) : (
@@ -159,6 +164,9 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 24,
     paddingBottom: 40,
+  },
+  tipWrapper: {
+    paddingHorizontal: spacing.lg,
   },
   sectionHeader: {
     flexDirection: 'row',

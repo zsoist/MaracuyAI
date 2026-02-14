@@ -2,12 +2,14 @@ import { Alert } from 'react-native';
 import { useCallback, useEffect, useState } from 'react';
 
 import { FEATURES } from '../config/env';
+import { useI18n } from '../i18n/useI18n';
 import * as api from '../services/api';
 import { useStore } from '../store/useStore';
 import type { ContextSnapshot, RiskEvent } from '../types';
 import { getErrorMessage } from '../utils/errorMessage';
 
 export function useHomeDashboard() {
+  const { t } = useI18n();
   const setParakeets = useStore((state) => state.setParakeets);
   const [alerts, setAlerts] = useState<api.Alert[]>([]);
   const [contextSnapshot, setContextSnapshot] = useState<ContextSnapshot | null>(null);
@@ -28,11 +30,11 @@ export function useHomeDashboard() {
       setRiskEvents(risks);
     } catch (error) {
       Alert.alert(
-        'Error',
-        getErrorMessage(error, 'No se pudo actualizar el tablero.')
+        t('commonError'),
+        getErrorMessage(error, t('errorLoadDashboard'))
       );
     }
-  }, [setParakeets]);
+  }, [setParakeets, t]);
 
   useEffect(() => {
     loadData();

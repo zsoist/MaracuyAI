@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import logging
 from typing import Any
 
 import httpx
@@ -12,6 +13,8 @@ from app.core.config import settings
 from app.models.environment_snapshot import EnvironmentSnapshot
 from app.models.habitat_profile import HabitatProfile
 from app.models.risk_event import RiskEvent
+
+logger = logging.getLogger(__name__)
 
 
 def _to_utc_datetime(value: str | None) -> datetime | None:
@@ -39,6 +42,19 @@ def _extract_noaa_wind_kph(wind_speed: str | None) -> float | None:
     except ValueError:
         return None
     return round(mph * 1.60934, 2)
+
+
+def _to_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value.strip())
+        except ValueError:
+            return None
+    return None
 
 
 @dataclass
@@ -151,16 +167,22 @@ class ContextService:
         for profile in profiles:
             if profile.latitude is None or profile.longitude is None:
                 continue
-            await self.refresh_snapshot(
-                db,
-                owner_id=profile.owner_id,
-                latitude=profile.latitude,
-                longitude=profile.longitude,
-                timezone_name=profile.timezone_name,
-                location_name=profile.location_name,
-                habitat_profile_id=profile.id,
-            )
-            refreshed += 1
+            try:
+                await self.refresh_snapshot(
+                    db,
+                    owner_id=profile.owner_id,
+                    latitude=profile.latitude,
+                    longitude=profile.longitude,
+                    timezone_name=profile.timezone_name,
+                    location_name=profile.location_name,
+                    habitat_profile_id=profile.id,
+                )
+                refreshed += 1
+            except Exception:
+                logger.exception(
+                    "Context refresh failed for habitat profile %s",
+                    profile.id,
+                )
         return refreshed
 
     async def refresh_snapshot(
@@ -383,9 +405,13 @@ class ContextService:
         pm25_value = None
         for row in rows:
             if row.get("ParameterName") == "PM2.5":
-                pm25_value = row.get("AQI")
-            if aqi_value is None and isinstance(row.get("AQI"), int):
-                aqi_value = row["AQI"]
+                concentration = _to_float(row.get("Concentration"))
+                if concentration is None:
+                    concentration = _to_float(row.get("RawConcentration"))
+                pm25_value = concentration
+            candidate_aqi = row.get("AQI")
+            if aqi_value is None and isinstance(candidate_aqi, (int, float)):
+                aqi_value = int(candidate_aqi)
 
         return {
             "source": "airnow",

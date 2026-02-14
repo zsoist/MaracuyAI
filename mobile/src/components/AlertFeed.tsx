@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useI18n } from '../i18n/useI18n';
 import type { Alert } from '../services/api';
 
 interface AlertFeedProps {
@@ -8,13 +9,14 @@ interface AlertFeedProps {
 }
 
 export function AlertFeed({ alerts }: AlertFeedProps) {
+  const { t, formatDateTime } = useI18n();
   if (alerts.length === 0) {
     return null;
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Alertas recientes</Text>
+      <Text style={styles.title}>{t('alertTitle')}</Text>
       {alerts.slice(0, 3).map((alert) => (
         <View
           key={`${alert.created_at}-${alert.parakeet_id ?? 'general'}`}
@@ -25,7 +27,7 @@ export function AlertFeed({ alerts }: AlertFeedProps) {
         >
           <Text style={styles.alertMessage}>{alert.message}</Text>
           <Text style={styles.alertMeta}>
-            {alert.parakeet_name || 'General'} • {new Date(alert.created_at).toLocaleString('es')}
+            {alert.parakeet_name || t('commonGeneral')} • {formatDateTime(alert.created_at)}
           </Text>
         </View>
       ))}

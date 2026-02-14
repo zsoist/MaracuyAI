@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useI18n } from '../i18n/useI18n';
 import type { ContextSnapshot, RiskEvent } from '../types';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 
@@ -10,25 +11,24 @@ interface ContextCardProps {
   onConfigureHabitat?: () => void;
 }
 
-function formatValue(value: number | null | undefined, suffix: string): string {
+function formatValue(value: number | null | undefined, suffix: string, fallback: string): string {
   if (value === null || value === undefined || Number.isNaN(value)) {
-    return 'N/A';
+    return fallback;
   }
   return `${Math.round(value)}${suffix}`;
 }
 
 export function ContextCard({ contextSnapshot, riskEvents, onConfigureHabitat }: ContextCardProps) {
+  const { t } = useI18n();
+
   if (!contextSnapshot) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Contexto ambiental</Text>
-        <Text style={styles.emptyText}>
-          Aun no hay datos de habitat. Configura una ubicacion para activar recomendaciones
-          por clima y calidad de aire.
-        </Text>
+        <Text style={styles.title}>{t('contextTitle')}</Text>
+        <Text style={styles.emptyText}>{t('contextEmpty')}</Text>
         {onConfigureHabitat && (
           <TouchableOpacity style={styles.button} onPress={onConfigureHabitat}>
-            <Text style={styles.buttonText}>Configurar habitat</Text>
+            <Text style={styles.buttonText}>{t('contextConfigure')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -37,30 +37,38 @@ export function ContextCard({ contextSnapshot, riskEvents, onConfigureHabitat }:
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Contexto ambiental</Text>
+      <Text style={styles.title}>{t('contextTitle')}</Text>
       <View style={styles.grid}>
         <View style={styles.metric}>
-          <Text style={styles.metricLabel}>Temp</Text>
-          <Text style={styles.metricValue}>{formatValue(contextSnapshot.temperature_c, '°C')}</Text>
-        </View>
-        <View style={styles.metric}>
-          <Text style={styles.metricLabel}>Humedad</Text>
+          <Text style={styles.metricLabel}>{t('contextTemp')}</Text>
           <Text style={styles.metricValue}>
-            {formatValue(contextSnapshot.relative_humidity_pct, '%')}
+            {formatValue(contextSnapshot.temperature_c, '°C', t('commonUnavailable'))}
           </Text>
         </View>
         <View style={styles.metric}>
-          <Text style={styles.metricLabel}>AQI</Text>
-          <Text style={styles.metricValue}>{formatValue(contextSnapshot.aqi_us, '')}</Text>
+          <Text style={styles.metricLabel}>{t('contextHumidity')}</Text>
+          <Text style={styles.metricValue}>
+            {formatValue(contextSnapshot.relative_humidity_pct, '%', t('commonUnavailable'))}
+          </Text>
         </View>
         <View style={styles.metric}>
-          <Text style={styles.metricLabel}>Viento</Text>
-          <Text style={styles.metricValue}>{formatValue(contextSnapshot.wind_speed_kph, ' km/h')}</Text>
+          <Text style={styles.metricLabel}>{t('contextAqi')}</Text>
+          <Text style={styles.metricValue}>
+            {formatValue(contextSnapshot.aqi_us, '', t('commonUnavailable'))}
+          </Text>
+        </View>
+        <View style={styles.metric}>
+          <Text style={styles.metricLabel}>{t('contextWind')}</Text>
+          <Text style={styles.metricValue}>
+            {formatValue(contextSnapshot.wind_speed_kph, ' km/h', t('commonUnavailable'))}
+          </Text>
         </View>
       </View>
       <Text style={styles.meta}>
-        Fuente clima: {contextSnapshot.source_weather || 'N/A'} · Fuente aire:{' '}
-        {contextSnapshot.source_aqi || 'N/A'}
+        {t('contextSource', {
+          weather: contextSnapshot.source_weather || t('commonUnavailable'),
+          air: contextSnapshot.source_aqi || t('commonUnavailable'),
+        })}
       </Text>
       {riskEvents.length > 0 && (
         <View style={styles.riskList}>

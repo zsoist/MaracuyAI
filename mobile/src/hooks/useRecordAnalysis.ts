@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { FEATURES } from '../config/env';
+import { useI18n } from '../i18n/useI18n';
 import * as api from '../services/api';
 import { useStore } from '../store/useStore';
 import type { AnalysisResult, Parakeet } from '../types';
@@ -31,6 +32,7 @@ interface UseRecordAnalysisResult {
 }
 
 export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResult {
+  const { t } = useI18n();
   const setLatestAnalysis = useStore((state) => state.setLatestAnalysis);
   const addRecording = useStore((state) => state.addRecording);
 
@@ -89,21 +91,21 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
         }
       } catch (error) {
         Alert.alert(
-          'Error',
-          getErrorMessage(error, 'No se pudo analizar el audio. Verifica tu conexion.')
+          t('commonError'),
+          getErrorMessage(error, t('errorAnalyzeAudio'))
         );
       } finally {
         setIsAnalyzing(false);
       }
     },
-    [addRecording, selectedParakeetId, setLatestAnalysis]
+    [addRecording, selectedParakeetId, setLatestAnalysis, t]
   );
 
   const startRecording = useCallback(async () => {
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Permiso requerido', 'Necesitamos acceso al microfono para grabar.');
+        Alert.alert(t('commonError'), t('warningNeedMicrophone'));
         return;
       }
 
@@ -132,9 +134,9 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
         setDuration((seconds) => seconds + 1);
       }, 1000);
     } catch (error) {
-      Alert.alert('Error', getErrorMessage(error, 'No se pudo iniciar la grabacion.'));
+      Alert.alert(t('commonError'), getErrorMessage(error, t('errorStartRecording')));
     }
-  }, [clearTimer, resetQuality, startMonitoring]);
+  }, [clearTimer, resetQuality, startMonitoring, t]);
 
   const stopRecording = useCallback(async () => {
     if (!recordingRef.current) {
@@ -155,15 +157,15 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
       });
 
       if (duration < 3) {
-        Alert.alert('Grabacion muy corta', 'Graba al menos 3 segundos para analizar.');
+        Alert.alert(t('commonError'), t('warningRecordingTooShort'));
         resetQuality();
         return;
       }
 
       if (FEATURES.captureQuality && recordingQuality.averageLevel < 0.08) {
         Alert.alert(
-          'Calidad de audio baja',
-          'La señal se ve muy baja. Puedes volver a grabar en un ambiente mas silencioso.'
+          t('qualityTitle'),
+          t('warningLowCaptureQuality')
         );
       }
 
@@ -171,7 +173,7 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
         await analyzeAudio(uri, 'recording.wav');
       }
     } catch (error) {
-      Alert.alert('Error', getErrorMessage(error, 'No se pudo detener la grabacion.'));
+      Alert.alert(t('commonError'), getErrorMessage(error, t('errorStopRecording')));
     }
   }, [
     analyzeAudio,
@@ -180,6 +182,7 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
     recordingQuality.averageLevel,
     resetQuality,
     stopMonitoring,
+    t,
   ]);
 
   const pickAudioFile = useCallback(async () => {
@@ -194,9 +197,9 @@ export function useRecordAnalysis(parakeets: Parakeet[]): UseRecordAnalysisResul
       const asset = result.assets[0];
       await analyzeAudio(asset.uri, asset.name);
     } catch (error) {
-      Alert.alert('Error', getErrorMessage(error, 'No se pudo seleccionar el archivo.'));
+      Alert.alert(t('commonError'), getErrorMessage(error, t('errorPickAudio')));
     }
-  }, [analyzeAudio]);
+  }, [analyzeAudio, t]);
 
   const resetAnalysis = () => {
     setAnalysisResult(null);

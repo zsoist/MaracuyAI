@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useI18n } from '../i18n/useI18n';
 import type { Parakeet } from '../types';
 
 interface ParakeetTargetSelectorProps {
@@ -14,13 +15,14 @@ export function ParakeetTargetSelector({
   selectedParakeetId,
   onSelect,
 }: ParakeetTargetSelectorProps) {
+  const { t } = useI18n();
   if (parakeets.length === 0) {
     return null;
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Analizar para:</Text>
+      <Text style={styles.label}>{t('recordTargetLabel')}</Text>
       <View style={styles.chips}>
         <TouchableOpacity
           style={[
@@ -35,7 +37,7 @@ export function ParakeetTargetSelector({
               selectedParakeetId === null && styles.chipTextActive,
             ]}
           >
-            General
+            {t('commonGeneral')}
           </Text>
         </TouchableOpacity>
         {parakeets.map((parakeet) => (

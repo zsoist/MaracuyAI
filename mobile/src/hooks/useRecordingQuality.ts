@@ -1,5 +1,6 @@
 import { Audio } from 'expo-av';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useI18n } from '../i18n/useI18n';
 
 export type RecordingQualityLabel = 'poor' | 'fair' | 'good' | 'excellent';
 
@@ -34,22 +35,23 @@ function toQualityLabel(level: number): RecordingQualityLabel {
   return 'excellent';
 }
 
-function guidanceForLabel(label: RecordingQualityLabel): string {
+function guidanceKeyForLabel(label: RecordingQualityLabel): 'guidancePoor' | 'guidanceFair' | 'guidanceGood' | 'guidanceExcellent' {
   switch (label) {
     case 'poor':
-      return 'Acerca mas el telefono al periquito y reduce ruido de fondo.';
+      return 'guidancePoor';
     case 'fair':
-      return 'Audio usable, pero intenta un ambiente mas silencioso.';
+      return 'guidanceFair';
     case 'good':
-      return 'Buena calidad de captura.';
+      return 'guidanceGood';
     case 'excellent':
-      return 'Excelente captura de audio.';
+      return 'guidanceExcellent';
     default:
-      return 'Capturando audio.';
+      return 'guidanceFair';
   }
 }
 
 export function useRecordingQuality(): UseRecordingQualityResult {
+  const { t } = useI18n();
   const [currentLevel, setCurrentLevel] = useState(0);
   const [averageLevel, setAverageLevel] = useState(0);
   const [peakLevel, setPeakLevel] = useState(0);
@@ -108,9 +110,9 @@ export function useRecordingQuality(): UseRecordingQualityResult {
       averageLevel,
       peakLevel,
       label,
-      guidance: guidanceForLabel(label),
+      guidance: t(guidanceKeyForLabel(label)),
     };
-  }, [averageLevel, currentLevel, peakLevel]);
+  }, [averageLevel, currentLevel, peakLevel, t]);
 
   return { summary, startMonitoring, stopMonitoring, reset };
 }

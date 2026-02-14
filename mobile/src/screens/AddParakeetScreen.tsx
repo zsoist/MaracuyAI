@@ -11,11 +11,15 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+import { useI18n } from '../i18n/useI18n';
 import * as api from '../services/api';
 import { useStore } from '../store/useStore';
+import { colors, radius, spacing, typography } from '../theme/tokens';
 import type { AddParakeetScreenProps } from '../types/navigation';
 
 export function AddParakeetScreen({ navigation }: AddParakeetScreenProps) {
+  const { t } = useI18n();
   const { addParakeet } = useStore();
   const [name, setName] = useState('');
   const [colorDescription, setColorDescription] = useState('');
@@ -24,7 +28,7 @@ export function AddParakeetScreen({ navigation }: AddParakeetScreenProps) {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'El nombre es obligatorio.');
+      Alert.alert(t('commonError'), t('warningParakeetNameRequired'));
       return;
     }
 
@@ -45,8 +49,8 @@ export function AddParakeetScreen({ navigation }: AddParakeetScreenProps) {
           typeof (err as { response?: { data?: { detail?: string } } }).response?.data?.detail ===
             'string' &&
           (err as { response?: { data?: { detail?: string } } }).response?.data?.detail) ||
-        'No se pudo crear el periquito.';
-      Alert.alert('Error', message);
+        t('errorCreateParakeet');
+      Alert.alert(t('commonError'), message);
     } finally {
       setLoading(false);
     }
@@ -59,33 +63,33 @@ export function AddParakeetScreen({ navigation }: AddParakeetScreenProps) {
     >
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.iconContainer}>
-          <Text style={styles.icon}>{'\u{1F99C}'}</Text>
-          <Text style={styles.title}>Nuevo periquito</Text>
+          <Text style={styles.icon}>{'🦜'}</Text>
+          <Text style={styles.title}>{t('addParakeetTitle')}</Text>
         </View>
 
-        <Text style={styles.label}>Nombre *</Text>
+        <Text style={styles.label}>{t('addParakeetNameLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Ej: Kiwi, Coco, Mango..."
+          placeholder={t('addParakeetNamePlaceholder')}
           placeholderTextColor="#999"
           value={name}
           onChangeText={setName}
           autoFocus
         />
 
-        <Text style={styles.label}>Color / Descripcion</Text>
+        <Text style={styles.label}>{t('addParakeetColorLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Ej: Verde con amarillo, azul cielo..."
+          placeholder={t('addParakeetColorPlaceholder')}
           placeholderTextColor="#999"
           value={colorDescription}
           onChangeText={setColorDescription}
         />
 
-        <Text style={styles.label}>Notas</Text>
+        <Text style={styles.label}>{t('addParakeetNotesLabel')}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          placeholder="Notas adicionales: personalidad, comportamiento, salud..."
+          placeholder={t('addParakeetNotesPlaceholder')}
           placeholderTextColor="#999"
           value={notes}
           onChangeText={setNotes}
@@ -102,7 +106,7 @@ export function AddParakeetScreen({ navigation }: AddParakeetScreenProps) {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.saveButtonText}>Guardar periquito</Text>
+            <Text style={styles.saveButtonText}>{t('addParakeetSave')}</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -113,27 +117,27 @@ export function AddParakeetScreen({ navigation }: AddParakeetScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 24,
+    padding: spacing.xxl,
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: 30,
-    marginTop: 10,
+    marginBottom: spacing.xxl,
+    marginTop: spacing.sm,
   },
   icon: {
     fontSize: 56,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#333',
+    color: colors.textPrimary,
   },
   label: {
-    fontSize: 14,
+    fontSize: typography.caption,
     fontWeight: '600',
     color: '#555',
     marginBottom: 6,
@@ -141,25 +145,25 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    marginBottom: 20,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    fontSize: typography.body,
+    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    color: '#333',
+    color: colors.textPrimary,
   },
   textArea: {
     height: 100,
-    paddingTop: 14,
+    paddingTop: spacing.md,
   },
   saveButton: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    padding: spacing.lg,
     alignItems: 'center',
-    marginTop: 10,
-    shadowColor: '#4CAF50',
+    marginTop: spacing.sm,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -170,7 +174,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: '#fff',
-    fontSize: 17,
+    fontSize: typography.body,
     fontWeight: '700',
   },
 });

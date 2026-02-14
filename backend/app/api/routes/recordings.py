@@ -35,6 +35,7 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 class RecordingResponse(BaseModel):
     id: str
     file_url: str
+    media_url: str | None = None
     original_filename: str
     duration_seconds: float
     file_size_bytes: int
@@ -107,7 +108,7 @@ async def upload_recording(
     db.add(recording)
     await db.flush()
 
-    return _to_response(recording)
+    return await _to_response(recording, db)
 
 
 @router.get("/", response_model=list[RecordingResponse])
@@ -124,7 +125,7 @@ async def list_recordings(
         .limit(limit)
         .offset(offset)
     )
-    return [_to_response(r) for r in result.scalars().all()]
+    return [await _to_response(r, db) for r in result.scalars().all()]
 
 
 @router.get("/{recording_id}", response_model=RecordingDetailResponse)
@@ -140,7 +141,7 @@ async def get_recording(
         .order_by(AnalysisResult.created_at.desc())
     )
     analyses = analysis_result.scalars().all()
-    return _to_detail_response(recording, analyses)
+    return await _to_detail_response(recording, analyses, db)
 
 
 @router.delete("/{recording_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -154,14 +155,36 @@ async def delete_recording(
     await db.delete(recording)
 
 
-def _to_response(recording: Recording) -> RecordingResponse:
+async def _resolve_recording_media_url(
+    recording: Recording, db: AsyncSession
+) -> str | None:
+    media_url = storage.to_public_media_url(recording.file_url)
+    if media_url is not None:
+        return media_url
+
+    normalized = await storage.normalize_recording_file_url(
+        file_url=recording.file_url,
+        user_id=str(recording.user_id),
+        recording_id=str(recording.id),
+    )
+    if normalized is None:
+        return None
+
+    recording.file_url = normalized
+    await db.flush()
+    return storage.to_public_media_url(recording.file_url)
+
+
+async def _to_response(recording: Recording, db: AsyncSession) -> RecordingResponse:
     if settings.FEATURE_CAPTURE_QUALITY:
         quality = _estimate_recording_quality(recording)
     else:
         quality = {"score": 0.0, "label": "disabled", "warnings": []}
+    media_url = await _resolve_recording_media_url(recording, db)
     return RecordingResponse(
         id=str(recording.id),
-        file_url=recording.file_url,
+        file_url=media_url or "",
+        media_url=media_url,
         original_filename=recording.original_filename,
         duration_seconds=recording.duration_seconds,
         file_size_bytes=recording.file_size_bytes,
@@ -174,11 +197,12 @@ def _to_response(recording: Recording) -> RecordingResponse:
     )
 
 
-def _to_detail_response(
-    recording: Recording, analyses: list[AnalysisResult]
+async def _to_detail_response(
+    recording: Recording, analyses: list[AnalysisResult], db: AsyncSession
 ) -> RecordingDetailResponse:
+    base = await _to_response(recording, db)
     return RecordingDetailResponse(
-        **_to_response(recording).model_dump(),
+        **base.model_dump(),
         analysis_results=[
             RecordingAnalysisResponse(
                 id=str(a.id),

@@ -10,14 +10,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
 import { MoodIndicator } from '../components/MoodIndicator';
 import { WellnessChart } from '../components/WellnessChart';
+import { useI18n } from '../i18n/useI18n';
 import * as api from '../services/api';
 import { MOOD_CONFIG, useStore } from '../store/useStore';
-import type { ParakeetProfileScreenProps } from '../types/navigation';
+import { colors, radius, spacing, typography } from '../theme/tokens';
 import type { AnalysisResult, MoodType, WellnessSummary } from '../types';
+import type { ParakeetProfileScreenProps } from '../types/navigation';
 
 export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
+  const { t } = useI18n();
   const { parakeetId } = route.params;
   const { parakeets, updateParakeet } = useStore();
   const parakeet = parakeets.find((p) => p.id === parakeetId);
@@ -28,7 +32,7 @@ export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [parakeetId]);
 
   const loadData = async () => {
@@ -40,7 +44,7 @@ export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
       setSummary(summaryData);
       setAnalyses(historyData);
     } catch {
-      Alert.alert('Error', 'No se pudo cargar el perfil del periquito.');
+      Alert.alert(t('commonError'), t('errorLoadProfile'));
     } finally {
       setLoading(false);
     }
@@ -50,7 +54,7 @@ export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
     if (!parakeet) return;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permiso requerido', 'Habilita acceso a fotos para subir imagen.');
+      Alert.alert(t('commonError'), t('warningNeedPhotos'));
       return;
     }
 
@@ -72,7 +76,7 @@ export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
       const updated = await api.uploadParakeetPhoto(parakeet.id, asset.uri, fileName, mimeType);
       updateParakeet(updated);
     } catch {
-      Alert.alert('Error', 'No se pudo subir la foto.');
+      Alert.alert(t('commonError'), t('errorUploadPhoto'));
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -81,7 +85,7 @@ export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
   if (!parakeet) {
     return (
       <View style={styles.center}>
-        <Text>Periquito no encontrado</Text>
+        <Text>{t('profileNotFound')}</Text>
       </View>
     );
   }
@@ -89,21 +93,30 @@ export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   const trendLabels: Record<string, string> = {
-    improving: 'Mejorando',
-    stable: 'Estable',
-    declining: 'Disminuyendo',
+    improving: t('profileTrendImproving'),
+    stable: t('profileTrendStable'),
+    declining: t('profileTrendDeclining'),
   };
 
   const trendColors: Record<string, string> = {
-    improving: '#4CAF50',
+    improving: colors.primary,
     stable: '#2196F3',
-    declining: '#F44336',
+    declining: colors.danger,
+  };
+
+  const moodLabelMap: Record<MoodType, Parameters<typeof t>[0]> = {
+    happy: 'moodHappy',
+    relaxed: 'moodRelaxed',
+    stressed: 'moodStressed',
+    scared: 'moodScared',
+    sick: 'moodSick',
+    neutral: 'moodNeutral',
   };
 
   return (
@@ -122,17 +135,15 @@ export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
           </View>
         )}
         <Text style={styles.name}>{parakeet.name}</Text>
-        {parakeet.color_description && (
-          <Text style={styles.description}>{parakeet.color_description}</Text>
-        )}
+        {parakeet.color_description && <Text style={styles.description}>{parakeet.color_description}</Text>}
         {parakeet.notes && <Text style={styles.notes}>{parakeet.notes}</Text>}
         <TouchableOpacity
           style={[styles.photoButton, isUploadingPhoto && styles.photoButtonDisabled]}
           disabled={isUploadingPhoto}
-          onPress={handlePickPhoto}
+          onPress={() => void handlePickPhoto()}
         >
           <Text style={styles.photoButtonText}>
-            {isUploadingPhoto ? 'Subiendo foto...' : 'Actualizar foto'}
+            {isUploadingPhoto ? t('profileUploadingPhoto') : t('profileUploadPhoto')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -142,29 +153,30 @@ export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
               <Text style={styles.statValue}>{summary.total_analyses}</Text>
-              <Text style={styles.statLabel}>Analisis</Text>
+              <Text style={styles.statLabel}>{t('profileAnalyses')}</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>
-                {Math.round(summary.average_energy * 100)}%
-              </Text>
-              <Text style={styles.statLabel}>Energia prom.</Text>
+              <Text style={styles.statValue}>{Math.round(summary.average_energy * 100)}%</Text>
+              <Text style={styles.statLabel}>{t('profileAvgEnergy')}</Text>
             </View>
             <View style={styles.statBox}>
               <Text
                 style={[
                   styles.statValue,
-                  { color: trendColors[summary.recent_trend] || '#666' },
+                  {
+                    color: trendColors[summary.recent_trend] || '#666',
+                    fontSize: 14,
+                  },
                 ]}
               >
                 {trendLabels[summary.recent_trend] || summary.recent_trend}
               </Text>
-              <Text style={styles.statLabel}>Tendencia</Text>
+              <Text style={styles.statLabel}>{t('profileTrend')}</Text>
             </View>
           </View>
 
           <View style={styles.moodSection}>
-            <Text style={styles.sectionTitle}>Estado dominante</Text>
+            <Text style={styles.sectionTitle}>{t('profileDominantMood')}</Text>
             <MoodIndicator
               mood={summary.dominant_mood}
               confidence={summary.average_confidence}
@@ -175,14 +187,14 @@ export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
           <WellnessChart analyses={analyses} />
 
           <View style={styles.distributionSection}>
-            <Text style={styles.sectionTitle}>Distribucion de estados</Text>
+            <Text style={styles.sectionTitle}>{t('profileMoodDistribution')}</Text>
             {Object.entries(summary.mood_distribution).map(([mood, count]) => {
               const config = MOOD_CONFIG[mood as MoodType];
               const percentage = Math.round((count / summary.total_analyses) * 100);
               return (
                 <View key={mood} style={styles.barRow}>
                   <Text style={[styles.barLabel, { color: config?.color || '#666' }]}>
-                    {config?.label || mood}
+                    {t(moodLabelMap[mood as MoodType])}
                   </Text>
                   <View style={styles.barTrack}>
                     <View
@@ -203,10 +215,7 @@ export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
         </>
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>
-            Aun no hay analisis para {parakeet.name}. Graba una vocalizacion para comenzar
-            a construir su perfil de bienestar.
-          </Text>
+          <Text style={styles.emptyText}>{t('profileEmpty', { name: parakeet.name })}</Text>
         </View>
       )}
     </ScrollView>
@@ -216,7 +225,7 @@ export function ParakeetProfileScreen({ route }: ParakeetProfileScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: colors.background,
   },
   center: {
     flex: 1,
@@ -224,10 +233,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    backgroundColor: '#4CAF50',
-    padding: 24,
+    backgroundColor: colors.primary,
+    padding: spacing.xxl,
     alignItems: 'center',
-    paddingBottom: 32,
+    paddingBottom: spacing.xxxl,
   },
   avatar: {
     width: 80,
@@ -236,13 +245,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.sm,
   },
   photo: {
     width: 92,
     height: 92,
     borderRadius: 46,
-    marginBottom: 12,
+    marginBottom: spacing.sm,
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.5)',
   },
@@ -257,7 +266,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   description: {
-    fontSize: 14,
+    fontSize: typography.caption,
     color: 'rgba(255,255,255,0.85)',
     marginTop: 4,
   },
@@ -268,11 +277,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   photoButton: {
-    marginTop: 12,
+    marginTop: spacing.sm,
     backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: radius.round,
   },
   photoButtonDisabled: {
     opacity: 0.7,
@@ -284,11 +293,11 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    marginHorizontal: 16,
+    marginHorizontal: spacing.lg,
     marginTop: -16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -302,42 +311,42 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#333',
+    color: colors.textPrimary,
   },
   statLabel: {
     fontSize: 11,
-    color: '#999',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   moodSection: {
-    backgroundColor: '#fff',
-    margin: 16,
-    borderRadius: 12,
-    padding: 20,
+    backgroundColor: colors.surface,
+    margin: spacing.lg,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: typography.section,
     fontWeight: '700',
-    color: '#333',
-    marginBottom: 12,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
   },
   distributionSection: {
-    backgroundColor: '#fff',
-    margin: 16,
+    backgroundColor: colors.surface,
+    margin: spacing.lg,
     marginTop: 0,
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
     marginBottom: 40,
   },
   barRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
   barLabel: {
-    width: 80,
-    fontSize: 13,
+    width: 84,
+    fontSize: typography.caption,
     fontWeight: '600',
   },
   barTrack: {
@@ -345,7 +354,7 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: '#f0f0f0',
     borderRadius: 4,
-    marginHorizontal: 8,
+    marginHorizontal: spacing.sm,
   },
   barFill: {
     height: 8,
@@ -354,7 +363,7 @@ const styles = StyleSheet.create({
   barValue: {
     width: 36,
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'right',
   },
   emptyState: {
@@ -362,8 +371,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: typography.caption,
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
   },

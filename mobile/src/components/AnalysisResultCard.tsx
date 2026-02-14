@@ -1,8 +1,20 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useI18n } from '../i18n/useI18n';
 import type { AnalysisResult } from '../types';
 import { MoodIndicator } from './MoodIndicator';
+import type { TranslationKey } from '../i18n/types';
+
+const VOCALIZATION_LABELS: Record<string, TranslationKey> = {
+  singing: 'vocalizationSinging',
+  chattering: 'vocalizationChattering',
+  alarm: 'vocalizationAlarm',
+  silence: 'vocalizationSilence',
+  distress: 'vocalizationDistress',
+  contact_call: 'vocalizationContactCall',
+  beak_grinding: 'vocalizationBeakGrinding',
+};
 
 interface AnalysisResultCardProps {
   analysisResult: AnalysisResult;
@@ -13,32 +25,36 @@ export function AnalysisResultCard({
   analysisResult,
   onNewRecording,
 }: AnalysisResultCardProps) {
+  const { t } = useI18n();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Resultado del analisis</Text>
+      <Text style={styles.title}>{t('recordResultTitle')}</Text>
       <MoodIndicator
         mood={analysisResult.mood}
         confidence={analysisResult.confidence}
         size="large"
       />
       <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Vocalizacion:</Text>
-        <Text style={styles.detailValue}>{analysisResult.vocalization_type}</Text>
+        <Text style={styles.detailLabel}>{t('recordVocalization')}</Text>
+        <Text style={styles.detailValue}>
+          {t(VOCALIZATION_LABELS[analysisResult.vocalization_type] || 'vocalizationUnknown')}
+        </Text>
       </View>
       <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Energia:</Text>
+        <Text style={styles.detailLabel}>{t('recordEnergy')}</Text>
         <Text style={styles.detailValue}>
           {Math.round(analysisResult.energy_level * 100)}%
         </Text>
       </View>
       {analysisResult.recommendations && (
         <View style={styles.recommendationBox}>
-          <Text style={styles.recommendationTitle}>Recomendacion</Text>
+          <Text style={styles.recommendationTitle}>{t('recordRecommendation')}</Text>
           <Text style={styles.recommendationText}>{analysisResult.recommendations}</Text>
         </View>
       )}
       <TouchableOpacity style={styles.newRecordingButton} onPress={onNewRecording}>
-        <Text style={styles.newRecordingText}>Nueva grabacion</Text>
+        <Text style={styles.newRecordingText}>{t('recordNewRecording')}</Text>
       </TouchableOpacity>
     </View>
   );

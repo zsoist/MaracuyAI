@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
@@ -9,16 +10,27 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routes import analysis, auth, context, parakeets, recordings
 from app.core.config import settings
 from app.core.database import Base, engine
+from app.core.migrations import ensure_database_schema_is_current
 from app.jobs.context_refresh import context_refresh_loop
 from app.core.rate_limit import InMemoryRateLimitMiddleware
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     refresh_task: asyncio.Task | None = None
     refresh_stop_event = asyncio.Event()
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+
+    if settings.DB_AUTO_CREATE_ON_STARTUP:
+        logger.warning(
+            "DB_AUTO_CREATE_ON_STARTUP is enabled. "
+            "Use Alembic migrations for release environments."
+        )
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    elif settings.ENFORCE_ALEMBIC_HEAD:
+        await ensure_database_schema_is_current(engine)
 
     if settings.FEATURE_CONTEXT_ENGINE and settings.CONTEXT_AUTO_REFRESH_ENABLED:
         refresh_task = asyncio.create_task(context_refresh_loop(refresh_stop_event))

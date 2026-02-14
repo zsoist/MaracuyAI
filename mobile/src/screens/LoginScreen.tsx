@@ -10,11 +10,15 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+import { useI18n } from '../i18n/useI18n';
 import * as api from '../services/api';
 import { useStore } from '../store/useStore';
+import { colors, radius, spacing, typography } from '../theme/tokens';
 import type { AuthScreenProps } from '../types/navigation';
 
 export function LoginScreen({ navigation }: AuthScreenProps) {
+  const { t } = useI18n();
   const { setUser } = useStore();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -24,11 +28,11 @@ export function LoginScreen({ navigation }: AuthScreenProps) {
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Ingresa email y contraseña.');
+      Alert.alert(t('commonError'), t('authRequiredFields'));
       return;
     }
     if (!isLogin && password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres.');
+      Alert.alert(t('commonError'), t('authPasswordShort'));
       return;
     }
 
@@ -40,6 +44,7 @@ export function LoginScreen({ navigation }: AuthScreenProps) {
         await api.register(email.trim(), password, displayName.trim() || undefined);
       }
       const user = await api.getMe();
+      await api.mergeGuestData().catch(() => undefined);
       setUser(user);
       if (navigation.canGoBack()) {
         navigation.goBack();
@@ -52,8 +57,8 @@ export function LoginScreen({ navigation }: AuthScreenProps) {
           typeof (err as { response?: { data?: { detail?: string } } }).response?.data?.detail ===
             'string' &&
           (err as { response?: { data?: { detail?: string } } }).response?.data?.detail) ||
-        'Ocurrio un error. Verifica tus datos e intenta de nuevo.';
-      Alert.alert('Error', message);
+        t('errorGeneric');
+      Alert.alert(t('commonError'), message);
     } finally {
       setLoading(false);
     }
@@ -65,11 +70,9 @@ export function LoginScreen({ navigation }: AuthScreenProps) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.header}>
-        <Text style={styles.logo}>{'\u{1F99C}'}</Text>
-        <Text style={styles.title}>Parakeet Wellness</Text>
-        <Text style={styles.subtitle}>
-          Monitorea el bienestar de tus periquitos con IA
-        </Text>
+        <Text style={styles.logo}>{'🦜'}</Text>
+        <Text style={styles.title}>{t('loginTitle')}</Text>
+        <Text style={styles.subtitle}>{t('loginSubtitle')}</Text>
       </View>
 
       <View style={styles.form}>
@@ -78,24 +81,20 @@ export function LoginScreen({ navigation }: AuthScreenProps) {
             style={[styles.tab, isLogin && styles.tabActive]}
             onPress={() => setIsLogin(true)}
           >
-            <Text style={[styles.tabText, isLogin && styles.tabTextActive]}>
-              Iniciar sesion
-            </Text>
+            <Text style={[styles.tabText, isLogin && styles.tabTextActive]}>{t('loginTabSignIn')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, !isLogin && styles.tabActive]}
             onPress={() => setIsLogin(false)}
           >
-            <Text style={[styles.tabText, !isLogin && styles.tabTextActive]}>
-              Registrarse
-            </Text>
+            <Text style={[styles.tabText, !isLogin && styles.tabTextActive]}>{t('loginTabRegister')}</Text>
           </TouchableOpacity>
         </View>
 
         {!isLogin && (
           <TextInput
             style={styles.input}
-            placeholder="Nombre (opcional)"
+            placeholder={t('loginNamePlaceholder')}
             placeholderTextColor="#999"
             value={displayName}
             onChangeText={setDisplayName}
@@ -105,7 +104,7 @@ export function LoginScreen({ navigation }: AuthScreenProps) {
 
         <TextInput
           style={styles.input}
-          placeholder="Email"
+          placeholder={t('loginEmailPlaceholder')}
           placeholderTextColor="#999"
           value={email}
           onChangeText={setEmail}
@@ -116,7 +115,7 @@ export function LoginScreen({ navigation }: AuthScreenProps) {
 
         <TextInput
           style={styles.input}
-          placeholder="Contraseña"
+          placeholder={t('loginPasswordPlaceholder')}
           placeholderTextColor="#999"
           value={password}
           onChangeText={setPassword}
@@ -132,7 +131,7 @@ export function LoginScreen({ navigation }: AuthScreenProps) {
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.buttonText}>
-              {isLogin ? 'Entrar' : 'Crear cuenta'}
+              {isLogin ? t('loginSubmitSignIn') : t('loginSubmitRegister')}
             </Text>
           )}
         </TouchableOpacity>
@@ -144,48 +143,48 @@ export function LoginScreen({ navigation }: AuthScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: colors.background,
   },
   header: {
     alignItems: 'center',
     paddingTop: 80,
     paddingBottom: 40,
-    backgroundColor: '#4CAF50',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    backgroundColor: colors.primary,
+    borderBottomLeftRadius: radius.xl,
+    borderBottomRightRadius: radius.xl,
   },
   logo: {
     fontSize: 64,
-    marginBottom: 12,
+    marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 28,
+    fontSize: typography.title,
     fontWeight: 'bold',
     color: '#fff',
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: typography.caption,
     color: 'rgba(255,255,255,0.85)',
-    marginTop: 8,
+    marginTop: spacing.xs,
     textAlign: 'center',
     paddingHorizontal: 40,
   },
   form: {
-    padding: 24,
-    marginTop: 20,
+    padding: spacing.xxl,
+    marginTop: spacing.md,
   },
   tabRow: {
     flexDirection: 'row',
     backgroundColor: '#E8E8E8',
-    borderRadius: 10,
-    marginBottom: 24,
+    borderRadius: radius.md,
+    marginBottom: spacing.xl,
     padding: 4,
   },
   tab: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   tabActive: {
     backgroundColor: '#fff',
@@ -196,31 +195,31 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: typography.caption,
     color: '#666',
     fontWeight: '500',
   },
   tabTextActive: {
-    color: '#4CAF50',
+    color: colors.primary,
     fontWeight: '700',
   },
   input: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    marginBottom: 14,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    fontSize: typography.body,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: '#E0E0E0',
     color: '#333',
   },
   button: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    padding: spacing.lg,
     alignItems: 'center',
-    marginTop: 8,
-    shadowColor: '#4CAF50',
+    marginTop: spacing.xs,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontSize: 17,
+    fontSize: typography.body,
     fontWeight: '700',
   },
 });

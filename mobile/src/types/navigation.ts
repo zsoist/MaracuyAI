@@ -7,6 +7,7 @@ export type HomeTabParamList = {
   Record: undefined;
   History: undefined;
   Settings: undefined;
+  Guide: undefined;
 };
 
 export type RootStackParamList = {

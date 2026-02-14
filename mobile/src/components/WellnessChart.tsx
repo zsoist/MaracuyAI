@@ -1,6 +1,7 @@
 import React from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
+import { useI18n } from '../i18n/useI18n';
 import type { AnalysisResult, MoodType } from '../types';
 import { MOOD_CONFIG } from '../store/useStore';
 
@@ -11,12 +12,11 @@ interface WellnessChartProps {
 const screenWidth = Dimensions.get('window').width;
 
 export function WellnessChart({ analyses }: WellnessChartProps) {
+  const { t } = useI18n();
   if (analyses.length < 2) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>
-          Se necesitan al menos 2 analisis para mostrar la grafica
-        </Text>
+        <Text style={styles.emptyText}>{t('chartNeedMore')}</Text>
       </View>
     );
   }
@@ -35,7 +35,7 @@ export function WellnessChart({ analyses }: WellnessChartProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tendencia de bienestar</Text>
+      <Text style={styles.title}>{t('chartTitle')}</Text>
       <LineChart
         data={{
           labels: labels.length > 7
@@ -53,7 +53,7 @@ export function WellnessChart({ analyses }: WellnessChartProps) {
               strokeWidth: 1,
             },
           ],
-          legend: ['Energia %', 'Confianza %'],
+          legend: [t('chartLegendEnergy'), t('chartLegendConfidence')],
         }}
         width={screenWidth - 64}
         height={200}
@@ -79,10 +79,18 @@ export function WellnessChart({ analyses }: WellnessChartProps) {
       <View style={styles.legend}>
         {sorted.slice(-5).reverse().map((a) => {
           const config = MOOD_CONFIG[a.mood as MoodType];
+          const moodLabelMap: Record<MoodType, Parameters<typeof t>[0]> = {
+            happy: 'moodHappy',
+            relaxed: 'moodRelaxed',
+            stressed: 'moodStressed',
+            scared: 'moodScared',
+            sick: 'moodSick',
+            neutral: 'moodNeutral',
+          };
           return (
             <View key={a.id} style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: config?.color || '#999' }]} />
-              <Text style={styles.legendText}>{config?.label || a.mood}</Text>
+              <Text style={styles.legendText}>{t(moodLabelMap[a.mood as MoodType])}</Text>
             </View>
           );
         })}

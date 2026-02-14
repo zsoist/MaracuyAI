@@ -1,6 +1,7 @@
 import io
 import imghdr
 import os
+import shutil
 import uuid
 from pathlib import Path
 
@@ -21,7 +22,7 @@ class StorageService:
         self, contents: bytes, user_id: str, original_filename: str
     ) -> dict:
         file_id = str(uuid.uuid4())
-        user_dir = self.upload_dir / user_id
+        user_dir = self.public_dir / "audio" / user_id
         user_dir.mkdir(parents=True, exist_ok=True)
 
         ext = Path(original_filename).suffix.lower() or ".wav"
@@ -63,12 +64,15 @@ class StorageService:
                     io.BytesIO(contents), sr=settings.AUDIO_SAMPLE_RATE, mono=True
                 )
                 sf.write(str(wav_path), y_resampled, settings.AUDIO_SAMPLE_RATE)
+                # Keep only one canonical media artifact per recording.
+                self._delete_if_exists(file_path)
                 target_path = wav_path
             except Exception:
                 target_path = file_path
 
         return {
             "file_url": str(target_path),
+            "media_url": self.to_public_media_url(str(target_path)),
             "duration_seconds": duration,
             "sample_rate": sample_rate,
         }
@@ -100,26 +104,58 @@ class StorageService:
         return f"/media/photos/{user_id}/{filename}"
 
     async def delete_audio(self, file_url: str) -> None:
-        path = Path(file_url)
+        path = self._resolve_stored_path(file_url)
         self._delete_if_exists(path)
         wav_variant = path.with_suffix(".wav")
         if wav_variant != path:
             self._delete_if_exists(wav_variant)
 
     async def delete_file(self, file_url: str) -> None:
-        path = Path(file_url)
-        if not path.is_absolute():
-            normalized = file_url.lstrip("/")
-            if normalized.startswith("media/"):
-                normalized = f"public/{normalized.removeprefix('media/')}"
-            path = self.upload_dir / normalized
+        path = self._resolve_stored_path(file_url)
         self._delete_if_exists(path)
 
     async def get_audio_path(self, file_url: str) -> Path:
-        path = Path(file_url)
+        path = self._resolve_stored_path(file_url)
         if not path.exists():
             raise FileNotFoundError(f"Audio file not found: {file_url}")
         return path
+
+    async def normalize_recording_file_url(
+        self, *, file_url: str, user_id: str, recording_id: str
+    ) -> str | None:
+        source = self._resolve_stored_path(file_url)
+        if not source.exists():
+            return None
+
+        ext = source.suffix.lower() or ".wav"
+        target_dir = self.public_dir / "audio" / user_id
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target_path = target_dir / f"{recording_id}{ext}"
+
+        if source.resolve() != target_path.resolve():
+            if target_path.exists():
+                target_path = target_dir / f"{recording_id}-{uuid.uuid4().hex[:8]}{ext}"
+            shutil.move(str(source), str(target_path))
+
+        return str(target_path)
+
+    def to_public_media_url(self, file_url: str) -> str | None:
+        path = self._resolve_stored_path(file_url)
+        try:
+            relative = path.resolve().relative_to(self.public_dir.resolve())
+        except ValueError:
+            return None
+        return f"/media/{relative.as_posix()}"
+
+    def _resolve_stored_path(self, file_url: str) -> Path:
+        path = Path(file_url)
+        if path.is_absolute():
+            return path
+
+        normalized = file_url.lstrip("/")
+        if normalized.startswith("media/"):
+            normalized = f"public/{normalized.removeprefix('media/')}"
+        return self.upload_dir / normalized
 
     def _delete_if_exists(self, path: Path) -> None:
         if path.exists():

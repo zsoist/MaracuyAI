@@ -1,18 +1,22 @@
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 
+import { I18nProvider } from './i18n/I18nProvider';
+import { useI18n } from './i18n/useI18n';
 import { useAuth } from './hooks/useAuth';
-import { LoginScreen } from './screens/LoginScreen';
-import { HomeScreen } from './screens/HomeScreen';
-import { RecordScreen } from './screens/RecordScreen';
-import { HistoryScreen } from './screens/HistoryScreen';
-import { ParakeetProfileScreen } from './screens/ParakeetProfileScreen';
 import { AddParakeetScreen } from './screens/AddParakeetScreen';
+import { GuideScreen } from './screens/GuideScreen';
+import { HistoryScreen } from './screens/HistoryScreen';
+import { HomeScreen } from './screens/HomeScreen';
+import { LoginScreen } from './screens/LoginScreen';
+import { ParakeetProfileScreen } from './screens/ParakeetProfileScreen';
+import { RecordScreen } from './screens/RecordScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { colors, typography } from './theme/tokens';
 import type { HomeTabParamList, RootStackParamList } from './types/navigation';
 
 const Tab = createBottomTabNavigator<HomeTabParamList>();
@@ -23,19 +27,24 @@ function TabIcon({ label, color }: { label: string; color: string }) {
 }
 
 function HomeTabs() {
+  const { t } = useI18n();
+
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#4CAF50',
-        tabBarInactiveTintColor: '#999',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: '#8A94A6',
         headerShown: false,
         tabBarStyle: {
           borderTopWidth: 0,
-          elevation: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
+          elevation: 12,
+          shadowColor: '#0F172A',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+          height: 84,
+          paddingBottom: 8,
+          paddingTop: 6,
         },
       }}
     >
@@ -43,47 +52,63 @@ function HomeTabs() {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarLabel: 'Inicio',
-          tabBarIcon: ({ color }) => <TabIcon label={'\u{1F3E0}'} color={color} />,
+          tabBarLabel: t('tabHome'),
+          tabBarIcon: ({ color }) => <TabIcon label={'🏠'} color={color} />,
         }}
       />
       <Tab.Screen
         name="Record"
         component={RecordScreen}
         options={{
-          tabBarLabel: 'Grabar',
-          tabBarIcon: ({ color }) => <TabIcon label={'\u{1F3A4}'} color={color} />,
+          tabBarLabel: t('tabRecord'),
+          tabBarIcon: ({ color }) => <TabIcon label={'🎤'} color={color} />,
         }}
       />
       <Tab.Screen
         name="History"
         component={HistoryScreen}
         options={{
-          tabBarLabel: 'Historial',
-          tabBarIcon: ({ color }) => <TabIcon label={'\u{1F4CA}'} color={color} />,
+          tabBarLabel: t('tabHistory'),
+          tabBarIcon: ({ color }) => <TabIcon label={'📈'} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Guide"
+        component={GuideScreen}
+        options={{
+          tabBarLabel: t('tabGuide'),
+          tabBarIcon: ({ color }) => <TabIcon label={'📚'} color={color} />,
         }}
       />
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}
         options={{
-          tabBarLabel: 'Ajustes',
-          tabBarIcon: ({ color }) => <TabIcon label={'\u{2699}'} color={color} />,
+          tabBarLabel: t('tabSettings'),
+          tabBarIcon: ({ color }) => <TabIcon label={'⚙️'} color={color} />,
         }}
       />
     </Tab.Navigator>
   );
 }
 
-export default function App() {
+function AppShell() {
   const { isLoading } = useAuth();
+  const { ready, t } = useI18n();
 
-  if (isLoading) {
+  if (isLoading || !ready) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#4CAF50' }}>
-        <Text style={{ fontSize: 64, marginBottom: 16 }}>{'\u{1F99C}'}</Text>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: colors.primary,
+        }}
+      >
+        <Text style={{ fontSize: 64, marginBottom: 16 }}>{'🦜'}</Text>
         <ActivityIndicator size="large" color="#fff" />
-        <Text style={{ color: '#fff', marginTop: 12, fontSize: 16 }}>Parakeet Wellness</Text>
+        <Text style={{ color: '#fff', marginTop: 12, fontSize: typography.body }}>{t('loadingBrand')}</Text>
       </View>
     );
   }
@@ -92,36 +117,40 @@ export default function App() {
     <NavigationContainer>
       <StatusBar style="auto" />
       <Stack.Navigator>
-        <Stack.Screen
-          name="Main"
-          component={HomeTabs}
-          options={{ headerShown: false }}
-        />
+        <Stack.Screen name="Main" component={HomeTabs} options={{ headerShown: false }} />
         <Stack.Screen
           name="ParakeetProfile"
           component={ParakeetProfileScreen}
           options={{
-            title: 'Perfil',
-            headerTintColor: '#4CAF50',
+            title: t('navProfile'),
+            headerTintColor: colors.primary,
           }}
         />
         <Stack.Screen
           name="AddParakeet"
           component={AddParakeetScreen}
           options={{
-            title: 'Nuevo periquito',
-            headerTintColor: '#4CAF50',
+            title: t('navAddParakeet'),
+            headerTintColor: colors.primary,
           }}
         />
         <Stack.Screen
           name="Auth"
           component={LoginScreen}
           options={{
-            title: 'Cuenta',
-            headerTintColor: '#4CAF50',
+            title: t('navAuth'),
+            headerTintColor: colors.primary,
           }}
         />
       </Stack.Navigator>
     </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
+    <I18nProvider>
+      <AppShell />
+    </I18nProvider>
   );
 }

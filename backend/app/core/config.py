@@ -11,6 +11,8 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@db:5432/parakeet_wellness"
+    DB_AUTO_CREATE_ON_STARTUP: bool = False
+    ENFORCE_ALEMBIC_HEAD: bool | None = None
 
     # JWT
     SECRET_KEY: str = "replace-with-a-very-long-random-secret-32-plus-chars"
@@ -31,6 +33,13 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_REQUESTS: int = 120
     RATE_LIMIT_WINDOW_SECONDS: int = 60
+    RATE_LIMIT_BACKEND: str = "memory"  # "memory" or "redis"
+    RATE_LIMIT_REDIS_URL: str = "redis://redis:6379/0"
+    RATE_LIMIT_KEY_PREFIX: str = "rate-limit"
+    RATE_LIMIT_REDIS_STRICT: bool = False
+
+    # Guest identity
+    GUEST_SECRET_MIN_LENGTH: int = 24
 
     # Feature flags
     FEATURE_CONTEXT_ENGINE: bool = True
@@ -83,6 +92,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "SECRET_KEY must be set to a strong value (32+ chars) when DEBUG is false."
             )
+        if self.ENFORCE_ALEMBIC_HEAD is None:
+            self.ENFORCE_ALEMBIC_HEAD = not self.DEBUG and not self.DB_AUTO_CREATE_ON_STARTUP
+        if self.RATE_LIMIT_BACKEND not in {"memory", "redis"}:
+            raise ValueError("RATE_LIMIT_BACKEND must be either 'memory' or 'redis'.")
+        if self.GUEST_SECRET_MIN_LENGTH < 16:
+            raise ValueError("GUEST_SECRET_MIN_LENGTH must be at least 16.")
         return self
 
     model_config = {"env_file": ".env", "extra": "ignore"}

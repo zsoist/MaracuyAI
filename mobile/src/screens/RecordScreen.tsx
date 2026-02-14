@@ -5,14 +5,16 @@ import { AnalysisLoadingState } from '../components/AnalysisLoadingState';
 import { AnalysisResultCard } from '../components/AnalysisResultCard';
 import { ParakeetTargetSelector } from '../components/ParakeetTargetSelector';
 import { RecordingQualityMeter } from '../components/RecordingQualityMeter';
+import { TipBanner } from '../components/TipBanner';
 import { FEATURES } from '../config/env';
 import { useRecordAnalysis } from '../hooks/useRecordAnalysis';
+import { useI18n } from '../i18n/useI18n';
 import { useStore } from '../store/useStore';
-import { accessibilityLabels } from '../theme/accessibility';
 import { colors, spacing, typography } from '../theme/tokens';
 import { formatDuration } from '../utils/audioHelpers';
 
 export function RecordScreen() {
+  const { t } = useI18n();
   const parakeets = useStore((state) => state.parakeets);
   const {
     isRecording,
@@ -45,6 +47,8 @@ export function RecordScreen() {
           <AnalysisResultCard analysisResult={analysisResult} onNewRecording={resetAnalysis} />
         ) : (
           <View style={styles.recordContainer}>
+            <TipBanner text={t('tipHowToRecord')} />
+
             <ParakeetTargetSelector
               parakeets={parakeets}
               selectedParakeetId={selectedParakeetId}
@@ -64,7 +68,7 @@ export function RecordScreen() {
             <Text style={styles.timerText}>{formatDuration(duration)}</Text>
 
             {isRecording && (
-              <Text style={styles.recordingHint}>Minimo 30 segundos recomendados</Text>
+              <Text style={styles.recordingHint}>{t('recordTimerHint')}</Text>
             )}
 
             <TouchableOpacity
@@ -72,14 +76,14 @@ export function RecordScreen() {
               onPress={toggleRecording}
               accessibilityRole="button"
               accessibilityLabel={
-                isRecording ? accessibilityLabels.stopRecording : accessibilityLabels.startRecording
+                isRecording ? t('a11yStopRecording') : t('a11yStartRecording')
               }
             >
               <View style={[styles.recordInner, isRecording && styles.recordInnerActive]} />
             </TouchableOpacity>
 
             <Text style={styles.recordLabel}>
-              {isRecording ? 'Toca para detener' : 'Toca para grabar'}
+              {isRecording ? t('recordTapToStop') : t('recordTapToRecord')}
             </Text>
 
             {!isRecording && (
@@ -87,9 +91,9 @@ export function RecordScreen() {
                 style={styles.uploadButton}
                 onPress={() => void pickAudioFile()}
                 accessibilityRole="button"
-                accessibilityLabel={accessibilityLabels.uploadAudio}
+                accessibilityLabel={t('a11yUploadAudio')}
               >
-                <Text style={styles.uploadText}>Subir archivo de audio</Text>
+                <Text style={styles.uploadText}>{t('recordUploadAudio')}</Text>
               </TouchableOpacity>
             )}
           </View>

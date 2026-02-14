@@ -64,12 +64,12 @@ export const useStore = create<AppState>((set) => ({
 
 export const MOOD_CONFIG: Record<
   MoodType,
-  { label: string; color: string; icon: string }
+  { color: string; icon: string }
 > = {
-  happy: { label: 'Feliz', color: '#4CAF50', icon: 'sentiment-very-satisfied' },
-  relaxed: { label: 'Relajado', color: '#2196F3', icon: 'spa' },
-  stressed: { label: 'Estresado', color: '#FF9800', icon: 'warning' },
-  scared: { label: 'Asustado', color: '#F44336', icon: 'flash-on' },
-  sick: { label: 'Enfermo', color: '#9C27B0', icon: 'local-hospital' },
-  neutral: { label: 'Normal', color: '#607D8B', icon: 'remove-circle-outline' },
+  happy: { color: '#4CAF50', icon: 'sentiment-very-satisfied' },
+  relaxed: { color: '#2196F3', icon: 'spa' },
+  stressed: { color: '#FF9800', icon: 'warning' },
+  scared: { color: '#F44336', icon: 'flash-on' },
+  sick: { color: '#9C27B0', icon: 'local-hospital' },
+  neutral: { color: '#607D8B', icon: 'remove-circle-outline' },
 };

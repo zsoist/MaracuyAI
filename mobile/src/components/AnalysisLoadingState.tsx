@@ -1,14 +1,15 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useI18n } from '../i18n/useI18n';
 
 export function AnalysisLoadingState() {
+  const { t } = useI18n();
+
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color="#4CAF50" />
-      <Text style={styles.text}>Analizando vocalizaciones...</Text>
-      <Text style={styles.subtext}>
-        Procesando espectrograma y clasificando patrones
-      </Text>
+      <Text style={styles.text}>{t('analysisLoadingTitle')}</Text>
+      <Text style={styles.subtext}>{t('analysisLoadingSubtitle')}</Text>
     </View>
   );
 }

@@ -7,10 +7,3 @@ export async function isReducedMotionEnabled(): Promise<boolean> {
     return false;
   }
 }
-
-export const accessibilityLabels = {
-  startRecording: 'Iniciar grabacion de audio',
-  stopRecording: 'Detener grabacion de audio',
-  uploadAudio: 'Subir archivo de audio para analisis',
-  refreshHome: 'Actualizar tablero principal',
-} as const;

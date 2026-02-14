@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { API_BASE_URL, AUTH_TOKEN_KEY, GUEST_ID_KEY } from '../config/env';
+import { API_BASE_URL, AUTH_TOKEN_KEY, GUEST_ID_KEY, GUEST_SECRET_KEY } from '../config/env';
 import type {
   AnalysisResult,
   ContextSnapshot,
@@ -29,6 +29,16 @@ function createGuestId() {
   });
 }
 
+function createGuestSecret() {
+  const segment = () =>
+    'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+      const random = Math.floor(Math.random() * 16);
+      const value = char === 'x' ? random : (random & 0x3) | 0x8;
+      return value.toString(16);
+    });
+  return `${segment()}${segment()}`;
+}
+
 async function getOrCreateGuestId() {
   const existing = await SecureStore.getItemAsync(GUEST_ID_KEY);
   if (existing) {
@@ -39,8 +49,18 @@ async function getOrCreateGuestId() {
   return created;
 }
 
+async function getOrCreateGuestSecret() {
+  const existing = await SecureStore.getItemAsync(GUEST_SECRET_KEY);
+  if (existing && existing.length >= 24) {
+    return existing;
+  }
+  const created = createGuestSecret();
+  await SecureStore.setItemAsync(GUEST_SECRET_KEY, created);
+  return created;
+}
+
 export async function ensureGuestIdentity() {
-  await getOrCreateGuestId();
+  await Promise.all([getOrCreateGuestId(), getOrCreateGuestSecret()]);
 }
 
 async function setAuthToken(token: string) {
@@ -52,8 +72,12 @@ async function clearAuthToken() {
 }
 
 api.interceptors.request.use(async (config) => {
-  const guestId = await getOrCreateGuestId();
+  const [guestId, guestSecret] = await Promise.all([
+    getOrCreateGuestId(),
+    getOrCreateGuestSecret(),
+  ]);
   config.headers['X-Guest-Id'] = guestId;
+  config.headers['X-Guest-Secret'] = guestSecret;
 
   const token = await getAuthToken();
   if (token) {
@@ -87,6 +111,29 @@ export async function getMe(): Promise<User> {
   return data;
 }
 
+export interface MergeGuestResult {
+  merged: boolean;
+  guest_id: string | null;
+  moved_parakeets: number;
+  moved_recordings: number;
+  moved_snapshots: number;
+  moved_risk_events: number;
+}
+
+export async function mergeGuestData(): Promise<MergeGuestResult> {
+  const { data } = await api.post<MergeGuestResult>('/auth/merge-guest');
+  return data;
+}
+
+export async function exportAccountData(): Promise<Record<string, unknown>> {
+  const { data } = await api.get<Record<string, unknown>>('/auth/export-data');
+  return data;
+}
+
+export async function deleteAccount(): Promise<void> {
+  await api.delete('/auth/me');
+}
+
 export async function logout() {
   await clearAuthToken();
 }
@@ -109,7 +156,12 @@ export async function getParakeets(): Promise<Parakeet[]> {
 
 export async function updateParakeet(
   id: string,
-  updates: Partial<Parakeet>
+  updates: {
+    name?: string;
+    color_description?: string | null;
+    birth_date?: string | null;
+    notes?: string | null;
+  }
 ): Promise<Parakeet> {
   const { data } = await api.put<Parakeet>(`/parakeets/${id}`, updates);
   return data;

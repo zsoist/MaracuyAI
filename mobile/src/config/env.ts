@@ -1,16 +1,42 @@
 import { Platform } from 'react-native';
 
-const configuredBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+const configuredBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
 const defaultDevBaseUrl =
   Platform.OS === 'android'
     ? 'http://10.0.2.2:8000/api/v1'
     : 'http://localhost:8000/api/v1';
 
-export const API_BASE_URL =
-  configuredBaseUrl || (__DEV__ ? defaultDevBaseUrl : 'https://api.parakeetwellness.com/api/v1');
+function isLocalBackendUrl(url: string): boolean {
+  const normalized = url.toLowerCase();
+  return (
+    normalized.includes('localhost') ||
+    normalized.includes('127.0.0.1') ||
+    normalized.includes('10.0.2.2')
+  );
+}
+
+function resolveApiBaseUrl(): string {
+  if (configuredBaseUrl && configuredBaseUrl.length > 0) {
+    if (!__DEV__ && isLocalBackendUrl(configuredBaseUrl)) {
+      throw new Error(
+        'EXPO_PUBLIC_API_BASE_URL cannot point to localhost/loopback in non-development builds.'
+      );
+    }
+    return configuredBaseUrl.replace(/\/+$/, '');
+  }
+
+  if (__DEV__) {
+    return defaultDevBaseUrl;
+  }
+
+  throw new Error('EXPO_PUBLIC_API_BASE_URL is required for non-development builds.');
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export const AUTH_TOKEN_KEY = 'auth_token';
 export const GUEST_ID_KEY = 'guest_id';
+export const GUEST_SECRET_KEY = 'guest_secret';
 
 function parseBooleanEnv(value: string | undefined, fallback: boolean): boolean {
   if (!value) return fallback;

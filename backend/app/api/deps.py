@@ -7,8 +7,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import decode_access_token, hash_password
+from app.core.security import decode_access_token, hash_password, verify_password
 from app.models.user import User
 
 security_scheme = HTTPBearer(auto_error=False)
@@ -47,16 +48,25 @@ async def _get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> User | None:
     return result.scalar_one_or_none()
 
 
-async def _get_or_create_guest_user(db: AsyncSession, guest_uuid: uuid.UUID) -> User:
+async def _get_or_create_guest_user(
+    db: AsyncSession, guest_uuid: uuid.UUID, guest_secret: str
+) -> User:
     guest_email = f"guest+{guest_uuid}@{GUEST_EMAIL_DOMAIN}"
     result = await db.execute(select(User).where(User.email == guest_email))
     existing = result.scalar_one_or_none()
     if existing is not None:
+        if not verify_password(guest_secret, existing.password_hash):
+            if settings.DEBUG:
+                # Local dev safety for pre-secret guest records.
+                existing.password_hash = hash_password(guest_secret)
+                await db.flush()
+                return existing
+            raise PermissionError("Guest identity proof failed.")
         return existing
 
     guest_user = User(
         email=guest_email,
-        password_hash=hash_password(uuid.uuid4().hex),
+        password_hash=hash_password(guest_secret),
         display_name="Guest",
     )
     db.add(guest_user)
@@ -99,6 +109,7 @@ async def get_current_user(
 async def get_auth_context(
     credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
     guest_id: str | None = Header(default=None, alias="X-Guest-Id"),
+    guest_secret: str | None = Header(default=None, alias="X-Guest-Secret"),
     db: AsyncSession = Depends(get_db),
 ) -> AuthContext:
     if credentials is not None:
@@ -122,7 +133,21 @@ async def get_auth_context(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Missing guest identity. Provide X-Guest-Id header or bearer token.",
         )
-    guest_user = await _get_or_create_guest_user(db, guest_uuid)
+    if guest_secret is None or len(guest_secret.strip()) < settings.GUEST_SECRET_MIN_LENGTH:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Missing or invalid guest secret. "
+                "Provide X-Guest-Secret header with a strong per-device secret."
+            ),
+        )
+    try:
+        guest_user = await _get_or_create_guest_user(db, guest_uuid, guest_secret.strip())
+    except PermissionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+        ) from exc
     return AuthContext(
         owner_id=guest_user.id,
         user=None,

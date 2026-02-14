@@ -8,11 +8,25 @@ import {
   View,
 } from 'react-native';
 import { MoodIndicator } from '../components/MoodIndicator';
+import { TipBanner } from '../components/TipBanner';
+import { useI18n } from '../i18n/useI18n';
+import type { TranslationKey } from '../i18n/types';
 import * as api from '../services/api';
 import { useStore } from '../store/useStore';
 import type { AnalysisResult } from '../types';
 
+const VOCALIZATION_LABELS: Record<string, TranslationKey> = {
+  singing: 'vocalizationSinging',
+  chattering: 'vocalizationChattering',
+  alarm: 'vocalizationAlarm',
+  silence: 'vocalizationSilence',
+  distress: 'vocalizationDistress',
+  contact_call: 'vocalizationContactCall',
+  beak_grinding: 'vocalizationBeakGrinding',
+};
+
 export function HistoryScreen() {
+  const { t, formatDateTime } = useI18n();
   const { parakeets } = useStore();
   const [selectedParakeet, setSelectedParakeet] = useState<string | null>(null);
   const [analyses, setAnalyses] = useState<AnalysisResult[]>([]);
@@ -54,19 +68,16 @@ export function HistoryScreen() {
   const renderItem = ({ item }: { item: AnalysisResult }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <MoodIndicator mood={item.mood} confidence={item.confidence} />
-        <View style={styles.cardInfo}>
-          <Text style={styles.vocType}>{item.vocalization_type}</Text>
-          <Text style={styles.date}>
-            {new Date(item.created_at).toLocaleDateString('es', {
-              day: 'numeric',
-              month: 'short',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Text>
+          <MoodIndicator mood={item.mood} confidence={item.confidence} />
+          <View style={styles.cardInfo}>
+            <Text style={styles.vocType}>
+              {t(VOCALIZATION_LABELS[item.vocalization_type] || 'vocalizationUnknown')}
+            </Text>
+            <Text style={styles.date}>
+              {formatDateTime(item.created_at)}
+            </Text>
           <Text style={styles.energy}>
-            Energia: {Math.round(item.energy_level * 100)}%
+            {t('historyEnergy', { value: Math.round(item.energy_level * 100) })}
           </Text>
         </View>
       </View>
@@ -80,6 +91,9 @@ export function HistoryScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.tipWrapper}>
+        <TipBanner text={t('tipHowToHistory')} />
+      </View>
       <View style={styles.filterRow}>
         {parakeets.map((p) => (
           <TouchableOpacity
@@ -103,8 +117,8 @@ export function HistoryScreen() {
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>
             {parakeets.length === 0
-              ? 'Agrega un periquito primero'
-              : 'No hay analisis todavia. Graba una vocalizacion para comenzar.'}
+              ? t('historyNoParakeets')
+              : t('historyNoAnalyses')}
           </Text>
         </View>
       ) : (
@@ -127,8 +141,13 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     flexDirection: 'row',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     gap: 8,
+  },
+  tipWrapper: {
+    padding: 16,
+    paddingBottom: 8,
   },
   filterChip: {
     paddingHorizontal: 16,

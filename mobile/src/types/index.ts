@@ -22,6 +22,7 @@ export interface Parakeet {
 export interface Recording {
   id: string;
   file_url: string;
+  media_url?: string | null;
   original_filename: string;
   duration_seconds: number;
   file_size_bytes: number;

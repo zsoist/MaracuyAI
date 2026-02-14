@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { RecordingQualityLabel } from '../hooks/useRecordingQuality';
+import { useI18n } from '../i18n/useI18n';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 
 interface RecordingQualityMeterProps {
@@ -27,18 +28,18 @@ function qualityColor(label: RecordingQualityLabel): string {
   }
 }
 
-function qualityLabelText(label: RecordingQualityLabel): string {
+function qualityLabelKey(label: RecordingQualityLabel): 'qualityPoor' | 'qualityFair' | 'qualityGood' | 'qualityExcellent' {
   switch (label) {
     case 'poor':
-      return 'Baja';
+      return 'qualityPoor';
     case 'fair':
-      return 'Media';
+      return 'qualityFair';
     case 'good':
-      return 'Buena';
+      return 'qualityGood';
     case 'excellent':
-      return 'Excelente';
+      return 'qualityExcellent';
     default:
-      return 'N/A';
+      return 'qualityFair';
   }
 }
 
@@ -49,23 +50,22 @@ export function RecordingQualityMeter({
   label,
   guidance,
 }: RecordingQualityMeterProps) {
+  const { t } = useI18n();
   const color = qualityColor(label);
   const widthPct: `${number}%` = `${Math.round(currentLevel * 100)}%`;
-  const avgPct = `${Math.round(averageLevel * 100)}%`;
-  const peakPct = `${Math.round(peakLevel * 100)}%`;
 
   return (
     <View style={styles.container}>
       <View style={styles.row}>
-        <Text style={styles.title}>Calidad de captura</Text>
-        <Text style={[styles.value, { color }]}>{qualityLabelText(label)}</Text>
+        <Text style={styles.title}>{t('qualityTitle')}</Text>
+        <Text style={[styles.value, { color }]}>{t(qualityLabelKey(label))}</Text>
       </View>
       <View style={styles.track}>
         <View style={[styles.fill, { width: widthPct, backgroundColor: color }]} />
       </View>
       <View style={styles.metaRow}>
-        <Text style={styles.meta}>Promedio: {avgPct}</Text>
-        <Text style={styles.meta}>Pico: {peakPct}</Text>
+        <Text style={styles.meta}>{t('qualityAverage', { value: Math.round(averageLevel * 100) })}</Text>
+        <Text style={styles.meta}>{t('qualityPeak', { value: Math.round(peakLevel * 100) })}</Text>
       </View>
       <Text style={styles.guidance}>{guidance}</Text>
     </View>

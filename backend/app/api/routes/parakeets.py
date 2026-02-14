@@ -14,6 +14,7 @@ from app.services.storage_service import StorageService
 
 router = APIRouter(prefix="/parakeets", tags=["parakeets"])
 storage = StorageService()
+MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
 class ParakeetCreate(BaseModel):
@@ -27,7 +28,6 @@ class ParakeetUpdate(BaseModel):
     name: str | None = None
     color_description: str | None = None
     birth_date: date | None = None
-    photo_url: str | None = None
     notes: str | None = None
 
 
@@ -129,6 +129,11 @@ async def upload_parakeet_photo(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Uploaded image is empty.",
+        )
+    if len(contents) > MAX_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Image is too large. Maximum size is 10MB.",
         )
 
     parakeet = await get_user_parakeet(db, parakeet_id, auth_context.owner_id)

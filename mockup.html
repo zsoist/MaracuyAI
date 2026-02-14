@@ -1,1772 +1,1005 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Parakeet Wellness AI - Preview</title>
-<style>
-  :root {
-    --color-primary: #4CAF50;
-    --color-primary-strong: #2E7D32;
-    --color-danger: #F44336;
-    --color-bg: #F5F7FA;
-    --color-surface: #FFFFFF;
-    --color-text: #333333;
-    --color-muted: #666666;
-    --focus-ring: #2563EB;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #1a1a2e;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
-  }
-  .phone-frame {
-    width: 375px;
-    height: 812px;
-    background: #F5F7FA;
-    border-radius: 40px;
-    overflow: hidden;
-    position: relative;
-    box-shadow: 0 0 0 8px #222, 0 0 0 10px #444, 0 30px 60px rgba(0,0,0,0.5);
-  }
-  .notch {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 150px;
-    height: 30px;
-    background: #222;
-    border-radius: 0 0 20px 20px;
-    z-index: 100;
-  }
-  .screen {
-    width: 100%;
-    height: 100%;
-    display: none;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .screen.active { display: flex; }
-  .screen-content {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .screen-content::-webkit-scrollbar { display: none; }
-  .is-hidden { display: none !important; }
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-  button:focus-visible,
-  input:focus-visible,
-  textarea:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  /* Tab Bar */
-  .tab-bar {
-    display: flex;
-    background: #fff;
-    border-top: none;
-    padding: 6px 0 calc(20px + env(safe-area-inset-bottom));
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
-    position: relative;
-    z-index: 10;
-  }
-  .tab-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    cursor: pointer;
-    padding: 4px 0;
-    border: none;
-    background: none;
-    transition: all 0.2s;
-  }
-  .tab-item span.icon { font-size: 20px; }
-  .tab-item span.label { font-size: 10px; color: #999; font-weight: 500; }
-  .tab-item.active span.label { color: #4CAF50; font-weight: 700; }
-
-  /* Login Screen */
-  .login-header {
-    background: linear-gradient(135deg, #4CAF50, #2E7D32);
-    padding: 60px 30px 40px;
-    text-align: center;
-    border-radius: 0 0 30px 30px;
-  }
-  .login-header .logo { font-size: 64px; margin-bottom: 10px; }
-  .login-header h1 { color: #fff; font-size: 26px; font-weight: 800; }
-  .login-header p { color: rgba(255,255,255,0.85); font-size: 13px; margin-top: 8px; }
-  .login-form { padding: 24px; margin-top: 10px; }
-  .tab-switch {
-    display: flex;
-    background: #E8E8E8;
-    border-radius: 10px;
-    padding: 4px;
-    margin-bottom: 24px;
-  }
-  .tab-switch button {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #666;
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .tab-switch button.active {
-    background: #fff;
-    color: #4CAF50;
-    font-weight: 700;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }
-  .input-field {
-    width: 100%;
-    background: #fff;
-    border: 1px solid #E0E0E0;
-    border-radius: 12px;
-    padding: 16px;
-    font-size: 15px;
-    margin-bottom: 14px;
-    outline: none;
-    color: #333;
-    transition: border-color 0.2s;
-  }
-  .input-field:focus { border-color: #4CAF50; }
-  .input-field::placeholder { color: #bbb; }
-  .btn-primary {
-    width: 100%;
-    background: linear-gradient(135deg, #4CAF50, #43A047);
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    padding: 16px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 8px;
-    box-shadow: 0 4px 12px rgba(76,175,80,0.35);
-    transition: transform 0.15s, box-shadow 0.15s;
-  }
-  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(76,175,80,0.4); }
-  .btn-primary:active { transform: translateY(0); }
-
-  /* Home Screen */
-  .home-header {
-    background: linear-gradient(135deg, #4CAF50, #2E7D32);
-    padding: 50px 20px 20px;
-  }
-  .home-header h1 { color: #fff; font-size: 24px; font-weight: 800; }
-  .home-header p { color: rgba(255,255,255,0.85); font-size: 13px; margin-top: 4px; }
-  .mode-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 10px;
-    background: rgba(255,255,255,0.18);
-    border: 1px solid rgba(255,255,255,0.24);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    border-radius: 999px;
-    padding: 5px 10px;
-  }
-
-  .latest-card {
-    background: #fff;
-    margin: 16px;
-    border-radius: 16px;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-  }
-  .latest-card h3 { font-size: 16px; color: #333; font-weight: 700; margin-bottom: 12px; }
-
-  .mood-indicator { text-align: center; }
-  .mood-circle {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 10px;
-    font-size: 40px;
-  }
-  .mood-circle.small { width: 44px; height: 44px; font-size: 22px; }
-  .mood-label { font-size: 20px; font-weight: 700; }
-  .mood-confidence { font-size: 12px; color: #999; margin-top: 4px; }
-
-  .recommendation-text {
-    font-size: 12px;
-    color: #666;
-    margin-top: 12px;
-    line-height: 1.6;
-    background: #E8F5E9;
-    padding: 12px;
-    border-radius: 10px;
-  }
-
-  .context-card {
-    background: #fff;
-    margin: 0 16px 8px;
-    border-radius: 14px;
-    padding: 14px;
-    border: 1px solid #DCE3EA;
-  }
-  .context-card h3 {
-    font-size: 15px;
-    color: #223;
-    font-weight: 700;
-    margin-bottom: 10px;
-  }
-  .context-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-  .context-metric {
-    border: 1px solid #E7EDF2;
-    border-radius: 10px;
-    padding: 8px;
-    background: #FAFCFE;
-  }
-  .context-metric .k { font-size: 10px; color: #789; }
-  .context-metric .v { font-size: 14px; color: #222; font-weight: 700; margin-top: 3px; }
-  .context-meta {
-    font-size: 10px;
-    color: #718096;
-    margin-top: 8px;
-  }
-  .risk-mini {
-    margin-top: 8px;
-    border: 1px solid #FFD1D1;
-    background: #FFF4F4;
-    border-radius: 10px;
-    padding: 8px;
-  }
-  .risk-mini .t { font-size: 12px; font-weight: 700; color: #8B1E1E; }
-  .risk-mini .d { font-size: 11px; color: #8B1E1E; margin-top: 4px; line-height: 1.4; }
-
-  .alerts-wrap {
-    margin: 0 16px 6px;
-  }
-  .alert-chip {
-    border-radius: 12px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-    border: 1px solid transparent;
-  }
-  .alert-chip.high {
-    background: #FFF1F1;
-    border-color: #FFD1D1;
-  }
-  .alert-chip.medium {
-    background: #FFF8E1;
-    border-color: #FFE0A8;
-  }
-  .alert-chip .msg {
-    font-size: 12px;
-    color: #333;
-    line-height: 1.4;
-  }
-  .alert-chip .meta {
-    font-size: 10px;
-    color: #666;
-    margin-top: 6px;
-  }
-
-  .record-btn-home {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    background: linear-gradient(135deg, #4CAF50, #43A047);
-    margin: 0 16px;
-    border-radius: 16px;
-    padding: 18px;
-    color: #fff;
-    border: none;
-    width: calc(100% - 32px);
-    font-size: 17px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(76,175,80,0.35);
-    transition: transform 0.15s;
-  }
-  .record-btn-home:hover { transform: translateY(-1px); }
-  .record-btn-home .icon { font-size: 22px; }
-
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 16px;
-    margin: 24px 0 12px;
-  }
-  .section-header h3 { font-size: 17px; font-weight: 700; color: #333; }
-  .section-header .add-btn {
-    font-size: 14px;
-    color: #4CAF50;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    background: none;
-  }
-
-  .parakeet-card {
-    display: flex;
-    align-items: center;
-    width: calc(100% - 32px);
-    background: #fff;
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin: 0 16px 8px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    cursor: pointer;
-    transition: transform 0.15s;
-    border: none;
-    text-align: left;
-    font: inherit;
-    appearance: none;
-  }
-  .parakeet-card:hover { transform: translateX(2px); }
-  .parakeet-avatar {
-    width: 44px;
-    height: 44px;
-    border-radius: 22px;
-    background: #4CAF50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 18px;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-  .parakeet-avatar.photo {
-    background-size: cover;
-    background-position: center;
-    color: transparent;
-  }
-  .parakeet-info { flex: 1; margin-left: 12px; }
-  .parakeet-info .name { font-size: 16px; font-weight: 600; color: #333; }
-  .parakeet-info .desc { font-size: 12px; color: #888; margin-top: 2px; }
-  .parakeet-info .mood-tag { font-size: 11px; color: #4CAF50; margin-top: 3px; font-weight: 500; }
-  .parakeet-card .arrow { font-size: 20px; color: #ccc; }
-
-  /* Record Screen */
-  .record-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    padding: 40px 20px;
-  }
-  .record-bird-selector {
-    width: 100%;
-    margin-bottom: 16px;
-  }
-  .record-bird-selector .lbl {
-    font-size: 12px;
-    color: #666;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-  .record-chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .record-chip {
-    border: 1px solid #D0D7DE;
-    border-radius: 16px;
-    padding: 7px 11px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #455A64;
-    background: #fff;
-    cursor: pointer;
-  }
-  .record-chip.active {
-    background: #4CAF50;
-    border-color: #4CAF50;
-    color: #fff;
-  }
-  .timer { font-size: 64px; font-weight: 200; color: #333; margin-bottom: 8px; }
-  .record-hint { font-size: 13px; color: #999; margin-bottom: 40px; }
-  .record-button {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: 4px solid #F44336;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    margin-bottom: 16px;
-    background: transparent;
-    transition: all 0.2s;
-  }
-  .record-button:hover { transform: scale(1.05); }
-  .record-inner {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: #F44336;
-    transition: all 0.3s;
-  }
-  .record-button.recording .record-inner {
-    width: 28px;
-    height: 28px;
-    border-radius: 4px;
-  }
-  .record-label { font-size: 14px; color: #666; margin-bottom: 40px; }
-  .quality-box {
-    width: 100%;
-    border: 1px solid #DCE3EA;
-    border-radius: 12px;
-    background: #fff;
-    padding: 12px;
-    margin-bottom: 14px;
-  }
-  .quality-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  .quality-head .title {
-    font-size: 12px;
-    color: #334155;
-    font-weight: 700;
-  }
-  .quality-head .state {
-    font-size: 12px;
-    font-weight: 700;
-    color: #16A34A;
-  }
-  .quality-track {
-    width: 100%;
-    height: 8px;
-    border-radius: 99px;
-    background: #E5E7EB;
-    overflow: hidden;
-  }
-  .quality-fill {
-    height: 100%;
-    width: 62%;
-    border-radius: 99px;
-    background: linear-gradient(90deg, #F59E0B, #22C55E);
-    transition: width 0.3s ease;
-  }
-  .quality-meta {
-    margin-top: 6px;
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: #64748B;
-  }
-  .quality-guide {
-    font-size: 11px;
-    color: #64748B;
-    margin-top: 6px;
-    line-height: 1.4;
-  }
-  .upload-btn {
-    padding: 12px 24px;
-    border: 1px solid #4CAF50;
-    border-radius: 8px;
-    color: #4CAF50;
-    font-size: 14px;
-    font-weight: 500;
-    background: none;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .upload-btn:hover { background: rgba(76,175,80,0.05); }
-
-  /* Analysis Result */
-  .analysis-result {
-    text-align: center;
-    padding: 20px;
-  }
-  .analysis-result h2 { font-size: 22px; font-weight: 700; color: #333; margin-bottom: 16px; }
-  .detail-row {
-    display: flex;
-    justify-content: space-between;
-    width: 80%;
-    margin: 0 auto;
-    padding: 10px 0;
-    border-bottom: 1px solid #eee;
-  }
-  .detail-row .label { font-size: 14px; color: #666; }
-  .detail-row .value { font-size: 14px; font-weight: 600; color: #333; }
-  .rec-box {
-    background: #E8F5E9;
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 20px;
-    text-align: left;
-  }
-  .rec-box h4 { font-size: 13px; font-weight: 700; color: #2E7D32; margin-bottom: 6px; }
-  .rec-box p { font-size: 12px; color: #333; line-height: 1.6; }
-  .new-recording-btn {
-    margin-top: 24px;
-    background: #4CAF50;
-    color: #fff;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  /* Analyzing animation */
-  .analyzing-container { text-align: center; padding: 40px 20px; }
-  .analyzing-container h3 { font-size: 18px; font-weight: 600; color: #333; margin-top: 20px; }
-  .analyzing-container p { font-size: 13px; color: #999; margin-top: 8px; }
-  .spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid #E0E0E0;
-    border-top-color: #4CAF50;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes pulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.1); opacity: 0.7; }
-  }
-
-  /* History Screen */
-  .filter-row {
-    display: flex;
-    padding: 16px;
-    gap: 8px;
-    overflow-x: auto;
-  }
-  .filter-chip {
-    padding: 8px 16px;
-    border-radius: 20px;
-    background: #E0E0E0;
-    font-size: 13px;
-    color: #666;
-    cursor: pointer;
-    border: none;
-    white-space: nowrap;
-    transition: all 0.2s;
-  }
-  .filter-chip.active { background: #4CAF50; color: #fff; font-weight: 600; }
-  .history-list { padding: 0 16px 16px; }
-  .history-card {
-    background: #fff;
-    border-radius: 12px;
-    padding: 14px;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  }
-  .history-card-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .history-card-info { flex: 1; }
-  .history-card-info .voc { font-size: 14px; font-weight: 600; color: #333; text-transform: capitalize; }
-  .history-card-info .date { font-size: 11px; color: #999; margin-top: 2px; }
-  .history-card-info .energy { font-size: 11px; color: #666; margin-top: 3px; }
-  .history-card .rec-text {
-    font-size: 11px;
-    color: #666;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #f0f0f0;
-  }
-
-  /* Profile Screen */
-  .profile-header {
-    background: linear-gradient(135deg, #4CAF50, #2E7D32);
-    padding: 20px 24px 32px;
-    text-align: center;
-  }
-  .profile-avatar {
-    width: 72px;
-    height: 72px;
-    border-radius: 36px;
-    background: rgba(255,255,255,0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 10px;
-    font-size: 32px;
-    font-weight: 700;
-    color: #fff;
-  }
-  .profile-avatar.photo {
-    background-size: cover;
-    background-position: center;
-    color: transparent;
-    border: 2px solid rgba(255,255,255,0.55);
-  }
-  .profile-header .name { font-size: 22px; font-weight: 700; color: #fff; }
-  .profile-header .desc { font-size: 13px; color: rgba(255,255,255,0.85); margin-top: 4px; }
-  .profile-photo-btn {
-    margin-top: 10px;
-    background: rgba(255,255,255,0.2);
-    border: 1px solid rgba(255,255,255,0.25);
-    color: #fff;
-    border-radius: 16px;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 8px 12px;
-    cursor: pointer;
-  }
-
-  .stats-row {
-    display: flex;
-    margin: -16px 16px 0;
-    background: #fff;
-    border-radius: 12px;
-    padding: 14px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    position: relative;
-    z-index: 2;
-  }
-  .stat-box { flex: 1; text-align: center; }
-  .stat-box .val { font-size: 18px; font-weight: 700; color: #333; }
-  .stat-box .lbl { font-size: 10px; color: #999; margin-top: 3px; }
-
-  .card-section {
-    background: #fff;
-    margin: 16px;
-    border-radius: 12px;
-    padding: 16px;
-  }
-  .card-section h3 { font-size: 15px; font-weight: 700; color: #333; margin-bottom: 12px; }
-
-  .bar-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  .bar-label { width: 75px; font-size: 12px; font-weight: 600; }
-  .bar-track {
-    flex: 1;
-    height: 8px;
-    background: #f0f0f0;
-    border-radius: 4px;
-    margin: 0 8px;
-    overflow: hidden;
-  }
-  .bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.8s ease;
-  }
-  .bar-value { width: 32px; font-size: 11px; color: #666; text-align: right; }
-
-  /* Chart mockup */
-  .chart-container {
-    background: #fff;
-    margin: 0 16px;
-    border-radius: 12px;
-    padding: 16px;
-  }
-  .chart-container h3 { font-size: 15px; font-weight: 700; color: #333; margin-bottom: 12px; }
-  .chart-svg { width: 100%; }
-  .chart-legend {
-    display: flex;
-    gap: 12px;
-    margin-top: 8px;
-    flex-wrap: wrap;
-  }
-  .chart-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 10px;
-    color: #666;
-  }
-  .chart-legend-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 4px;
-  }
-
-  /* Settings */
-  .settings-section {
-    background: #fff;
-    border-radius: 12px;
-    margin: 16px;
-    padding: 16px;
-  }
-  .settings-section h3 { font-size: 15px; font-weight: 700; color: #333; margin-bottom: 10px; }
-  .settings-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 13px;
-  }
-  .settings-row .lbl { color: #666; }
-  .settings-row .val { color: #333; font-weight: 500; }
-  .logout-btn {
-    width: calc(100% - 32px);
-    margin: 16px;
-    background: #fff;
-    border: none;
-    border-radius: 12px;
-    padding: 16px;
-    font-size: 15px;
-    color: #F44336;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .logout-btn:hover { background: #FFF5F5; }
-  .mini-btn {
-    width: 100%;
-    border: none;
-    border-radius: 10px;
-    padding: 11px 12px;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 10px;
-  }
-  .mini-btn.primary {
-    background: #4CAF50;
-    color: #fff;
-  }
-  .mini-btn.secondary {
-    background: #F1F5F9;
-    color: #334155;
-  }
-  .settings-input {
-    width: 100%;
-    border: 1px solid #DCE3EA;
-    background: #fff;
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-size: 13px;
-    color: #334155;
-    margin-bottom: 8px;
-    outline: none;
-  }
-  .settings-input-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    align-items: start;
-  }
-  .settings-field-label {
-    display: block;
-    font-size: 11px;
-    color: #64748B;
-    font-weight: 600;
-    margin: 2px 0 4px;
-  }
-  .flag-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    margin-top: 6px;
-  }
-  .flag-chip {
-    border: 1px solid #D0D7DE;
-    border-radius: 999px;
-    padding: 6px 10px;
-    font-size: 10px;
-    font-weight: 700;
-    color: #455A64;
-    background: #fff;
-    text-align: center;
-    cursor: pointer;
-    user-select: none;
-  }
-  .flag-chip.on {
-    color: #fff;
-    border-color: #4CAF50;
-    background: #4CAF50;
-  }
-
-  /* Add Parakeet */
-  .add-form { padding: 24px; }
-  .add-form .icon-top { text-align: center; margin-bottom: 24px; }
-  .add-form .icon-top span { font-size: 56px; }
-  .add-form .icon-top h2 { font-size: 20px; font-weight: 700; color: #333; margin-top: 6px; }
-  .form-label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; margin-left: 4px; }
-
-  /* Screen header bar */
-  .screen-header-bar {
-    display: flex;
-    align-items: center;
-    padding: 50px 16px 12px;
-    background: #fff;
-    border-bottom: 1px solid #f0f0f0;
-  }
-  .back-btn {
-    font-size: 16px;
-    color: #4CAF50;
-    cursor: pointer;
-    border: none;
-    background: none;
-    font-weight: 600;
-    padding: 4px 8px;
-  }
-  .screen-header-bar h2 {
-    flex: 1;
-    text-align: center;
-    font-size: 17px;
-    font-weight: 600;
-    color: #333;
-    margin-right: 40px;
-  }
-
-  /* Animations */
-  .fade-in {
-    animation: fadeIn 0.3s ease;
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .recording-pulse {
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-
-  /* Waveform animation */
-  .waveform {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    height: 60px;
-    margin: 20px 0;
-  }
-  .wave-bar {
-    width: 4px;
-    background: #4CAF50;
-    border-radius: 2px;
-    animation: wave 0.8s ease-in-out infinite;
-  }
-  @keyframes wave {
-    0%, 100% { height: 8px; }
-    50% { height: 40px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parakeet Wellness - Product Mockup</title>
+  <style>
+    :root {
+      --bg: #eef2f7;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --primary: #2f7a59;
+      --primary-soft: #dff3e9;
+      --danger: #b91c1c;
+      --warning: #b45309;
+      --border: #d8dee7;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
     }
-  }
-</style>
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at top, #dbeafe 0%, #e2e8f0 45%, #cbd5e1 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      padding: 20px;
+    }
+
+    .wrapper {
+      width: min(980px, 100%);
+      display: grid;
+      gap: 18px;
+    }
+
+    .toolbar {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar h1 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .toolbar p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .segmented {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 3px;
+      background: var(--surface);
+    }
+
+    .segmented button {
+      border: none;
+      background: transparent;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .segmented button.active {
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .phone {
+      width: min(390px, 100%);
+      height: 844px;
+      margin: 0 auto;
+      border-radius: 42px;
+      border: 10px solid #111827;
+      background: var(--bg);
+      overflow: hidden;
+      box-shadow: 0 26px 50px rgba(15, 23, 42, 0.35);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160px;
+      height: 30px;
+      background: #111827;
+      border-radius: 0 0 16px 16px;
+      z-index: 8;
+    }
+
+    .screen {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 100px;
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .screen::-webkit-scrollbar {
+      display: none;
+    }
+
+    .hero {
+      background: linear-gradient(140deg, #2f7a59 0%, #1f5f47 100%);
+      color: #fff;
+      padding: 56px 20px 20px;
+    }
+
+    .hero h2 {
+      font-size: 24px;
+      font-weight: 750;
+      letter-spacing: -0.3px;
+    }
+
+    .hero p {
+      margin-top: 6px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.87);
+      line-height: 1.45;
+    }
+
+    .mode-pill {
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.14);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .content {
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .tip {
+      border-color: #c7d8ff;
+      background: #f2f7ff;
+      color: #1e293b;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .tip strong {
+      color: #0f172a;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .metric {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface-soft);
+      padding: 8px;
+    }
+
+    .metric .k {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .metric .v {
+      margin-top: 3px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .alert {
+      border: 1px solid #fecaca;
+      background: #fff1f2;
+      border-radius: 10px;
+      padding: 8px;
+      margin-top: 8px;
+    }
+
+    .alert .title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #7f1d1d;
+    }
+
+    .alert p {
+      margin-top: 4px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #7f1d1d;
+    }
+
+    .button {
+      border: none;
+      background: linear-gradient(135deg, #2f7a59, #256b4d);
+      color: #fff;
+      border-radius: 12px;
+      padding: 12px;
+      width: 100%;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .button.secondary {
+      background: #fff;
+      color: var(--primary);
+      border: 1px solid #99c7b0;
+    }
+
+    .list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .list-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+      display: grid;
+      gap: 3px;
+    }
+
+    .list-item .title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .list-item .meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip {
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 650;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .chip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .record-timer {
+      text-align: center;
+      font-size: 56px;
+      font-weight: 250;
+      margin: 10px 0 2px;
+    }
+
+    .record-hint {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .quality-track {
+      height: 8px;
+      width: 100%;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .quality-fill {
+      height: 100%;
+      width: 68%;
+      background: linear-gradient(90deg, #f59e0b, #22c55e);
+    }
+
+    .quality-meta {
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 7px;
+    }
+
+    .guide-section {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px;
+      background: #fff;
+      margin-top: 8px;
+    }
+
+    .guide-section h4 {
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+
+    .guide-section p {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin-bottom: 6px;
+    }
+
+    .guide-section ul {
+      padding-left: 16px;
+      display: grid;
+      gap: 4px;
+      font-size: 11px;
+      color: #1f2937;
+      line-height: 1.4;
+    }
+
+    .danger-note {
+      border: 1px solid #fed7aa;
+      background: #fff7ed;
+      color: #9a3412;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 1px solid #ecf0f4;
+      padding: 9px 0;
+      font-size: 12px;
+    }
+
+    .settings-row:last-child {
+      border-bottom: none;
+    }
+
+    .settings-row .k {
+      color: var(--text-muted);
+    }
+
+    .settings-row .v {
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .bottom-nav {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.98);
+      border-top: 1px solid #e2e8f0;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      padding: 7px 6px calc(8px + env(safe-area-inset-bottom));
+      gap: 4px;
+      z-index: 12;
+    }
+
+    .tab {
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      gap: 2px;
+      cursor: pointer;
+      padding: 6px 2px;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 650;
+    }
+
+    .tab span:first-child {
+      font-size: 16px;
+    }
+
+    .tab.active {
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+  </style>
 </head>
 <body>
-
-<div class="phone-frame">
-  <div class="notch"></div>
-
-  <!-- LOGIN SCREEN -->
-  <div class="screen" id="screen-login">
-    <div class="screen-content">
-      <div class="login-header">
-        <div class="logo">&#x1F99C;</div>
-        <h1>Parakeet Wellness</h1>
-        <p>Monitorea el bienestar de tus periquitos con IA</p>
+  <div class="wrapper">
+    <div class="toolbar">
+      <div>
+        <h1>Parakeet Wellness Mockup</h1>
+        <p data-i18n="toolbar_subtitle">Guide + bilingual + release-hardening iOS preview</p>
       </div>
-      <div class="login-form">
-        <div class="tab-switch">
-          <button type="button" class="active" onclick="switchLoginTab(this, 'login')">Iniciar sesion</button>
-          <button type="button" onclick="switchLoginTab(this, 'register')">Registrarse</button>
+      <div class="controls">
+        <div class="segmented" aria-label="Language selector">
+          <button id="lang-en" class="active" onclick="setLanguage('en')">English</button>
+          <button id="lang-es" onclick="setLanguage('es')">Espanol</button>
         </div>
-        <div id="name-field" style="display:none">
-          <label class="sr-only" for="auth-name">Nombre (opcional)</label>
-          <input id="auth-name" class="input-field" placeholder="Nombre (opcional)" autocomplete="name">
-        </div>
-        <label class="sr-only" for="auth-email">Email</label>
-        <input id="auth-email" class="input-field" placeholder="Email" value="maria@ejemplo.com" autocomplete="email">
-        <label class="sr-only" for="auth-password">Contrasena</label>
-        <input id="auth-password" class="input-field" type="password" placeholder="Contrasena" value="********" autocomplete="current-password">
-        <button type="button" class="btn-primary" onclick="goToHome(true)">Entrar</button>
-        <button type="button" class="mini-btn secondary" onclick="goToHome(false)">Continuar como invitado</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- HOME SCREEN -->
-  <div class="screen active" id="screen-home">
-    <div class="screen-content">
-      <div class="home-header">
-        <h1>Parakeet Wellness</h1>
-        <p>Monitor de bienestar para tus periquitos</p>
-        <div class="mode-badge" id="mode-badge" role="status" aria-live="polite">&#x1F464; Modo invitado activo</div>
-      </div>
-
-      <div class="latest-card fade-in">
-        <h3>Ultimo analisis</h3>
-        <div class="mood-indicator">
-          <div class="mood-circle" style="background:#4CAF50;">&#x1F99C;</div>
-          <div class="mood-label" style="color:#4CAF50;">Feliz</div>
-          <div class="mood-confidence">72% confianza</div>
-        </div>
-        <div class="recommendation-text">
-          Tu periquito suena feliz y activo. Sigue manteniendo un buen ambiente con juguetes e interaccion social.
-        </div>
-      </div>
-
-      <div class="context-card fade-in" id="context-card">
-        <h3>Contexto ambiental</h3>
-        <div class="context-grid">
-          <div class="context-metric"><div class="k">Temperatura</div><div class="v">31°C</div></div>
-          <div class="context-metric"><div class="k">Humedad</div><div class="v">64%</div></div>
-          <div class="context-metric"><div class="k">AQI</div><div class="v">112</div></div>
-          <div class="context-metric"><div class="k">Viento</div><div class="v">14 km/h</div></div>
-        </div>
-        <div class="context-meta">Clima: NOAA · Aire: Open-Meteo fallback · Confianza 0.82</div>
-        <div class="risk-mini">
-          <div class="t">Poor air quality detected</div>
-          <div class="d">AQI unhealthy para aves sensibles. Reduce exposición exterior y monitorea respiración.</div>
-        </div>
-      </div>
-
-      <div class="alerts-wrap">
-        <div class="section-header" style="padding:0;margin:0 0 8px;">
-          <h3 style="font-size:16px;">Alertas recientes</h3>
-          <span style="font-size:11px;color:#999;font-weight:600;">Top 3</span>
-        </div>
-        <div class="alert-chip high">
-          <div class="msg">Llamadas de alarma detectadas de Kiwi. Verifica amenazas o ruido fuerte cerca de la jaula.</div>
-          <div class="meta">Kiwi • Hoy 10:32</div>
-        </div>
-        <div class="alert-chip medium">
-          <div class="msg">Signos de estres en Coco. Revisa cambios recientes de ambiente y horas de descanso.</div>
-          <div class="meta">Coco • Ayer 20:18</div>
-        </div>
-      </div>
-
-      <button type="button" class="record-btn-home" onclick="switchTab('record')">
-        <span class="icon">&#x1F3A4;</span>
-        Grabar vocalizacion
-      </button>
-
-      <div class="section-header">
-        <h3>Mis periquitos</h3>
-        <button type="button" class="add-btn" onclick="showScreen('screen-add')">+ Agregar</button>
-      </div>
-
-      <button type="button" class="parakeet-card" onclick="showScreen('screen-profile')" aria-label="Abrir perfil de Kiwi">
-        <div class="parakeet-avatar photo" style="background-image:linear-gradient(130deg,#9BE15D,#00E3AE);">K</div>
-        <div class="parakeet-info">
-          <div class="name">Kiwi</div>
-          <div class="desc">Verde con amarillo</div>
-          <div class="mood-tag">Feliz - hace 2 horas</div>
-        </div>
-        <span class="arrow">&#x203A;</span>
-      </button>
-
-      <button type="button" class="parakeet-card" onclick="showScreen('screen-profile')" aria-label="Abrir perfil de Coco">
-        <div class="parakeet-avatar photo" style="background-image:linear-gradient(130deg,#89F7FE,#66A6FF);">C</div>
-        <div class="parakeet-info">
-          <div class="name">Coco</div>
-          <div class="desc">Azul cielo con blanco</div>
-          <div class="mood-tag">Relajado - hace 2 horas</div>
-        </div>
-        <span class="arrow">&#x203A;</span>
-      </button>
-
-      <div style="height:20px"></div>
-    </div>
-    <div class="tab-bar" id="main-tabs" role="navigation" aria-label="Navegacion principal">
-      <button type="button" class="tab-item active" onclick="switchTab('home')" aria-current="page">
-        <span class="icon">&#x1F3E0;</span>
-        <span class="label">Inicio</span>
-      </button>
-      <button type="button" class="tab-item" onclick="switchTab('record')">
-        <span class="icon">&#x1F3A4;</span>
-        <span class="label">Grabar</span>
-      </button>
-      <button type="button" class="tab-item" onclick="switchTab('history')">
-        <span class="icon">&#x1F4CA;</span>
-        <span class="label">Historial</span>
-      </button>
-      <button type="button" class="tab-item" onclick="switchTab('settings')">
-        <span class="icon">&#x2699;&#xFE0F;</span>
-        <span class="label">Ajustes</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- RECORD SCREEN -->
-  <div class="screen" id="screen-record">
-    <div class="screen-content">
-      <div class="record-container" id="record-idle">
-        <div class="record-bird-selector">
-          <div class="lbl">Analizar para:</div>
-          <div class="record-chip-row">
-            <button type="button" class="record-chip active" data-bird="general" onclick="selectBirdChip(this)">General</button>
-            <button type="button" class="record-chip" data-bird="kiwi" onclick="selectBirdChip(this)">Kiwi</button>
-            <button type="button" class="record-chip" data-bird="coco" onclick="selectBirdChip(this)">Coco</button>
-          </div>
-        </div>
-        <div class="quality-box" id="quality-box">
-          <div class="quality-head">
-            <span class="title">Calidad de captura</span>
-            <span class="state" id="quality-state" role="status" aria-live="polite">Buena</span>
-          </div>
-          <div class="quality-track">
-            <div class="quality-fill" id="quality-fill"></div>
-          </div>
-          <div class="quality-meta">
-            <span id="quality-avg">Promedio 62%</span>
-            <span id="quality-peak">Pico 88%</span>
-          </div>
-          <div class="quality-guide" id="quality-guide">Buena calidad de captura. Mantén distancia estable y poco ruido.</div>
-        </div>
-        <div class="timer" id="timer-display">0:00</div>
-        <div class="record-hint">Minimo 30 segundos recomendados</div>
-        <button type="button" class="record-button" id="rec-btn" onclick="toggleRecording()" aria-label="Iniciar grabacion">
-          <div class="record-inner"></div>
-        </button>
-        <div class="record-label" id="rec-label">Toca para grabar</div>
-        <button type="button" class="upload-btn" onclick="showAnalyzing()">Subir archivo de audio</button>
-      </div>
-
-      <div id="recording-waveform" style="display:none;">
-        <div style="text-align:center;padding-top:100px;">
-          <div class="timer recording-pulse" id="timer-display-2" style="color:#F44336;">0:00</div>
-          <div class="waveform">
-            <div class="wave-bar" style="animation-delay:0s;height:12px;"></div>
-            <div class="wave-bar" style="animation-delay:0.1s;height:20px;"></div>
-            <div class="wave-bar" style="animation-delay:0.2s;height:35px;"></div>
-            <div class="wave-bar" style="animation-delay:0.15s;height:28px;"></div>
-            <div class="wave-bar" style="animation-delay:0.3s;height:15px;"></div>
-            <div class="wave-bar" style="animation-delay:0.05s;height:38px;"></div>
-            <div class="wave-bar" style="animation-delay:0.25s;height:22px;"></div>
-            <div class="wave-bar" style="animation-delay:0.35s;height:30px;"></div>
-            <div class="wave-bar" style="animation-delay:0.12s;height:18px;"></div>
-            <div class="wave-bar" style="animation-delay:0.08s;height:42px;"></div>
-            <div class="wave-bar" style="animation-delay:0.28s;height:25px;"></div>
-            <div class="wave-bar" style="animation-delay:0.18s;height:33px;"></div>
-            <div class="wave-bar" style="animation-delay:0.22s;height:12px;"></div>
-            <div class="wave-bar" style="animation-delay:0.4s;height:28px;"></div>
-            <div class="wave-bar" style="animation-delay:0.02s;height:20px;"></div>
-          </div>
-          <div class="record-hint" style="margin-top:20px">Grabando vocalizaciones...</div>
-          <button type="button" class="record-button recording" onclick="showAnalyzing()" style="margin:20px auto;" aria-label="Detener grabacion">
-            <div class="record-inner"></div>
-          </button>
-          <div class="record-label">Toca para detener</div>
-        </div>
-      </div>
-
-      <div id="analyzing-view" style="display:none;">
-        <div class="analyzing-container">
-          <div class="spinner"></div>
-          <h3>Analizando vocalizaciones...</h3>
-          <p>Procesando espectrograma y clasificando patrones</p>
-        </div>
-      </div>
-
-      <div id="result-view" style="display:none;">
-        <div class="analysis-result fade-in" style="padding-top:60px;">
-          <h2>Resultado del analisis</h2>
-          <div class="mood-indicator">
-            <div class="mood-circle" style="background:#4CAF50;">&#x1F99C;</div>
-            <div class="mood-label" style="color:#4CAF50;">Feliz</div>
-            <div class="mood-confidence">72% confianza</div>
-          </div>
-          <div class="detail-row">
-            <span class="label">Vocalizacion:</span>
-            <span class="value">Singing</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Periquito:</span>
-            <span class="value" id="selected-bird-value">General</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Energia:</span>
-            <span class="value">68%</span>
-          </div>
-          <div class="rec-box">
-            <h4>Recomendacion</h4>
-            <p>Tu periquito suena feliz y activo. Sigue manteniendo un buen ambiente con juguetes e interaccion social.</p>
-          </div>
-          <button type="button" class="new-recording-btn" onclick="resetRecording()">Nueva grabacion</button>
+        <div class="segmented" aria-label="Identity mode selector">
+          <button id="mode-guest" class="active" onclick="setMode('guest')" data-i18n="mode_guest">Guest</button>
+          <button id="mode-account" onclick="setMode('account')" data-i18n="mode_account">Account</button>
         </div>
       </div>
     </div>
-    <div class="tab-bar" role="navigation" aria-label="Navegacion principal">
-      <button type="button" class="tab-item" onclick="switchTab('home')">
-        <span class="icon">&#x1F3E0;</span>
-        <span class="label">Inicio</span>
-      </button>
-      <button type="button" class="tab-item active" onclick="switchTab('record')" aria-current="page">
-        <span class="icon">&#x1F3A4;</span>
-        <span class="label">Grabar</span>
-      </button>
-      <button type="button" class="tab-item" onclick="switchTab('history')">
-        <span class="icon">&#x1F4CA;</span>
-        <span class="label">Historial</span>
-      </button>
-      <button type="button" class="tab-item" onclick="switchTab('settings')">
-        <span class="icon">&#x2699;&#xFE0F;</span>
-        <span class="label">Ajustes</span>
-      </button>
-    </div>
-  </div>
 
-  <!-- HISTORY SCREEN -->
-  <div class="screen" id="screen-history">
-    <div class="screen-content">
-      <div style="padding-top:50px;">
-        <div class="filter-row">
-          <button type="button" class="filter-chip active" data-filter="kiwi" onclick="setHistoryFilter(this)" aria-pressed="true">Kiwi</button>
-          <button type="button" class="filter-chip" data-filter="coco" onclick="setHistoryFilter(this)" aria-pressed="false">Coco</button>
+    <div class="phone">
+      <div class="notch"></div>
+
+      <section class="screen active" id="screen-home">
+        <div class="hero">
+          <h2 data-i18n="home_title">Parakeet Wellness</h2>
+          <p data-i18n="home_subtitle">Audio analysis, context alerts, and friendly guidance.</p>
+          <div class="mode-pill" id="mode-pill">Guest mode active</div>
         </div>
-        <div class="history-list">
+        <div class="content">
+          <div class="card tip">
+            <strong data-i18n="tip_title">Tip:</strong>
+            <span data-i18n="tip_home"> Add your parakeet profile first to improve personalization.</span>
+          </div>
 
-          <div class="history-card fade-in">
-            <div class="history-card-header">
-              <div class="mood-circle small" style="background:#4CAF50;">&#x1F99C;</div>
-              <div class="history-card-info">
-                <div class="voc">Singing</div>
-                <div class="date">14 feb, 10:30</div>
-                <div class="energy">Energia: 68%</div>
+          <div class="card">
+            <h3 data-i18n="latest_analysis">Latest analysis</h3>
+            <div class="grid">
+              <div class="metric">
+                <div class="k" data-i18n="metric_mood">Mood</div>
+                <div class="v" data-i18n="metric_mood_value">Happy</div>
+              </div>
+              <div class="metric">
+                <div class="k" data-i18n="metric_confidence">Confidence</div>
+                <div class="v">84%</div>
+              </div>
+              <div class="metric">
+                <div class="k" data-i18n="metric_energy">Energy</div>
+                <div class="v">71%</div>
+              </div>
+              <div class="metric">
+                <div class="k" data-i18n="metric_vocalization">Vocalization</div>
+                <div class="v" data-i18n="metric_vocalization_value">Singing</div>
               </div>
             </div>
-            <div class="rec-text">Tu periquito suena feliz y activo.</div>
           </div>
 
-          <div class="history-card">
-            <div class="history-card-header">
-              <div class="mood-circle small" style="background:#2196F3;">&#x1F54A;</div>
-              <div class="history-card-info">
-                <div class="voc">Chattering</div>
-                <div class="date">13 feb, 16:45</div>
-                <div class="energy">Energia: 42%</div>
-              </div>
+          <div class="card">
+            <h3 data-i18n="context_title">Environmental context</h3>
+            <div class="grid">
+              <div class="metric"><div class="k">Temp</div><div class="v">24 C</div></div>
+              <div class="metric"><div class="k">Humidity</div><div class="v">53%</div></div>
+              <div class="metric"><div class="k">AQI</div><div class="v">72</div></div>
+              <div class="metric"><div class="k">Wind</div><div class="v">8 km/h</div></div>
             </div>
-            <div class="rec-text">Tu periquito parece calmado y contento.</div>
-          </div>
-
-          <div class="history-card">
-            <div class="history-card-header">
-              <div class="mood-circle small" style="background:#FF9800;">&#x26A0;</div>
-              <div class="history-card-info">
-                <div class="voc">Distress</div>
-                <div class="date">12 feb, 09:15</div>
-                <div class="energy">Energia: 78%</div>
-              </div>
+            <div class="alert">
+              <div class="title" data-i18n="risk_title">Risk event</div>
+              <p data-i18n="risk_desc">Air quality is moderate. Reduce strong aerosols and keep good ventilation.</p>
             </div>
-            <div class="rec-text">Signos de estres detectados. Revisa el ambiente.</div>
           </div>
 
-          <div class="history-card">
-            <div class="history-card-header">
-              <div class="mood-circle small" style="background:#4CAF50;">&#x1F99C;</div>
-              <div class="history-card-info">
-                <div class="voc">Singing</div>
-                <div class="date">11 feb, 14:20</div>
-                <div class="energy">Energia: 71%</div>
-              </div>
-            </div>
-            <div class="rec-text">Tu periquito suena feliz y activo.</div>
+          <div class="card">
+            <h3 data-i18n="ai_card_title">AI capability snapshot</h3>
+            <p style="font-size:12px; line-height:1.45; color: var(--text-muted);" data-i18n="ai_card_desc">
+              The backend extracts audio features (MFCC, spectral, pitch, energy), classifies mood patterns,
+              and combines quality/context signals into explainable results.
+            </p>
           </div>
 
-          <div class="history-card">
-            <div class="history-card-header">
-              <div class="mood-circle small" style="background:#607D8B;">&#x1F426;</div>
-              <div class="history-card-info">
-                <div class="voc">Contact call</div>
-                <div class="date">10 feb, 11:00</div>
-                <div class="energy">Energia: 35%</div>
-              </div>
-            </div>
-            <div class="rec-text">Actividad normal detectada.</div>
+          <div class="card">
+            <h3 data-i18n="hardening_title">Release hardening snapshot</h3>
+            <ul style="padding-left:16px; display:grid; gap:5px; font-size:11px; color:#1f2937; line-height:1.4;">
+              <li data-i18n="hardening_b1">Guest data ownership now requires X-Guest-Id plus X-Guest-Secret.</li>
+              <li data-i18n="hardening_b2">Production builds fail fast if API base URL is missing or localhost-like.</li>
+              <li data-i18n="hardening_b3">Database startup can enforce Alembic head before serving requests.</li>
+              <li data-i18n="hardening_b4">Rate limiting supports Redis shared backend for multi-instance deployments.</li>
+            </ul>
           </div>
 
+          <button class="button" data-i18n="cta_record" onclick="switchTab('record')">Record vocalization</button>
         </div>
-      </div>
-    </div>
-    <div class="tab-bar" role="navigation" aria-label="Navegacion principal">
-      <button type="button" class="tab-item" onclick="switchTab('home')">
-        <span class="icon">&#x1F3E0;</span>
-        <span class="label">Inicio</span>
-      </button>
-      <button type="button" class="tab-item" onclick="switchTab('record')">
-        <span class="icon">&#x1F3A4;</span>
-        <span class="label">Grabar</span>
-      </button>
-      <button type="button" class="tab-item active" onclick="switchTab('history')" aria-current="page">
-        <span class="icon">&#x1F4CA;</span>
-        <span class="label">Historial</span>
-      </button>
-      <button type="button" class="tab-item" onclick="switchTab('settings')">
-        <span class="icon">&#x2699;&#xFE0F;</span>
-        <span class="label">Ajustes</span>
-      </button>
+      </section>
+
+      <section class="screen" id="screen-record">
+        <div class="hero">
+          <h2 data-i18n="record_title">Record</h2>
+          <p data-i18n="record_subtitle">Capture at least 30 seconds in a quiet room for better AI confidence.</p>
+        </div>
+        <div class="content">
+          <div class="card tip">
+            <strong data-i18n="tip_title">Tip:</strong>
+            <span data-i18n="tip_record"> Keep the phone close to the cage and avoid TV/background music.</span>
+          </div>
+
+          <div class="card">
+            <div class="section-title" data-i18n="target_label">Analyze for</div>
+            <div class="chips">
+              <button class="chip active" data-i18n="chip_general">General</button>
+              <button class="chip">Kiwi</button>
+              <button class="chip">Mango</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="record-timer">0:32</div>
+            <div class="record-hint" data-i18n="record_hint">Tap to stop. Minimum recommended: 30s.</div>
+            <button class="button" data-i18n="record_stop">Stop recording</button>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="quality_title">Capture quality</h3>
+            <div style="font-size:12px; color: #166534; font-weight: 700;" data-i18n="quality_label">Good</div>
+            <div class="quality-track"><div class="quality-fill"></div></div>
+            <div class="quality-meta">
+              <span data-i18n="quality_avg">Average: 68%</span>
+              <span data-i18n="quality_peak">Peak: 91%</span>
+            </div>
+          </div>
+
+          <button class="button secondary" data-i18n="upload_audio">Upload audio file</button>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-history">
+        <div class="hero">
+          <h2 data-i18n="history_title">History</h2>
+          <p data-i18n="history_subtitle">Track trend direction over weeks, not only one recording.</p>
+        </div>
+        <div class="content">
+          <div class="card tip">
+            <strong data-i18n="tip_title">Tip:</strong>
+            <span data-i18n="tip_history"> Compare confidence + energy together for better interpretation.</span>
+          </div>
+
+          <div class="card">
+            <div class="section-title" data-i18n="history_filters">Filters</div>
+            <div class="chips">
+              <button class="chip active">Kiwi</button>
+              <button class="chip">Mango</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="history_recent">Recent analyses</h3>
+            <div class="list">
+              <div class="list-item">
+                <div class="title" data-i18n="metric_mood_value">Happy</div>
+                <div class="meta">84% confidence · 71% energy · 2026-02-14</div>
+              </div>
+              <div class="list-item">
+                <div class="title" data-i18n="history_item_relaxed">Relaxed</div>
+                <div class="meta">73% confidence · 52% energy · 2026-02-12</div>
+              </div>
+              <div class="list-item">
+                <div class="title" data-i18n="history_item_stressed">Stressed</div>
+                <div class="meta">61% confidence · 66% energy · 2026-02-09</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-guide">
+        <div class="hero">
+          <h2 data-i18n="guide_title">Australian Budgerigar Guide</h2>
+          <p data-i18n="guide_subtitle">Practical care + warning signs + app usage tutorial.</p>
+        </div>
+        <div class="content">
+          <div class="guide-section">
+            <h4 data-i18n="guide_info_title">Species info</h4>
+            <p data-i18n="guide_info_text">Social parrots that need routine, stimulation, and close daily observation.</p>
+            <ul>
+              <li data-i18n="guide_info_b1">Common lifespan: 7-12 years with quality care.</li>
+              <li data-i18n="guide_info_b2">Voice and posture changes are early warning signals.</li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h4 data-i18n="guide_history_title">History and behavior</h4>
+            <p data-i18n="guide_history_text">Budgerigars evolved in Australian grasslands and communicate in flock style patterns.</p>
+            <ul>
+              <li data-i18n="guide_history_b1">Frequent chirping can be normal social communication.</li>
+              <li data-i18n="guide_history_b2">Sudden silence can indicate stress/fear/discomfort.</li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h4 data-i18n="guide_care_title">Care and tips</h4>
+            <ul>
+              <li data-i18n="guide_care_b1">Clean water daily and check appetite consistency.</li>
+              <li data-i18n="guide_care_b2">Use enrichment rotation (toys, perches, foraging).</li>
+              <li data-i18n="guide_care_b3">Track trends weekly, not from one event.</li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h4 data-i18n="guide_risk_title">Risks and warning signs</h4>
+            <ul>
+              <li data-i18n="guide_risk_b1">Air quality exposure (smoke, aerosols, poor ventilation).</li>
+              <li data-i18n="guide_risk_b2">Heat/cold stress and long-term routine disruption.</li>
+              <li data-i18n="guide_risk_b3">Breathing effort changes, appetite loss, persistent lethargy.</li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h4 data-i18n="guide_howto_title">How to use this app</h4>
+            <ul>
+              <li data-i18n="guide_howto_b1">1. Add each parakeet profile with notes and photo.</li>
+              <li data-i18n="guide_howto_b2">2. Record 30+ seconds in a calm environment.</li>
+              <li data-i18n="guide_howto_b3">3. Review mood, confidence, and recommendation.</li>
+              <li data-i18n="guide_howto_b4">4. Use History for trends and Settings for habitat context.</li>
+            </ul>
+          </div>
+
+          <div class="card danger-note" data-i18n="guide_safety_note">
+            Educational support only. This app does not replace avian veterinary diagnosis.
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-settings">
+        <div class="hero">
+          <h2 data-i18n="settings_title">Settings</h2>
+          <p data-i18n="settings_subtitle">Account mode, language, habitat context, and privacy actions.</p>
+        </div>
+        <div class="content">
+          <div class="card tip">
+            <strong data-i18n="tip_title">Tip:</strong>
+            <span data-i18n="tip_settings"> Set habitat coordinates to unlock context-based risk events.</span>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="settings_account">Account</h3>
+            <div class="settings-row"><span class="k" data-i18n="settings_mode">Mode</span><span class="v" id="mode-label">Guest</span></div>
+            <div class="settings-row"><span class="k" data-i18n="settings_email">Email</span><span class="v" id="email-label">N/A</span></div>
+            <div class="settings-row"><span class="k" data-i18n="settings_guest_secret">Guest secret</span><span class="v" data-i18n="settings_guest_secret_value">Stored in SecureStore</span></div>
+            <div class="settings-row"><span class="k" data-i18n="settings_merge_contract">Merge contract</span><span class="v">POST /auth/merge-guest</span></div>
+            <button class="button secondary" style="margin-top:10px;" data-i18n="settings_auth_cta">Create account or sign in</button>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="settings_habitat">Habitat and context</h3>
+            <div class="settings-row"><span class="k" data-i18n="settings_location">Location</span><span class="v">Home</span></div>
+            <div class="settings-row"><span class="k">Lat/Lon</span><span class="v">40.7128 / -74.0060</span></div>
+            <div class="settings-row"><span class="k" data-i18n="settings_timezone">Timezone</span><span class="v">America/New_York</span></div>
+            <button class="button" style="margin-top:10px;" data-i18n="settings_save_habitat">Save habitat</button>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="settings_privacy">Privacy lifecycle</h3>
+            <div class="settings-row"><span class="k" data-i18n="settings_export">Export account data</span><span class="v">GET /auth/export-data</span></div>
+            <div class="settings-row"><span class="k" data-i18n="settings_delete">Delete account</span><span class="v">DELETE /auth/me</span></div>
+            <button class="button secondary" style="margin-top:10px; border-color:#fecaca; color:#b91c1c;" data-i18n="settings_delete_cta">Delete account</button>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="settings_release">Release readiness</h3>
+            <div class="settings-row"><span class="k" data-i18n="settings_release_status">Status</span><span class="v" data-i18n="settings_release_status_value">Conditionally ready</span></div>
+            <div class="settings-row"><span class="k" data-i18n="settings_release_checks">Checks</span><span class="v" data-i18n="settings_release_checks_value">Compile/Lint/Typecheck/Audit</span></div>
+            <div class="settings-row"><span class="k" data-i18n="settings_release_blocker">Pending ops</span><span class="v" data-i18n="settings_release_blocker_value">Run alembic upgrade head in target env</span></div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="bottom-nav" aria-label="Main navigation">
+        <button class="tab active" id="tab-home" onclick="switchTab('home')"><span>🏠</span><span data-i18n="tab_home">Home</span></button>
+        <button class="tab" id="tab-record" onclick="switchTab('record')"><span>🎤</span><span data-i18n="tab_record">Record</span></button>
+        <button class="tab" id="tab-history" onclick="switchTab('history')"><span>📈</span><span data-i18n="tab_history">History</span></button>
+        <button class="tab" id="tab-guide" onclick="switchTab('guide')"><span>📚</span><span data-i18n="tab_guide">Guide</span></button>
+        <button class="tab" id="tab-settings" onclick="switchTab('settings')"><span>⚙️</span><span data-i18n="tab_settings">Settings</span></button>
+      </nav>
     </div>
   </div>
 
-  <!-- SETTINGS SCREEN -->
-  <div class="screen" id="screen-settings">
-    <div class="screen-content" style="padding-top:50px;">
-      <div class="settings-section">
-        <h3>Cuenta</h3>
-        <div class="settings-row">
-          <span class="lbl">Modo</span>
-          <span class="val" id="settings-mode">Invitado</span>
-        </div>
-        <div class="settings-row">
-          <span class="lbl">Email</span>
-          <span class="val" id="settings-email">No aplica (invitado)</span>
-        </div>
-        <button type="button" class="mini-btn primary" onclick="showScreen('screen-login')">Crear cuenta o iniciar sesion</button>
-      </div>
-      <div class="settings-section">
-        <h3>Habitat y contexto</h3>
-        <label class="settings-field-label" for="habitat-name">Nombre de ubicacion</label>
-        <input class="settings-input" id="habitat-name" placeholder="Nombre ubicacion" value="Casa">
-        <div class="settings-input-row">
-          <div>
-            <label class="settings-field-label" for="habitat-lat">Latitud</label>
-            <input class="settings-input" id="habitat-lat" placeholder="Latitude" value="40.7128">
-          </div>
-          <div>
-            <label class="settings-field-label" for="habitat-lon">Longitud</label>
-            <input class="settings-input" id="habitat-lon" placeholder="Longitude" value="-74.0060">
-          </div>
-        </div>
-        <label class="settings-field-label" for="habitat-tz">Timezone</label>
-        <input class="settings-input" id="habitat-tz" placeholder="Timezone" value="America/New_York">
-        <label class="settings-field-label" for="habitat-type">Tipo de habitat</label>
-        <input class="settings-input" id="habitat-type" placeholder="Habitat type" value="urban">
-        <button type="button" class="mini-btn primary" onclick="mockSaveHabitat()">Guardar habitat</button>
-        <div class="context-meta" id="settings-save-status" role="status" aria-live="polite"></div>
-      </div>
-      <div class="settings-section">
-        <h3>Feature flags</h3>
-        <div class="flag-grid">
-          <button type="button" class="flag-chip on" data-flag="CONTEXT_ENGINE" onclick="toggleFlag(this)">CONTEXT_ENGINE</button>
-          <button type="button" class="flag-chip on" data-flag="CAPTURE_QUALITY" onclick="toggleFlag(this)">CAPTURE_QUALITY</button>
-          <button type="button" class="flag-chip on" data-flag="IOS_UX_FOUNDATION" onclick="toggleFlag(this)">IOS_UX_FOUNDATION</button>
-          <button type="button" class="flag-chip" data-flag="ADVANCED_REASONING" onclick="toggleFlag(this)">ADVANCED_REASONING</button>
-          <button type="button" class="flag-chip" data-flag="OFFLINE_RESILIENCE" onclick="toggleFlag(this)">OFFLINE_RESILIENCE</button>
-          <button type="button" class="flag-chip" data-flag="SMART_DISCOVERY" onclick="toggleFlag(this)">SMART_DISCOVERY</button>
-        </div>
-      </div>
-      <div class="settings-section">
-        <h3>Acerca de</h3>
-        <div class="settings-row">
-          <span class="lbl">Version</span>
-          <span class="val">0.2.0</span>
-        </div>
-        <div class="settings-row">
-          <span class="lbl">Modelo IA</span>
-          <span class="val">Heuristico v1 + Quality Layer</span>
-        </div>
-      </div>
-      <button type="button" class="logout-btn" id="logout-btn" onclick="mockLogout()">Cerrar sesion</button>
-    </div>
-    <div class="tab-bar" role="navigation" aria-label="Navegacion principal">
-      <button type="button" class="tab-item" onclick="switchTab('home')">
-        <span class="icon">&#x1F3E0;</span>
-        <span class="label">Inicio</span>
-      </button>
-      <button type="button" class="tab-item" onclick="switchTab('record')">
-        <span class="icon">&#x1F3A4;</span>
-        <span class="label">Grabar</span>
-      </button>
-      <button type="button" class="tab-item" onclick="switchTab('history')">
-        <span class="icon">&#x1F4CA;</span>
-        <span class="label">Historial</span>
-      </button>
-      <button type="button" class="tab-item active" onclick="switchTab('settings')" aria-current="page">
-        <span class="icon">&#x2699;&#xFE0F;</span>
-        <span class="label">Ajustes</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- PROFILE SCREEN -->
-  <div class="screen" id="screen-profile">
-    <div class="screen-content">
-      <div class="screen-header-bar">
-        <button type="button" class="back-btn" onclick="showScreen('screen-home')">&larr; Atras</button>
-        <h2>Perfil</h2>
-      </div>
-      <div class="profile-header">
-        <div class="profile-avatar photo" style="background-image:linear-gradient(130deg,#9BE15D,#00E3AE);">K</div>
-        <div class="name">Kiwi</div>
-        <div class="desc">Verde con amarillo</div>
-        <button type="button" class="profile-photo-btn">Actualizar foto</button>
-      </div>
-      <div class="stats-row">
-        <div class="stat-box">
-          <div class="val">12</div>
-          <div class="lbl">Analisis</div>
-        </div>
-        <div class="stat-box">
-          <div class="val">65%</div>
-          <div class="lbl">Energia prom.</div>
-        </div>
-        <div class="stat-box">
-          <div class="val" style="color:#4CAF50;">Mejorando</div>
-          <div class="lbl">Tendencia</div>
-        </div>
-      </div>
-
-      <div class="card-section">
-        <h3>Estado dominante</h3>
-        <div class="mood-indicator">
-          <div class="mood-circle" style="background:#4CAF50;">&#x1F99C;</div>
-          <div class="mood-label" style="color:#4CAF50;">Feliz</div>
-          <div class="mood-confidence">64% confianza promedio</div>
-        </div>
-      </div>
-
-      <div class="chart-container">
-        <h3>Tendencia de bienestar</h3>
-        <svg class="chart-svg" viewBox="0 0 300 150" preserveAspectRatio="xMidYMid meet">
-          <!-- Grid -->
-          <line x1="30" y1="10" x2="30" y2="120" stroke="#f0f0f0" stroke-width="0.5"/>
-          <line x1="30" y1="120" x2="290" y2="120" stroke="#f0f0f0" stroke-width="0.5"/>
-          <line x1="30" y1="90" x2="290" y2="90" stroke="#f0f0f0" stroke-width="0.5"/>
-          <line x1="30" y1="60" x2="290" y2="60" stroke="#f0f0f0" stroke-width="0.5"/>
-          <line x1="30" y1="30" x2="290" y2="30" stroke="#f0f0f0" stroke-width="0.5"/>
-          <!-- Y axis labels -->
-          <text x="24" y="123" fill="#999" font-size="8" text-anchor="end">0%</text>
-          <text x="24" y="93" fill="#999" font-size="8" text-anchor="end">25%</text>
-          <text x="24" y="63" fill="#999" font-size="8" text-anchor="end">50%</text>
-          <text x="24" y="33" fill="#999" font-size="8" text-anchor="end">75%</text>
-          <!-- X axis labels -->
-          <text x="55" y="135" fill="#999" font-size="7" text-anchor="middle">8/2</text>
-          <text x="107" y="135" fill="#999" font-size="7" text-anchor="middle">10/2</text>
-          <text x="160" y="135" fill="#999" font-size="7" text-anchor="middle">11/2</text>
-          <text x="212" y="135" fill="#999" font-size="7" text-anchor="middle">12/2</text>
-          <text x="265" y="135" fill="#999" font-size="7" text-anchor="middle">14/2</text>
-          <!-- Energy line (green) -->
-          <polyline points="55,80 107,72 160,50 212,38 265,46" fill="none" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="55" cy="80" r="3" fill="#4CAF50"/>
-          <circle cx="107" cy="72" r="3" fill="#4CAF50"/>
-          <circle cx="160" cy="50" r="3" fill="#FF9800"/>
-          <circle cx="212" cy="38" r="3" fill="#4CAF50"/>
-          <circle cx="265" cy="46" r="3" fill="#4CAF50"/>
-          <!-- Confidence line (blue) -->
-          <polyline points="55,75 107,68 160,58 212,52 265,48" fill="none" stroke="#2196F3" stroke-width="1.5" stroke-dasharray="4,2" stroke-linecap="round"/>
-        </svg>
-        <div class="chart-legend">
-          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#4CAF50;"></div>Energia %</div>
-          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#2196F3;"></div>Confianza %</div>
-          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#FF9800;"></div>Estresado</div>
-          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#4CAF50;"></div>Feliz</div>
-        </div>
-      </div>
-
-      <div class="card-section" style="margin-top:0;">
-        <h3>Distribucion de estados</h3>
-        <div class="bar-row">
-          <div class="bar-label" style="color:#4CAF50;">Feliz</div>
-          <div class="bar-track"><div class="bar-fill" style="width:58%;background:#4CAF50;"></div></div>
-          <div class="bar-value">58%</div>
-        </div>
-        <div class="bar-row">
-          <div class="bar-label" style="color:#2196F3;">Relajado</div>
-          <div class="bar-track"><div class="bar-fill" style="width:25%;background:#2196F3;"></div></div>
-          <div class="bar-value">25%</div>
-        </div>
-        <div class="bar-row">
-          <div class="bar-label" style="color:#FF9800;">Estresado</div>
-          <div class="bar-track"><div class="bar-fill" style="width:8%;background:#FF9800;"></div></div>
-          <div class="bar-value">8%</div>
-        </div>
-        <div class="bar-row">
-          <div class="bar-label" style="color:#607D8B;">Normal</div>
-          <div class="bar-track"><div class="bar-fill" style="width:9%;background:#607D8B;"></div></div>
-          <div class="bar-value">9%</div>
-        </div>
-      </div>
-      <div style="height:20px"></div>
-    </div>
-  </div>
-
-  <!-- ADD PARAKEET SCREEN -->
-  <div class="screen" id="screen-add">
-    <div class="screen-content">
-      <div class="screen-header-bar">
-        <button type="button" class="back-btn" onclick="showScreen('screen-home')">&larr; Atras</button>
-        <h2>Nuevo periquito</h2>
-      </div>
-      <div class="add-form">
-        <div class="icon-top">
-          <span>&#x1F99C;</span>
-          <h2>Nuevo periquito</h2>
-        </div>
-        <label class="form-label" for="new-bird-name">Nombre *</label>
-        <input id="new-bird-name" class="input-field" placeholder="Ej: Kiwi, Coco, Mango..." autocomplete="off">
-        <label class="form-label" for="new-bird-color">Color / Descripcion</label>
-        <input id="new-bird-color" class="input-field" placeholder="Ej: Verde con amarillo, azul cielo..." autocomplete="off">
-        <label class="form-label" for="new-bird-notes">Notas</label>
-        <textarea id="new-bird-notes" class="input-field" placeholder="Notas adicionales: personalidad, comportamiento..." style="height:90px;resize:none;font-family:inherit;"></textarea>
-        <button type="button" class="btn-primary" onclick="showScreen('screen-home')">Guardar periquito</button>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<script>
-  const STORAGE_KEY = 'parakeet_mockup_state_v3';
-  const defaultState = {
-    hasAccount: false,
-    selectedBird: 'general',
-    flags: {
-      CONTEXT_ENGINE: true,
-      CAPTURE_QUALITY: true,
-      IOS_UX_FOUNDATION: true,
-      ADVANCED_REASONING: false,
-      OFFLINE_RESILIENCE: false,
-      SMART_DISCOVERY: false
-    },
-    habitat: {
-      name: 'Casa',
-      latitude: '40.7128',
-      longitude: '-74.0060',
-      timezone: 'America/New_York',
-      type: 'urban'
-    }
-  };
-  const appState = loadState();
-  const runtime = {
-    isRecording: false,
-    seconds: 0,
-    timerInterval: null
-  };
-  const el = {};
-
-  function byId(id) {
-    return document.getElementById(id);
-  }
-
-  function loadState() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        return JSON.parse(JSON.stringify(defaultState));
+  <script>
+    const translations = {
+      en: {
+        toolbar_subtitle: "Guide + bilingual + release-hardening iOS preview",
+        mode_guest: "Guest",
+        mode_account: "Account",
+        home_title: "Parakeet Wellness",
+        home_subtitle: "Audio analysis, context alerts, and friendly guidance.",
+        tip_title: "Tip:",
+        tip_home: " Add your parakeet profile first to improve personalization.",
+        latest_analysis: "Latest analysis",
+        metric_mood: "Mood",
+        metric_mood_value: "Happy",
+        metric_confidence: "Confidence",
+        metric_energy: "Energy",
+        metric_vocalization: "Vocalization",
+        metric_vocalization_value: "Singing",
+        context_title: "Environmental context",
+        risk_title: "Risk event",
+        risk_desc: "Air quality is moderate. Reduce strong aerosols and keep good ventilation.",
+        ai_card_title: "AI capability snapshot",
+        ai_card_desc: "The backend extracts audio features (MFCC, spectral, pitch, energy), classifies mood patterns, and combines quality/context signals into explainable results.",
+        hardening_title: "Release hardening snapshot",
+        hardening_b1: "Guest data ownership now requires X-Guest-Id plus X-Guest-Secret.",
+        hardening_b2: "Production builds fail fast if API base URL is missing or localhost-like.",
+        hardening_b3: "Database startup can enforce Alembic head before serving requests.",
+        hardening_b4: "Rate limiting supports Redis shared backend for multi-instance deployments.",
+        cta_record: "Record vocalization",
+        record_title: "Record",
+        record_subtitle: "Capture at least 30 seconds in a quiet room for better AI confidence.",
+        tip_record: " Keep the phone close to the cage and avoid TV/background music.",
+        target_label: "Analyze for",
+        chip_general: "General",
+        record_hint: "Tap to stop. Minimum recommended: 30s.",
+        record_stop: "Stop recording",
+        quality_title: "Capture quality",
+        quality_label: "Good",
+        quality_avg: "Average: 68%",
+        quality_peak: "Peak: 91%",
+        upload_audio: "Upload audio file",
+        history_title: "History",
+        history_subtitle: "Track trend direction over weeks, not only one recording.",
+        tip_history: " Compare confidence + energy together for better interpretation.",
+        history_filters: "Filters",
+        history_recent: "Recent analyses",
+        history_item_relaxed: "Relaxed",
+        history_item_stressed: "Stressed",
+        guide_title: "Australian Budgerigar Guide",
+        guide_subtitle: "Practical care + warning signs + app usage tutorial.",
+        guide_info_title: "Species info",
+        guide_info_text: "Social parrots that need routine, stimulation, and close daily observation.",
+        guide_info_b1: "Common lifespan: 7-12 years with quality care.",
+        guide_info_b2: "Voice and posture changes are early warning signals.",
+        guide_history_title: "History and behavior",
+        guide_history_text: "Budgerigars evolved in Australian grasslands and communicate in flock style patterns.",
+        guide_history_b1: "Frequent chirping can be normal social communication.",
+        guide_history_b2: "Sudden silence can indicate stress/fear/discomfort.",
+        guide_care_title: "Care and tips",
+        guide_care_b1: "Clean water daily and check appetite consistency.",
+        guide_care_b2: "Use enrichment rotation (toys, perches, foraging).",
+        guide_care_b3: "Track trends weekly, not from one event.",
+        guide_risk_title: "Risks and warning signs",
+        guide_risk_b1: "Air quality exposure (smoke, aerosols, poor ventilation).",
+        guide_risk_b2: "Heat/cold stress and long-term routine disruption.",
+        guide_risk_b3: "Breathing effort changes, appetite loss, persistent lethargy.",
+        guide_howto_title: "How to use this app",
+        guide_howto_b1: "1. Add each parakeet profile with notes and photo.",
+        guide_howto_b2: "2. Record 30+ seconds in a calm environment.",
+        guide_howto_b3: "3. Review mood, confidence, and recommendation.",
+        guide_howto_b4: "4. Use History for trends and Settings for habitat context.",
+        guide_safety_note: "Educational support only. This app does not replace avian veterinary diagnosis.",
+        settings_title: "Settings",
+        settings_subtitle: "Account mode, language, habitat context, and privacy actions.",
+        tip_settings: " Set habitat coordinates to unlock context-based risk events.",
+        settings_account: "Account",
+        settings_mode: "Mode",
+        settings_email: "Email",
+        settings_guest_secret: "Guest secret",
+        settings_guest_secret_value: "Stored in SecureStore",
+        settings_merge_contract: "Merge contract",
+        settings_auth_cta: "Create account or sign in",
+        settings_habitat: "Habitat and context",
+        settings_location: "Location",
+        settings_timezone: "Timezone",
+        settings_save_habitat: "Save habitat",
+        settings_privacy: "Privacy lifecycle",
+        settings_export: "Export account data",
+        settings_delete: "Delete account",
+        settings_delete_cta: "Delete account",
+        settings_release: "Release readiness",
+        settings_release_status: "Status",
+        settings_release_status_value: "Conditionally ready",
+        settings_release_checks: "Checks",
+        settings_release_checks_value: "Compile/Lint/Typecheck/Audit",
+        settings_release_blocker: "Pending ops",
+        settings_release_blocker_value: "Run alembic upgrade head in target env",
+        tab_home: "Home",
+        tab_record: "Record",
+        tab_history: "History",
+        tab_guide: "Guide",
+        tab_settings: "Settings"
+      },
+      es: {
+        toolbar_subtitle: "Preview iOS con guia bilingue y hardening de release",
+        mode_guest: "Invitado",
+        mode_account: "Cuenta",
+        home_title: "Parakeet Wellness",
+        home_subtitle: "Analisis de audio, alertas de contexto y guia amigable.",
+        tip_title: "Consejo:",
+        tip_home: " Agrega primero el perfil de tu periquito para mejorar la personalizacion.",
+        latest_analysis: "Ultimo analisis",
+        metric_mood: "Estado",
+        metric_mood_value: "Feliz",
+        metric_confidence: "Confianza",
+        metric_energy: "Energia",
+        metric_vocalization: "Vocalizacion",
+        metric_vocalization_value: "Canto",
+        context_title: "Contexto ambiental",
+        risk_title: "Evento de riesgo",
+        risk_desc: "La calidad del aire es moderada. Reduce aerosoles y mejora ventilacion.",
+        ai_card_title: "Resumen de capacidad AI",
+        ai_card_desc: "El backend extrae features de audio (MFCC, espectrales, pitch, energia), clasifica patrones de estado y combina calidad/contexto para resultados explicables.",
+        hardening_title: "Resumen de hardening para release",
+        hardening_b1: "La propiedad de datos de invitado ahora requiere X-Guest-Id y X-Guest-Secret.",
+        hardening_b2: "Builds de produccion fallan si falta API base URL o apunta a localhost.",
+        hardening_b3: "El arranque de backend puede exigir Alembic head antes de servir.",
+        hardening_b4: "Rate limit soporta backend Redis compartido para despliegues multi-instancia.",
+        cta_record: "Grabar vocalizacion",
+        record_title: "Grabar",
+        record_subtitle: "Captura al menos 30 segundos en ambiente silencioso para mejor confianza AI.",
+        tip_record: " Mantener el telefono cerca de la jaula y evitar TV/musica.",
+        target_label: "Analizar para",
+        chip_general: "General",
+        record_hint: "Toca para detener. Minimo recomendado: 30s.",
+        record_stop: "Detener grabacion",
+        quality_title: "Calidad de captura",
+        quality_label: "Buena",
+        quality_avg: "Promedio: 68%",
+        quality_peak: "Pico: 91%",
+        upload_audio: "Subir archivo de audio",
+        history_title: "Historial",
+        history_subtitle: "Sigue la tendencia por semanas, no por una sola grabacion.",
+        tip_history: " Compara confianza + energia para mejor interpretacion.",
+        history_filters: "Filtros",
+        history_recent: "Analisis recientes",
+        history_item_relaxed: "Relajado",
+        history_item_stressed: "Estresado",
+        guide_title: "Guia del Periquito Australiano",
+        guide_subtitle: "Cuidados practicos + senales + tutorial de uso.",
+        guide_info_title: "Informacion de especie",
+        guide_info_text: "Loros sociales que necesitan rutina, estimulacion y observacion diaria.",
+        guide_info_b1: "Vida promedio: 7-12 anos con buen cuidado.",
+        guide_info_b2: "Cambios de voz y postura son senales tempranas.",
+        guide_history_title: "Historia y conducta",
+        guide_history_text: "Evolucionaron en pastizales australianos y comunican en patrones de bandada.",
+        guide_history_b1: "El canto frecuente puede ser comunicacion normal.",
+        guide_history_b2: "Silencio repentino puede indicar estres/miedo.",
+        guide_care_title: "Cuidado y tips",
+        guide_care_b1: "Agua limpia diaria y control de apetito.",
+        guide_care_b2: "Rotacion de enriquecimiento (juguetes, perchas, forrajeo).",
+        guide_care_b3: "Mira tendencias semanales, no solo un evento.",
+        guide_risk_title: "Riesgos y senales",
+        guide_risk_b1: "Exposicion a mala calidad de aire (humo, aerosoles).",
+        guide_risk_b2: "Estres por calor/frio y cambios de rutina.",
+        guide_risk_b3: "Cambios respiratorios, baja de apetito, letargo persistente.",
+        guide_howto_title: "Como usar la app",
+        guide_howto_b1: "1. Agrega cada perfil con notas y foto.",
+        guide_howto_b2: "2. Graba 30+ segundos en ambiente tranquilo.",
+        guide_howto_b3: "3. Revisa estado, confianza y recomendacion.",
+        guide_howto_b4: "4. Usa Historial para tendencias y Ajustes para contexto.",
+        guide_safety_note: "Soporte educativo. Esta app no reemplaza diagnostico veterinario aviar.",
+        settings_title: "Ajustes",
+        settings_subtitle: "Modo de cuenta, idioma, habitat y acciones de privacidad.",
+        tip_settings: " Configura coordenadas del habitat para activar riesgos contextuales.",
+        settings_account: "Cuenta",
+        settings_mode: "Modo",
+        settings_email: "Email",
+        settings_guest_secret: "Secreto de invitado",
+        settings_guest_secret_value: "Guardado en SecureStore",
+        settings_merge_contract: "Contrato de merge",
+        settings_auth_cta: "Crear cuenta o iniciar sesion",
+        settings_habitat: "Habitat y contexto",
+        settings_location: "Ubicacion",
+        settings_timezone: "Zona horaria",
+        settings_save_habitat: "Guardar habitat",
+        settings_privacy: "Ciclo de vida de privacidad",
+        settings_export: "Exportar datos de cuenta",
+        settings_delete: "Eliminar cuenta",
+        settings_delete_cta: "Eliminar cuenta",
+        settings_release: "Estado de release",
+        settings_release_status: "Estado",
+        settings_release_status_value: "Lista condicionalmente",
+        settings_release_checks: "Checks",
+        settings_release_checks_value: "Compile/Lint/Typecheck/Audit",
+        settings_release_blocker: "Pendiente operativo",
+        settings_release_blocker_value: "Ejecutar alembic upgrade head en entorno destino",
+        tab_home: "Inicio",
+        tab_record: "Grabar",
+        tab_history: "Historial",
+        tab_guide: "Guia",
+        tab_settings: "Ajustes"
       }
-      const parsed = JSON.parse(raw);
-      return {
-        hasAccount: Boolean(parsed.hasAccount),
-        selectedBird: typeof parsed.selectedBird === 'string' ? parsed.selectedBird : defaultState.selectedBird,
-        flags: { ...defaultState.flags, ...(parsed.flags || {}) },
-        habitat: { ...defaultState.habitat, ...(parsed.habitat || {}) }
-      };
-    } catch (_err) {
-      return JSON.parse(JSON.stringify(defaultState));
-    }
-  }
-
-  function saveState() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-    } catch (_err) {
-      // Ignore persistence errors in preview mode.
-    }
-  }
-
-  function cacheElements() {
-    el.modeBadge = byId('mode-badge');
-    el.settingsMode = byId('settings-mode');
-    el.settingsEmail = byId('settings-email');
-    el.logoutBtn = byId('logout-btn');
-    el.contextCard = byId('context-card');
-    el.qualityBox = byId('quality-box');
-    el.qualityFill = byId('quality-fill');
-    el.qualityState = byId('quality-state');
-    el.qualityAvg = byId('quality-avg');
-    el.qualityPeak = byId('quality-peak');
-    el.qualityGuide = byId('quality-guide');
-    el.recordIdle = byId('record-idle');
-    el.recordWaveform = byId('recording-waveform');
-    el.analyzingView = byId('analyzing-view');
-    el.resultView = byId('result-view');
-    el.timerDisplay = byId('timer-display');
-    el.timerDisplay2 = byId('timer-display-2');
-    el.recButton = byId('rec-btn');
-    el.selectedBirdValue = byId('selected-bird-value');
-    el.habitatName = byId('habitat-name');
-    el.habitatLat = byId('habitat-lat');
-    el.habitatLon = byId('habitat-lon');
-    el.habitatTz = byId('habitat-tz');
-    el.habitatType = byId('habitat-type');
-    el.settingsSaveStatus = byId('settings-save-status');
-    el.flagChips = Array.from(document.querySelectorAll('.flag-chip[data-flag]'));
-    el.historyFilterChips = Array.from(document.querySelectorAll('.filter-chip[data-filter]'));
-  }
-
-  function showSettingsStatus(message) {
-    if (!el.settingsSaveStatus) return;
-    el.settingsSaveStatus.textContent = message || '';
-  }
-
-  function showScreen(id) {
-    const target = byId(id);
-    if (!target) return;
-    document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active'));
-    target.classList.add('active');
-    if (id !== 'screen-record') {
-      resetRecording();
-    }
-  }
-
-  function updateAccountUI() {
-    if (el.modeBadge) {
-      el.modeBadge.textContent = appState.hasAccount ? '✅ Cuenta activa' : '👤 Modo invitado activo';
-    }
-    if (el.settingsMode) {
-      el.settingsMode.textContent = appState.hasAccount ? 'Con cuenta' : 'Invitado';
-    }
-    if (el.settingsEmail) {
-      el.settingsEmail.textContent = appState.hasAccount ? 'maria@ejemplo.com' : 'No aplica (invitado)';
-    }
-    if (el.logoutBtn) {
-      el.logoutBtn.classList.toggle('is-hidden', !appState.hasAccount);
-    }
-  }
-
-  function hydrateHabitatInputs() {
-    if (el.habitatName) el.habitatName.value = appState.habitat.name;
-    if (el.habitatLat) el.habitatLat.value = appState.habitat.latitude;
-    if (el.habitatLon) el.habitatLon.value = appState.habitat.longitude;
-    if (el.habitatTz) el.habitatTz.value = appState.habitat.timezone;
-    if (el.habitatType) el.habitatType.value = appState.habitat.type;
-  }
-
-  function saveHabitatFromInputs() {
-    appState.habitat.name = el.habitatName ? el.habitatName.value.trim() : appState.habitat.name;
-    appState.habitat.latitude = el.habitatLat ? el.habitatLat.value.trim() : appState.habitat.latitude;
-    appState.habitat.longitude = el.habitatLon ? el.habitatLon.value.trim() : appState.habitat.longitude;
-    appState.habitat.timezone = el.habitatTz ? el.habitatTz.value.trim() : appState.habitat.timezone;
-    appState.habitat.type = el.habitatType ? el.habitatType.value.trim() : appState.habitat.type;
-    saveState();
-    showSettingsStatus('Habitat guardado localmente.');
-  }
-
-  function updateFlagsUI() {
-    el.flagChips.forEach((chip) => {
-      const flagName = chip.dataset.flag;
-      const enabled = Boolean(appState.flags[flagName]);
-      chip.classList.toggle('on', enabled);
-      chip.setAttribute('aria-pressed', String(enabled));
-    });
-  }
-
-  function applyFeatureFlags() {
-    if (el.contextCard) {
-      el.contextCard.classList.toggle('is-hidden', !appState.flags.CONTEXT_ENGINE);
-    }
-    if (el.qualityBox) {
-      el.qualityBox.classList.toggle('is-hidden', !appState.flags.CAPTURE_QUALITY);
-    }
-  }
-
-  function goToHome(withAccount = false) {
-    appState.hasAccount = Boolean(withAccount);
-    saveState();
-    updateAccountUI();
-    showScreen('screen-home');
-  }
-
-  function mockLogout() {
-    appState.hasAccount = false;
-    saveState();
-    updateAccountUI();
-    showScreen('screen-home');
-    alert('Sesion cerrada. La app sigue disponible en modo invitado.');
-  }
-
-  function switchTab(tab) {
-    const map = {
-      home: 'screen-home',
-      record: 'screen-record',
-      history: 'screen-history',
-      settings: 'screen-settings'
     };
-    if (!map[tab]) return;
-    showScreen(map[tab]);
-  }
 
-  function switchLoginTab(btn, mode) {
-    btn.parentElement.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
-    btn.classList.add('active');
-    const nameField = byId('name-field');
-    if (nameField) {
-      nameField.style.display = mode === 'register' ? 'block' : 'none';
-    }
-  }
+    let currentLanguage = "en";
+    let currentMode = "guest";
 
-  function setHistoryFilter(btn) {
-    if (!btn) return;
-    const row = btn.closest('.filter-row');
-    if (!row) return;
-    row.querySelectorAll('.filter-chip[data-filter]').forEach((chip) => {
-      const isActive = chip === btn;
-      chip.classList.toggle('active', isActive);
-      chip.setAttribute('aria-pressed', String(isActive));
-    });
-  }
-
-  function toggleFlag(chip) {
-    const flagName = chip.dataset.flag;
-    if (!flagName) return;
-    appState.flags[flagName] = !Boolean(appState.flags[flagName]);
-    saveState();
-    updateFlagsUI();
-    applyFeatureFlags();
-    showSettingsStatus('Feature flag ' + flagName + ' actualizada.');
-  }
-
-  function mockSaveHabitat() {
-    saveHabitatFromInputs();
-    alert('Habitat guardado. Contexto ambiental actualizado.');
-  }
-
-  function selectBirdChip(btn) {
-    const row = btn.closest('.record-chip-row');
-    row.querySelectorAll('.record-chip').forEach((chip) => chip.classList.remove('active'));
-    btn.classList.add('active');
-    appState.selectedBird = btn.dataset.bird || 'general';
-    saveState();
-  }
-
-  function updateQuality(level) {
-    if (!el.qualityFill || !el.qualityState || !el.qualityAvg || !el.qualityPeak || !el.qualityGuide) return;
-    if (!appState.flags.CAPTURE_QUALITY) return;
-
-    const pct = Math.max(5, Math.min(95, Math.round(level * 100)));
-    el.qualityFill.style.width = pct + '%';
-    el.qualityAvg.textContent = 'Promedio ' + pct + '%';
-    el.qualityPeak.textContent = 'Pico ' + Math.min(99, pct + 25) + '%';
-
-    if (pct < 35) {
-      el.qualityState.textContent = 'Baja';
-      el.qualityState.style.color = '#EF4444';
-      el.qualityGuide.textContent = 'Acerca mas el microfono y reduce ruido de fondo.';
-    } else if (pct < 60) {
-      el.qualityState.textContent = 'Media';
-      el.qualityState.style.color = '#F59E0B';
-      el.qualityGuide.textContent = 'Audio usable, pero puedes mejorar distancia y ruido.';
-    } else {
-      el.qualityState.textContent = 'Buena';
-      el.qualityState.style.color = '#16A34A';
-      el.qualityGuide.textContent = 'Buena calidad de captura. Manten distancia estable y poco ruido.';
-    }
-  }
-
-  function toggleRecording() {
-    if (!runtime.isRecording) {
-      runtime.isRecording = true;
-      runtime.seconds = 0;
-      if (el.recordIdle) el.recordIdle.style.display = 'none';
-      if (el.recordWaveform) el.recordWaveform.style.display = 'block';
-      if (el.recButton) el.recButton.setAttribute('aria-label', 'Detener grabacion');
-      runtime.timerInterval = setInterval(() => {
-        runtime.seconds += 1;
-        const m = Math.floor(runtime.seconds / 60);
-        const s = runtime.seconds % 60;
-        if (el.timerDisplay2) {
-          el.timerDisplay2.textContent = m + ':' + String(s).padStart(2, '0');
+    function applyTranslations() {
+      const dict = translations[currentLanguage];
+      document.querySelectorAll("[data-i18n]").forEach((node) => {
+        const key = node.getAttribute("data-i18n");
+        if (dict[key]) {
+          node.textContent = dict[key];
         }
-        updateQuality(0.35 + Math.random() * 0.45);
-      }, 1000);
-      return;
+      });
+      document.documentElement.lang = currentLanguage;
+      updateModeUI();
     }
-    showAnalyzing();
-  }
 
-  function showAnalyzing() {
-    runtime.isRecording = false;
-    clearInterval(runtime.timerInterval);
-    if (el.recordIdle) el.recordIdle.style.display = 'none';
-    if (el.recordWaveform) el.recordWaveform.style.display = 'none';
-    if (el.analyzingView) el.analyzingView.style.display = 'block';
-    if (el.resultView) el.resultView.style.display = 'none';
-    setTimeout(() => {
-      if (el.analyzingView) el.analyzingView.style.display = 'none';
-      if (el.resultView) el.resultView.style.display = 'block';
-      if (el.selectedBirdValue) {
-        el.selectedBirdValue.textContent = appState.selectedBird === 'general'
-          ? 'General'
-          : appState.selectedBird.charAt(0).toUpperCase() + appState.selectedBird.slice(1);
+    function setLanguage(language) {
+      currentLanguage = language;
+      document.getElementById("lang-en").classList.toggle("active", language === "en");
+      document.getElementById("lang-es").classList.toggle("active", language === "es");
+      applyTranslations();
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById("mode-guest").classList.toggle("active", mode === "guest");
+      document.getElementById("mode-account").classList.toggle("active", mode === "account");
+      updateModeUI();
+    }
+
+    function updateModeUI() {
+      const modePill = document.getElementById("mode-pill");
+      const modeLabel = document.getElementById("mode-label");
+      const emailLabel = document.getElementById("email-label");
+
+      const isSpanish = currentLanguage === "es";
+      const modeGuestText = isSpanish ? "Modo invitado activo" : "Guest mode active";
+      const modeAccountText = isSpanish ? "Cuenta activa" : "Account mode active";
+
+      if (currentMode === "guest") {
+        modePill.textContent = modeGuestText;
+        modeLabel.textContent = translations[currentLanguage].mode_guest;
+        emailLabel.textContent = isSpanish ? "No aplica" : "N/A";
+      } else {
+        modePill.textContent = modeAccountText;
+        modeLabel.textContent = translations[currentLanguage].mode_account;
+        emailLabel.textContent = "owner@parakeet.app";
       }
-    }, 2500);
-  }
-
-  function resetRecording() {
-    runtime.isRecording = false;
-    runtime.seconds = 0;
-    clearInterval(runtime.timerInterval);
-    if (el.recordIdle) el.recordIdle.style.display = 'flex';
-    if (el.recordWaveform) el.recordWaveform.style.display = 'none';
-    if (el.analyzingView) el.analyzingView.style.display = 'none';
-    if (el.resultView) el.resultView.style.display = 'none';
-    if (el.timerDisplay) el.timerDisplay.textContent = '0:00';
-    if (el.recButton) el.recButton.setAttribute('aria-label', 'Iniciar grabacion');
-    updateQuality(0.62);
-  }
-
-  function initializeBirdSelector() {
-    const active = document.querySelector('.record-chip[data-bird="' + appState.selectedBird + '"]');
-    if (active) {
-      selectBirdChip(active);
     }
-  }
 
-  function initializeApp() {
-    cacheElements();
-    updateAccountUI();
-    hydrateHabitatInputs();
-    updateFlagsUI();
-    applyFeatureFlags();
-    if (el.historyFilterChips.length > 0) {
-      const activeChip = el.historyFilterChips.find((chip) => chip.classList.contains('active')) || el.historyFilterChips[0];
-      setHistoryFilter(activeChip);
+    function switchTab(tab) {
+      const tabs = ["home", "record", "history", "guide", "settings"];
+      tabs.forEach((name) => {
+        const screen = document.getElementById(`screen-${name}`);
+        const button = document.getElementById(`tab-${name}`);
+        const isActive = name === tab;
+        screen.classList.toggle("active", isActive);
+        button.classList.toggle("active", isActive);
+      });
     }
-    initializeBirdSelector();
-    resetRecording();
-  }
 
-  initializeApp();
-</script>
-
+    applyTranslations();
+  </script>
 </body>
 </html>
