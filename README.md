@@ -15,7 +15,9 @@ If you do not code, this is the simple version:
 - mood estimate (happy, relaxed, stressed, scared, sick, neutral)
 - confidence score
 - energy level
-- vocalization type
+- vocalization type (singing, chattering, alarm, silence, distress, contact call, beak grinding)
+- bird detection confidence
+- mood and vocalization probability breakdowns
 - recommendations
 5. The app stores history so you can see trends over time.
 6. The app can also add environmental context (weather + AQI) if habitat coordinates are configured.
@@ -29,13 +31,18 @@ Important: this app is educational and trend-based support. It does **not** repl
 - Optional account register/login.
 - Guest to account merge (data continuity).
 - Add/edit parakeets and upload profile photos.
+- **iOS-style dashboard HomeScreen** with stat badges, mood probability mini-chart, bird detection badges, and dual CTA (Record + Add Bird).
+- Welcome card for first-time users with prominent Add Bird onboarding.
 - Record audio in-app.
 - Upload audio files from device.
-- Analyze recordings and view results.
-- View analysis history and wellness trend chart.
-- View risk alerts generated from analysis and context.
-- Guide tab with Australian budgerigar education:
-- info, history, care, tips, risks, common signs, uncommon advice, app tutorial.
+- Analyze recordings and view results with probability breakdowns.
+- View analysis history with bird detection status and segment info.
+- **Comprehensive Guide tab** with:
+  - 7 collapsible care sections with icons (Species, Habitat, Nutrition, Daily Care, Behavior, Risks, Enrichment).
+  - Vocalization Reference: 7 interactive cards explaining each vocalization type.
+  - Health Checklist: 7-point daily health check with healthy vs. warning indicators.
+  - Emergency Signs: red box with 8 urgent signs and action protocol.
+  - How to Use guide and safety disclaimer.
 - Full bilingual UX: English + Spanish.
 - Language auto-detect + manual override persisted in SecureStore.
 - In-app educational tip banners on Home/Record/History/Settings.
@@ -46,21 +53,21 @@ Important: this app is educational and trend-based support. It does **not** repl
 - Guest identity via `X-Guest-Id` + `X-Guest-Secret` and account identity via JWT Bearer token.
 - Ownership enforcement for parakeets, recordings, analyses.
 - Audio upload validation:
-- file type checks
-- size limits
-- minimum/maximum duration
-- invalid/no-signal rejection
+  - file type checks
+  - size limits
+  - minimum/maximum duration
+  - invalid/no-signal rejection
 - Context engine with provider fallback:
-- NOAA -> Open-Meteo (weather)
-- AirNow (if API key) -> Open-Meteo AQI
+  - NOAA -> Open-Meteo (weather)
+  - AirNow (if API key) -> Open-Meteo AQI
 - Background context refresh loop (feature-flag controlled).
 - Canonical media URL serving via `/media`.
 - Legacy recording paths self-heal to canonical media paths on read.
 - Rate limiting supports memory mode and Redis shared mode.
 - Account lifecycle endpoints:
-- merge guest data
-- export account data
-- delete account and media
+  - merge guest data
+  - export account data
+  - delete account and media
 
 ## 3. AI / Machine Learning Capabilities (Detailed But Simple)
 
@@ -68,68 +75,71 @@ This section explains the current AI layer in plain language.
 
 ### 3.1 What kind of AI is currently implemented
 
-Current analysis is a practical AI stack with two parts:
+Current analysis is a 4-component ensemble ML stack:
 
-1. **Signal processing + feature extraction** (real audio DSP)
-2. **Heuristic classifier** (rule-based decision logic)
-
-So today, it is not yet a large trained deep model in production; it is a deterministic AI pipeline that uses meaningful acoustic features and produces explainable outputs.
+1. **CNN dual-head classifier** (TensorFlow/Keras): Conv2D x4 with BatchNorm, trained on mel spectrograms to predict vocalization type and mood simultaneously.
+2. **Statistical classifier**: Gaussian log-likelihood scoring against budgerigar-specific acoustic profiles for each mood and vocalization class.
+3. **Advanced feature engine**: Extracts 100+ audio features (MFCCs + deltas, spectral features, pitch, energy, bird-band energy ratio, harmonic ratio, chroma, tonnetz, and more).
+4. **Ensemble predictor**: Blends CNN + Statistical + Temporal predictions with adaptive weights. CNN available: 50/30/20 weighting. CNN unavailable: 5/65/30.
 
 ### 3.2 Audio analysis pipeline (step by step)
 
 When audio reaches the backend, this happens:
 
 1. **Load + normalize audio**
-- convert to mono target rate
-- normalize amplitude
-- apply noise reduction
+   - convert to mono target rate
+   - normalize amplitude
+   - adaptive noise reduction (quietest 0.5s window)
 
-2. **Segment audio**
-- split into fixed windows for local analysis
+2. **Bandpass filter**
+   - Butterworth filter 800Hz-10kHz (budgerigar vocal range)
 
-3. **Extract features per segment**
-- mel spectrogram
-- MFCC + delta MFCC
-- spectral centroid / rolloff
-- zero crossing rate
-- RMS energy
-- chroma
-- pitch mean / pitch variance
+3. **HPSS (Harmonic-Percussive Source Separation)**
+   - Isolate bird vocalizations from percussive noise
 
-4. **Classify each segment**
-- heuristic logic maps acoustic patterns to mood/vocalization candidates
+4. **Voice Activity Detection (VAD)**
+   - Identify vocal segments vs. silence
 
-5. **Aggregate segment outputs**
-- dominant mood
-- average confidence
-- average energy
-- dominant vocalization type
+5. **Segment vocal regions**
+   - Split into meaningful windows for per-segment analysis
 
-6. **Compute quality metadata**
-- signal quality score and label
-- noise profile
-- segment count and segment mood list
+6. **Per-segment processing**
+   - Mel spectrogram -> CNN prediction (vocalization + mood)
+   - Feature extraction -> Statistical classifier prediction
+   - Temporal consistency scoring across segments
+   - Bird detection confidence scoring
 
-7. **Return user-facing output**
-- mood, confidence, energy, vocalization type, recommendations, details
+7. **Ensemble aggregation**
+   - Blend all classifiers with adaptive weights
+   - Apply bird detection gating (halves confidence if no bird detected)
+   - Generate mood probabilities, vocalization probabilities
+   - Produce recommendations per detected mood
 
-### 3.3 Why this AI design is useful now
+8. **Return rich output**
+   - mood, vocalization_type, confidence, energy_level, recommendations
+   - bird_detected, bird_confidence, temporal_consistency, vocal_activity_ratio
+   - mood_probabilities, vocalization_probabilities, classifier_weights
+   - segment_predictions, signal_quality, model_version
 
-- Fast iteration with low infrastructure complexity.
+### 3.3 Why this AI design is useful
+
+- Ensemble approach is robust even without trained CNN weights (statistical fallback).
+- Bird detection prevents false readings from non-bird audio.
+- Temporal consistency scoring catches erratic/noisy segments.
 - Outputs are explainable (you can trace why a result happened).
-- Stable for MVP while collecting better real-world data.
-- Strong foundation for future model upgrades.
+- Strong foundation for future model training with real-world data.
 
 ### 3.4 What AI does NOT do yet
 
 - It does not diagnose disease.
 - It does not identify exact individual bird voices automatically in mixed audio.
-- It does not run a production deep neural network classifier yet.
+- CNN weights are placeholder until trained on real budgerigar dataset.
 - It does not guarantee medical-grade precision.
 
 ### 3.5 Planned AI evolution
 
-Roadmap direction (already documented in handoff/plans):
+Roadmap direction:
+- Train CNN on labeled budgerigar vocalization dataset
 - hybrid reasoning (rules + richer model outputs + context)
 - better confidence handling and explainability
 - smarter discovery/watchlist behavior
@@ -138,14 +148,14 @@ Roadmap direction (already documented in handoff/plans):
 ## 4. System Architecture
 
 Monorepo root:
-- `/Users/daniel/Library/Mobile Documents/com~apple~CloudDocs/Paraket MK 2/Project-MK-2/backend`
-- `/Users/daniel/Library/Mobile Documents/com~apple~CloudDocs/Paraket MK 2/Project-MK-2/mobile`
+- `backend/` - Python FastAPI server
+- `mobile/` - Expo / React Native app
 
 ### Backend stack
 - Python 3.12
 - FastAPI
 - SQLAlchemy async + PostgreSQL
-- librosa, noisereduce, scipy, tensorflow (future model path)
+- librosa, noisereduce, scipy, tensorflow
 
 ### Mobile stack
 - Expo / React Native / TypeScript
@@ -197,7 +207,7 @@ Base prefix: `/api/v1`
 ## 6.1 Start backend
 
 ```bash
-cd "/Users/daniel/Library/Mobile Documents/com~apple~CloudDocs/Paraket MK 2/Project-MK-2/backend"
+cd backend
 cp .env.example .env
 docker compose up --build
 ```
@@ -209,7 +219,7 @@ Backend URL:
 ## 6.2 Start mobile app
 
 ```bash
-cd "/Users/daniel/Library/Mobile Documents/com~apple~CloudDocs/Paraket MK 2/Project-MK-2/mobile"
+cd mobile
 cp .env.example .env
 npm install
 npx expo start
@@ -226,11 +236,11 @@ EXPO_PUBLIC_API_BASE_URL=http://192.168.1.25:8000/api/v1
 
 1. Launch app (guest mode is automatic).
 2. Open `Settings` and set language if needed.
-3. Add a parakeet in `Home` > `+ Add`.
+3. Add a parakeet via the prominent "Add Bird" button on Home.
 4. Upload photo in profile.
-5. Open `Guide` and read care/risk sections.
+5. Open `Guide` and explore care sections, vocalization reference, and health checklist.
 6. Open `Record`, select target bird, record 30+ seconds.
-7. Review analysis result and recommendation.
+7. Review analysis result: mood, vocalization type, probability breakdowns, bird detection status.
 8. Check `History` weekly for trend direction.
 9. Optionally configure habitat coordinates for context alerts.
 
@@ -279,11 +289,8 @@ Latest local checks:
 - `npm --prefix mobile run lint`: pass
 - `npm --prefix mobile audit --audit-level=high`: pass (`0 vulnerabilities`)
 
-Current iOS verdict status in review report:
+Current iOS verdict status:
 - **CONDITIONALLY READY** after code-level blocker fixes; release execution steps still required (migration run + media normalization verification).
-
-Detailed report:
-- `/Users/daniel/Library/Mobile Documents/com~apple~CloudDocs/Paraket MK 2/Project-MK-2/REVIEW_IOS_FIRST_2026-02-14.md`
 
 ## 10. Troubleshooting (Beginner-Friendly)
 

@@ -149,6 +149,7 @@
       background: linear-gradient(140deg, #2f7a59 0%, #1f5f47 100%);
       color: #fff;
       padding: 56px 20px 20px;
+      border-radius: 0 0 20px 20px;
     }
 
     .hero h2 {
@@ -162,6 +163,33 @@
       font-size: 13px;
       color: rgba(255, 255, 255, 0.87);
       line-height: 1.45;
+    }
+
+    .stat-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .stat-badge {
+      flex: 1;
+      text-align: center;
+    }
+
+    .stat-badge .value {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .stat-badge .label {
+      font-size: 9px;
+      color: rgba(255,255,255,0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
     }
 
     .mode-pill {
@@ -233,6 +261,66 @@
       font-weight: 700;
     }
 
+    .bird-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .bird-badge.ok {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .bird-badge.warn {
+      background: #FFF8E1;
+      color: #F57F17;
+    }
+
+    .prob-bar-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    .prob-bar-label {
+      width: 55px;
+      color: var(--text-muted);
+    }
+
+    .prob-bar-track {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: #e5e7eb;
+      margin: 0 6px;
+      overflow: hidden;
+    }
+
+    .prob-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--primary);
+    }
+
+    .prob-bar-value {
+      width: 30px;
+      text-align: right;
+      color: var(--text-muted);
+      font-size: 10px;
+    }
+
+    .cta-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
     .alert {
       border: 1px solid #fecaca;
       background: #fff1f2;
@@ -264,12 +352,13 @@
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
+      text-align: center;
     }
 
     .button.secondary {
       background: #fff;
       color: var(--primary);
-      border: 1px solid #99c7b0;
+      border: 2px solid var(--primary);
     }
 
     .list {
@@ -368,28 +457,140 @@
       padding: 9px;
       background: #fff;
       margin-top: 8px;
+      cursor: pointer;
+    }
+
+    .guide-section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .guide-section-icon {
+      font-size: 20px;
     }
 
     .guide-section h4 {
       font-size: 12px;
       font-weight: 800;
-      margin-bottom: 5px;
+      flex: 1;
+    }
+
+    .guide-section .chevron {
+      font-size: 10px;
+      color: var(--text-muted);
     }
 
     .guide-section p {
       font-size: 11px;
       color: var(--text-muted);
       line-height: 1.45;
+      margin: 6px 0;
+    }
+
+    .voc-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px;
+      background: #fff;
+      margin-top: 8px;
+    }
+
+    .voc-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .voc-card-icon {
+      font-size: 20px;
+    }
+
+    .voc-card-name {
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .voc-card-mood {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .voc-card-action {
+      background: #f3fbf6;
+      border-radius: 6px;
+      padding: 6px 8px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: #166534;
+      font-weight: 600;
+    }
+
+    .health-row {
+      display: flex;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 11px;
+    }
+
+    .health-icon {
+      font-size: 16px;
+      width: 24px;
+      text-align: center;
+    }
+
+    .health-label {
+      font-weight: 700;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+
+    .health-good {
+      color: #166534;
+    }
+
+    .health-warn {
+      color: #991b1b;
+    }
+
+    .emergency-box {
+      background: #fff1f1;
+      border: 2px solid #ffcdd2;
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .emergency-box h4 {
+      color: #b71c1c;
+      font-size: 13px;
+      font-weight: 800;
       margin-bottom: 6px;
     }
 
-    .guide-section ul {
+    .emergency-box ul {
+      text-align: left;
       padding-left: 16px;
       display: grid;
-      gap: 4px;
+      gap: 3px;
       font-size: 11px;
-      color: #1f2937;
+      color: #b71c1c;
+      font-weight: 600;
       line-height: 1.4;
+    }
+
+    .emergency-action {
+      background: #ffebee;
+      border: 1px solid #ef9a9a;
+      border-radius: 6px;
+      padding: 6px 8px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: #b71c1c;
+      font-weight: 700;
+      text-align: left;
     }
 
     .danger-note {
@@ -465,7 +666,7 @@
     <div class="toolbar">
       <div>
         <h1>Parakeet Wellness Mockup</h1>
-        <p data-i18n="toolbar_subtitle">Guide + bilingual + release-hardening iOS preview</p>
+        <p data-i18n="toolbar_subtitle">Ensemble AI + iOS dashboard + comprehensive guide preview</p>
       </div>
       <div class="controls">
         <div class="segmented" aria-label="Language selector">
@@ -485,17 +686,20 @@
       <section class="screen active" id="screen-home" role="tabpanel" aria-labelledby="tab-home" aria-hidden="false">
         <div class="hero">
           <h2 data-i18n="home_title">Parakeet Wellness</h2>
-          <p data-i18n="home_subtitle">Audio analysis, context alerts, and friendly guidance.</p>
+          <p data-i18n="home_subtitle">Wellness monitoring for your parakeets</p>
+          <div class="stat-row">
+            <div class="stat-badge"><div class="value">2</div><div class="label" data-i18n="stat_birds">BIRDS</div></div>
+            <div class="stat-badge"><div class="value">84%</div><div class="label" data-i18n="stat_confidence">CONFIDENCE</div></div>
+            <div class="stat-badge"><div class="value">71%</div><div class="label" data-i18n="stat_energy">ENERGY</div></div>
+          </div>
           <div class="mode-pill" id="mode-pill" aria-live="polite">Guest mode active</div>
         </div>
         <div class="content">
-          <div class="card tip">
-            <strong data-i18n="tip_title">Tip:</strong>
-            <span data-i18n="tip_home"> Add your parakeet profile first to improve personalization.</span>
-          </div>
-
           <div class="card">
-            <h3 data-i18n="latest_analysis">Latest analysis</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <h3 data-i18n="latest_analysis">Latest analysis</h3>
+              <span class="bird-badge ok" data-i18n="bird_conf_badge">Bird 92%</span>
+            </div>
             <div class="grid">
               <div class="metric">
                 <div class="k" data-i18n="metric_mood">Mood</div>
@@ -514,6 +718,11 @@
                 <div class="v" data-i18n="metric_vocalization_value">Singing</div>
               </div>
             </div>
+            <div style="margin-top:10px; padding-top:10px; border-top:1px solid #f0f0f0;">
+              <div class="prob-bar-row"><span class="prob-bar-label">Happy</span><div class="prob-bar-track"><div class="prob-bar-fill" style="width:62%"></div></div><span class="prob-bar-value">62%</span></div>
+              <div class="prob-bar-row"><span class="prob-bar-label">Relaxed</span><div class="prob-bar-track"><div class="prob-bar-fill" style="width:24%"></div></div><span class="prob-bar-value">24%</span></div>
+              <div class="prob-bar-row"><span class="prob-bar-label">Neutral</span><div class="prob-bar-track"><div class="prob-bar-fill" style="width:14%"></div></div><span class="prob-bar-value">14%</span></div>
+            </div>
           </div>
 
           <div class="card">
@@ -524,31 +733,24 @@
               <div class="metric"><div class="k">AQI</div><div class="v">72</div></div>
               <div class="metric"><div class="k" data-i18n="context_wind">Wind</div><div class="v">8 km/h</div></div>
             </div>
-            <div class="alert">
-              <div class="title" data-i18n="risk_title">Risk event</div>
-              <p data-i18n="risk_desc">Air quality is moderate. Reduce strong aerosols and keep good ventilation.</p>
-            </div>
+          </div>
+
+          <div class="cta-row">
+            <button type="button" class="button" data-i18n="cta_record" onclick="switchTab('record')">Record</button>
+            <button type="button" class="button secondary" data-i18n="cta_add_bird">Add Bird</button>
+          </div>
+
+          <div class="card tip">
+            <strong data-i18n="tip_title">Tip:</strong>
+            <span data-i18n="tip_home"> Add your parakeet profile first to improve personalization.</span>
           </div>
 
           <div class="card">
-            <h3 data-i18n="ai_card_title">AI capability snapshot</h3>
-            <p style="font-size:12px; line-height:1.45; color: var(--text-muted);" data-i18n="ai_card_desc">
-              The backend extracts audio features (MFCC, spectral, pitch, energy), classifies mood patterns,
-              and combines quality/context signals into explainable results.
+            <h3 data-i18n="ai_snapshot">AI model: Ensemble v2</h3>
+            <p style="font-size:11px; line-height:1.45; color: var(--text-muted);" data-i18n="ai_card_desc">
+              CNN dual-head + Statistical classifier + Temporal analysis. Bird detection, mood probabilities, and vocalization breakdown with adaptive weights.
             </p>
           </div>
-
-          <div class="card">
-            <h3 data-i18n="hardening_title">Release hardening snapshot</h3>
-            <ul style="padding-left:16px; display:grid; gap:5px; font-size:11px; color:#1f2937; line-height:1.4;">
-              <li data-i18n="hardening_b1">Guest data ownership now requires X-Guest-Id plus X-Guest-Secret.</li>
-              <li data-i18n="hardening_b2">Production builds fail fast if API base URL is missing or localhost-like.</li>
-              <li data-i18n="hardening_b3">Database startup can enforce Alembic head before serving requests.</li>
-              <li data-i18n="hardening_b4">Rate limiting supports Redis shared backend for multi-instance deployments.</li>
-            </ul>
-          </div>
-
-          <button type="button" class="button" data-i18n="cta_record" onclick="switchTab('record')">Record vocalization</button>
         </div>
       </section>
 
@@ -615,16 +817,25 @@
             <h3 data-i18n="history_recent">Recent analyses</h3>
             <div class="list">
               <div class="list-item">
-                <div class="title" data-i18n="metric_mood_value">Happy</div>
-                <div class="meta" data-i18n="history_meta_1">84% confidence · 71% energy · 2026-02-14</div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div class="title" data-i18n="metric_mood_value">Happy</div>
+                  <span class="bird-badge ok">Bird 92%</span>
+                </div>
+                <div class="meta" data-i18n="history_meta_1">84% confidence · 71% energy · 3 segments · 2026-02-16</div>
               </div>
               <div class="list-item">
-                <div class="title" data-i18n="history_item_relaxed">Relaxed</div>
-                <div class="meta" data-i18n="history_meta_2">73% confidence · 52% energy · 2026-02-12</div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div class="title" data-i18n="history_item_relaxed">Relaxed</div>
+                  <span class="bird-badge ok">Bird 88%</span>
+                </div>
+                <div class="meta" data-i18n="history_meta_2">73% confidence · 52% energy · 2 segments · 2026-02-14</div>
               </div>
               <div class="list-item">
-                <div class="title" data-i18n="history_item_stressed">Stressed</div>
-                <div class="meta" data-i18n="history_meta_3">61% confidence · 66% energy · 2026-02-09</div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div class="title" data-i18n="history_item_stressed">Stressed</div>
+                  <span class="bird-badge warn">Bird 45%</span>
+                </div>
+                <div class="meta" data-i18n="history_meta_3">61% confidence · 66% energy · 4 segments · 2026-02-12</div>
               </div>
             </div>
           </div>
@@ -633,58 +844,114 @@
 
       <section class="screen" id="screen-guide" role="tabpanel" aria-labelledby="tab-guide" aria-hidden="true">
         <div class="hero">
-          <h2 data-i18n="guide_title">Australian Budgerigar Guide</h2>
-          <p data-i18n="guide_subtitle">Practical care + warning signs + app usage tutorial.</p>
+          <h2 data-i18n="guide_title">Budgerigar Care Guide</h2>
+          <p data-i18n="guide_subtitle">Everything you need to keep your budgie happy, healthy, and thriving.</p>
         </div>
         <div class="content">
           <div class="guide-section">
-            <h4 data-i18n="guide_info_title">Species info</h4>
-            <p data-i18n="guide_info_text">Social parrots that need routine, stimulation, and close daily observation.</p>
-            <ul>
-              <li data-i18n="guide_info_b1">Common lifespan: 7-12 years with quality care.</li>
-              <li data-i18n="guide_info_b2">Voice and posture changes are early warning signals.</li>
-            </ul>
+            <div class="guide-section-header">
+              <span class="guide-section-icon">🦜</span>
+              <h4 data-i18n="guide_species_title">Know Your Budgie</h4>
+              <span class="chevron">▼</span>
+            </div>
+            <p data-i18n="guide_species_text">Intelligent social parrots with complex vocal communication. Lifespan 7-15 years.</p>
           </div>
 
           <div class="guide-section">
-            <h4 data-i18n="guide_history_title">History and behavior</h4>
-            <p data-i18n="guide_history_text">Budgerigars evolved in Australian grasslands and communicate in flock style patterns.</p>
-            <ul>
-              <li data-i18n="guide_history_b1">Frequent chirping can be normal social communication.</li>
-              <li data-i18n="guide_history_b2">Sudden silence can indicate stress/fear/discomfort.</li>
-            </ul>
+            <div class="guide-section-header">
+              <span class="guide-section-icon">🏠</span>
+              <h4 data-i18n="guide_habitat_title">Ideal Habitat Setup</h4>
+              <span class="chevron">▼</span>
+            </div>
+            <p data-i18n="guide_habitat_text">Cage environment directly impacts health, mood, and vocalization patterns.</p>
           </div>
 
           <div class="guide-section">
-            <h4 data-i18n="guide_care_title">Care and tips</h4>
-            <ul>
-              <li data-i18n="guide_care_b1">Clean water daily and check appetite consistency.</li>
-              <li data-i18n="guide_care_b2">Use enrichment rotation (toys, perches, foraging).</li>
-              <li data-i18n="guide_care_b3">Track trends weekly, not from one event.</li>
-            </ul>
+            <div class="guide-section-header">
+              <span class="guide-section-icon">🥦</span>
+              <h4 data-i18n="guide_nutrition_title">Nutrition Essentials</h4>
+              <span class="chevron">▼</span>
+            </div>
+            <p data-i18n="guide_nutrition_text">Seed-only diets cause malnutrition. Pellets 60-70% + fresh veggies daily.</p>
           </div>
 
           <div class="guide-section">
-            <h4 data-i18n="guide_risk_title">Risks and warning signs</h4>
-            <ul>
-              <li data-i18n="guide_risk_b1">Air quality exposure (smoke, aerosols, poor ventilation).</li>
-              <li data-i18n="guide_risk_b2">Heat/cold stress and long-term routine disruption.</li>
-              <li data-i18n="guide_risk_b3">Breathing effort changes, appetite loss, persistent lethargy.</li>
-            </ul>
+            <div class="guide-section-header">
+              <span class="guide-section-icon">🧠</span>
+              <h4 data-i18n="guide_behavior_title">Behavior Decoder</h4>
+              <span class="chevron">▼</span>
+            </div>
+            <p data-i18n="guide_behavior_text">Understanding body language helps catch problems early.</p>
           </div>
 
-          <div class="guide-section">
-            <h4 data-i18n="guide_howto_title">How to use this app</h4>
+          <div class="section-title" style="margin-top:12px;" data-i18n="guide_voc_title">Vocalization Reference</div>
+
+          <div class="voc-card">
+            <div class="voc-card-header">
+              <span class="voc-card-icon">🎵</span>
+              <div><div class="voc-card-name" data-i18n="voc_singing">Singing / Warbling</div><div class="voc-card-mood" data-i18n="voc_singing_mood">Happy, content, socially engaged</div></div>
+            </div>
+            <div class="voc-card-action" data-i18n="voc_singing_action">Great sign! Your budgie is comfortable and thriving.</div>
+          </div>
+
+          <div class="voc-card">
+            <div class="voc-card-header">
+              <span class="voc-card-icon">🚨</span>
+              <div><div class="voc-card-name" data-i18n="voc_alarm">Alarm Call</div><div class="voc-card-mood" data-i18n="voc_alarm_mood">Frightened, perceiving threat</div></div>
+            </div>
+            <div class="voc-card-action" data-i18n="voc_alarm_action">Check for threats: predators, shadows, sudden movements.</div>
+          </div>
+
+          <div class="voc-card">
+            <div class="voc-card-header">
+              <span class="voc-card-icon">😴</span>
+              <div><div class="voc-card-name" data-i18n="voc_beak">Beak Grinding</div><div class="voc-card-mood" data-i18n="voc_beak_mood">Deeply relaxed, content</div></div>
+            </div>
+            <div class="voc-card-action" data-i18n="voc_beak_action">Excellent sign! Usually heard at bedtime. Your budgie feels safe.</div>
+          </div>
+
+          <div class="section-title" style="margin-top:12px;" data-i18n="guide_health_title">Quick Health Check</div>
+
+          <div class="card" style="padding:0;">
+            <div class="health-row" style="padding:8px;">
+              <span class="health-icon">👁</span>
+              <div>
+                <div class="health-label" data-i18n="health_eyes">Eyes</div>
+                <div class="health-good" data-i18n="health_eyes_ok">Bright, clear, alert</div>
+                <div class="health-warn" data-i18n="health_eyes_warn">Swollen, crusty, half-closed</div>
+              </div>
+            </div>
+            <div class="health-row" style="padding:8px;">
+              <span class="health-icon">🪶</span>
+              <div>
+                <div class="health-label" data-i18n="health_feathers">Feathers</div>
+                <div class="health-good" data-i18n="health_feathers_ok">Smooth, sleek, well-groomed</div>
+                <div class="health-warn" data-i18n="health_feathers_warn">Fluffed constantly, bald patches</div>
+              </div>
+            </div>
+            <div class="health-row" style="padding:8px;">
+              <span class="health-icon">💨</span>
+              <div>
+                <div class="health-label" data-i18n="health_breathing">Breathing</div>
+                <div class="health-good" data-i18n="health_breathing_ok">Quiet, no visible effort</div>
+                <div class="health-warn" data-i18n="health_breathing_warn">Open-mouth, tail bobbing, wheezing</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="emergency-box">
+            <h4 data-i18n="emergency_title">Emergency: See a Vet Immediately</h4>
             <ul>
-              <li data-i18n="guide_howto_b1">1. Add each parakeet profile with notes and photo.</li>
-              <li data-i18n="guide_howto_b2">2. Record 30+ seconds in a calm environment.</li>
-              <li data-i18n="guide_howto_b3">3. Review mood, confidence, and recommendation.</li>
-              <li data-i18n="guide_howto_b4">4. Use History for trends and Settings for habitat context.</li>
+              <li data-i18n="emergency_1">Sitting on cage floor, fluffed up, eyes closed</li>
+              <li data-i18n="emergency_2">Open-mouth breathing or persistent tail bobbing</li>
+              <li data-i18n="emergency_3">Seizures or inability to perch</li>
+              <li data-i18n="emergency_4">Bleeding that does not stop within 5 minutes</li>
             </ul>
+            <div class="emergency-action" data-i18n="emergency_action">Keep bird warm (85F/29C), quiet dark space, transport to avian vet ASAP.</div>
           </div>
 
           <div class="card danger-note" data-i18n="guide_safety_note">
-            Educational support only. This app does not replace avian veterinary diagnosis.
+            AI-powered wellness monitoring. Does NOT replace avian veterinary diagnosis.
           </div>
         </div>
       </section>
@@ -695,17 +962,11 @@
           <p data-i18n="settings_subtitle">Account mode, language, habitat context, and privacy actions.</p>
         </div>
         <div class="content">
-          <div class="card tip">
-            <strong data-i18n="tip_title">Tip:</strong>
-            <span data-i18n="tip_settings"> Set habitat coordinates to unlock context-based risk events.</span>
-          </div>
-
           <div class="card">
             <h3 data-i18n="settings_account">Account</h3>
             <div class="settings-row"><span class="k" data-i18n="settings_mode">Mode</span><span class="v" id="mode-label">Guest</span></div>
             <div class="settings-row"><span class="k" data-i18n="settings_email">Email</span><span class="v" id="email-label">N/A</span></div>
-            <div class="settings-row"><span class="k" data-i18n="settings_guest_secret">Guest secret</span><span class="v" data-i18n="settings_guest_secret_value">Stored in SecureStore</span></div>
-            <div class="settings-row"><span class="k" data-i18n="settings_merge_contract">Merge contract</span><span class="v">POST /auth/merge-guest</span></div>
+            <div class="settings-row"><span class="k" data-i18n="settings_ai_model">AI model</span><span class="v" data-i18n="settings_ai_model_value">Ensemble v2</span></div>
             <button type="button" class="button secondary" style="margin-top:10px;" data-i18n="settings_auth_cta">Create account or sign in</button>
           </div>
 
@@ -713,22 +974,13 @@
             <h3 data-i18n="settings_habitat">Habitat and context</h3>
             <div class="settings-row"><span class="k" data-i18n="settings_location">Location</span><span class="v" data-i18n="settings_location_value">Home</span></div>
             <div class="settings-row"><span class="k" data-i18n="settings_latlon">Lat/Lon</span><span class="v">40.7128 / -74.0060</span></div>
-            <div class="settings-row"><span class="k" data-i18n="settings_timezone">Timezone</span><span class="v" data-i18n="settings_timezone_value">America/New_York</span></div>
             <button type="button" class="button" style="margin-top:10px;" data-i18n="settings_save_habitat">Save habitat</button>
           </div>
 
           <div class="card">
             <h3 data-i18n="settings_privacy">Privacy lifecycle</h3>
-            <div class="settings-row"><span class="k" data-i18n="settings_export">Export account data</span><span class="v">GET /auth/export-data</span></div>
-            <div class="settings-row"><span class="k" data-i18n="settings_delete">Delete account</span><span class="v">DELETE /auth/me</span></div>
+            <div class="settings-row"><span class="k" data-i18n="settings_export">Export data</span><span class="v">GET /auth/export-data</span></div>
             <button type="button" class="button secondary" style="margin-top:10px; border-color:#fecaca; color:#b91c1c;" data-i18n="settings_delete_cta">Delete account</button>
-          </div>
-
-          <div class="card">
-            <h3 data-i18n="settings_release">Release readiness</h3>
-            <div class="settings-row"><span class="k" data-i18n="settings_release_status">Status</span><span class="v" data-i18n="settings_release_status_value">Conditionally ready</span></div>
-            <div class="settings-row"><span class="k" data-i18n="settings_release_checks">Checks</span><span class="v" data-i18n="settings_release_checks_value">Compile/Lint/Typecheck/Audit</span></div>
-            <div class="settings-row"><span class="k" data-i18n="settings_release_blocker">Pending ops</span><span class="v" data-i18n="settings_release_blocker_value">Run alembic upgrade head in target env</span></div>
           </div>
         </div>
       </section>
@@ -746,7 +998,7 @@
   <script>
     const translations = {
       en: {
-        toolbar_subtitle: "Guide + bilingual + release-hardening iOS preview",
+        toolbar_subtitle: "Ensemble AI + iOS dashboard + comprehensive guide preview",
         lang_english: "English",
         lang_spanish: "Espanol",
         mode_guest: "Guest",
@@ -754,10 +1006,14 @@
         mode_guest_active: "Guest mode active",
         mode_account_active: "Account mode active",
         home_title: "Parakeet Wellness",
-        home_subtitle: "Audio analysis, context alerts, and friendly guidance.",
+        home_subtitle: "Wellness monitoring for your parakeets",
+        stat_birds: "BIRDS",
+        stat_confidence: "CONFIDENCE",
+        stat_energy: "ENERGY",
         tip_title: "Tip:",
         tip_home: " Add your parakeet profile first to improve personalization.",
         latest_analysis: "Latest analysis",
+        bird_conf_badge: "Bird 92%",
         metric_mood: "Mood",
         metric_mood_value: "Happy",
         metric_confidence: "Confidence",
@@ -768,16 +1024,10 @@
         context_temp: "Temp",
         context_humidity: "Humidity",
         context_wind: "Wind",
-        risk_title: "Risk event",
-        risk_desc: "Air quality is moderate. Reduce strong aerosols and keep good ventilation.",
-        ai_card_title: "AI capability snapshot",
-        ai_card_desc: "The backend extracts audio features (MFCC, spectral, pitch, energy), classifies mood patterns, and combines quality/context signals into explainable results.",
-        hardening_title: "Release hardening snapshot",
-        hardening_b1: "Guest data ownership now requires X-Guest-Id plus X-Guest-Secret.",
-        hardening_b2: "Production builds fail fast if API base URL is missing or localhost-like.",
-        hardening_b3: "Database startup can enforce Alembic head before serving requests.",
-        hardening_b4: "Rate limiting supports Redis shared backend for multi-instance deployments.",
-        cta_record: "Record vocalization",
+        ai_snapshot: "AI model: Ensemble v2",
+        ai_card_desc: "CNN dual-head + Statistical classifier + Temporal analysis. Bird detection, mood probabilities, and vocalization breakdown with adaptive weights.",
+        cta_record: "Record",
+        cta_add_bird: "Add Bird",
         record_title: "Record",
         record_subtitle: "Capture at least 30 seconds in a quiet room for better AI confidence.",
         tip_record: " Keep the phone close to the cage and avoid TV/background music.",
@@ -797,33 +1047,46 @@
         history_recent: "Recent analyses",
         history_item_relaxed: "Relaxed",
         history_item_stressed: "Stressed",
-        history_meta_1: "84% confidence · 71% energy · 2026-02-14",
-        history_meta_2: "73% confidence · 52% energy · 2026-02-12",
-        history_meta_3: "61% confidence · 66% energy · 2026-02-09",
-        guide_title: "Australian Budgerigar Guide",
-        guide_subtitle: "Practical care + warning signs + app usage tutorial.",
-        guide_info_title: "Species info",
-        guide_info_text: "Social parrots that need routine, stimulation, and close daily observation.",
-        guide_info_b1: "Common lifespan: 7-12 years with quality care.",
-        guide_info_b2: "Voice and posture changes are early warning signals.",
-        guide_history_title: "History and behavior",
-        guide_history_text: "Budgerigars evolved in Australian grasslands and communicate in flock style patterns.",
-        guide_history_b1: "Frequent chirping can be normal social communication.",
-        guide_history_b2: "Sudden silence can indicate stress/fear/discomfort.",
-        guide_care_title: "Care and tips",
-        guide_care_b1: "Clean water daily and check appetite consistency.",
-        guide_care_b2: "Use enrichment rotation (toys, perches, foraging).",
-        guide_care_b3: "Track trends weekly, not from one event.",
-        guide_risk_title: "Risks and warning signs",
-        guide_risk_b1: "Air quality exposure (smoke, aerosols, poor ventilation).",
-        guide_risk_b2: "Heat/cold stress and long-term routine disruption.",
-        guide_risk_b3: "Breathing effort changes, appetite loss, persistent lethargy.",
-        guide_howto_title: "How to use this app",
-        guide_howto_b1: "1. Add each parakeet profile with notes and photo.",
-        guide_howto_b2: "2. Record 30+ seconds in a calm environment.",
-        guide_howto_b3: "3. Review mood, confidence, and recommendation.",
-        guide_howto_b4: "4. Use History for trends and Settings for habitat context.",
-        guide_safety_note: "Educational support only. This app does not replace avian veterinary diagnosis.",
+        history_meta_1: "84% confidence · 71% energy · 3 segments · 2026-02-16",
+        history_meta_2: "73% confidence · 52% energy · 2 segments · 2026-02-14",
+        history_meta_3: "61% confidence · 66% energy · 4 segments · 2026-02-12",
+        guide_title: "Budgerigar Care Guide",
+        guide_subtitle: "Everything you need to keep your budgie happy, healthy, and thriving.",
+        guide_species_title: "Know Your Budgie",
+        guide_species_text: "Intelligent social parrots with complex vocal communication. Lifespan 7-15 years.",
+        guide_habitat_title: "Ideal Habitat Setup",
+        guide_habitat_text: "Cage environment directly impacts health, mood, and vocalization patterns.",
+        guide_nutrition_title: "Nutrition Essentials",
+        guide_nutrition_text: "Seed-only diets cause malnutrition. Pellets 60-70% + fresh veggies daily.",
+        guide_behavior_title: "Behavior Decoder",
+        guide_behavior_text: "Understanding body language helps catch problems early.",
+        guide_voc_title: "Vocalization Reference",
+        voc_singing: "Singing / Warbling",
+        voc_singing_mood: "Happy, content, socially engaged",
+        voc_singing_action: "Great sign! Your budgie is comfortable and thriving.",
+        voc_alarm: "Alarm Call",
+        voc_alarm_mood: "Frightened, perceiving threat",
+        voc_alarm_action: "Check for threats: predators, shadows, sudden movements.",
+        voc_beak: "Beak Grinding",
+        voc_beak_mood: "Deeply relaxed, content",
+        voc_beak_action: "Excellent sign! Usually heard at bedtime. Your budgie feels safe.",
+        guide_health_title: "Quick Health Check",
+        health_eyes: "Eyes",
+        health_eyes_ok: "Bright, clear, alert",
+        health_eyes_warn: "Swollen, crusty, half-closed",
+        health_feathers: "Feathers",
+        health_feathers_ok: "Smooth, sleek, well-groomed",
+        health_feathers_warn: "Fluffed constantly, bald patches",
+        health_breathing: "Breathing",
+        health_breathing_ok: "Quiet, no visible effort",
+        health_breathing_warn: "Open-mouth, tail bobbing, wheezing",
+        emergency_title: "Emergency: See a Vet Immediately",
+        emergency_1: "Sitting on cage floor, fluffed up, eyes closed",
+        emergency_2: "Open-mouth breathing or persistent tail bobbing",
+        emergency_3: "Seizures or inability to perch",
+        emergency_4: "Bleeding that does not stop within 5 minutes",
+        emergency_action: "Keep bird warm (85F/29C), quiet dark space, transport to avian vet ASAP.",
+        guide_safety_note: "AI-powered wellness monitoring. Does NOT replace avian veterinary diagnosis.",
         settings_title: "Settings",
         settings_subtitle: "Account mode, language, habitat context, and privacy actions.",
         tip_settings: " Set habitat coordinates to unlock context-based risk events.",
@@ -832,28 +1095,17 @@
         settings_email: "Email",
         settings_email_na: "N/A",
         settings_email_account: "owner@parakeet.app",
-        settings_guest_secret: "Guest secret",
-        settings_guest_secret_value: "Stored in SecureStore",
-        settings_merge_contract: "Merge contract",
+        settings_ai_model: "AI model",
+        settings_ai_model_value: "Ensemble v2",
         settings_auth_cta: "Create account or sign in",
         settings_habitat: "Habitat and context",
         settings_location: "Location",
         settings_location_value: "Home",
         settings_latlon: "Lat/Lon",
-        settings_timezone: "Timezone",
-        settings_timezone_value: "America/New_York",
         settings_save_habitat: "Save habitat",
         settings_privacy: "Privacy lifecycle",
-        settings_export: "Export account data",
-        settings_delete: "Delete account",
+        settings_export: "Export data",
         settings_delete_cta: "Delete account",
-        settings_release: "Release readiness",
-        settings_release_status: "Status",
-        settings_release_status_value: "Conditionally ready",
-        settings_release_checks: "Checks",
-        settings_release_checks_value: "Compile/Lint/Typecheck/Audit",
-        settings_release_blocker: "Pending ops",
-        settings_release_blocker_value: "Run alembic upgrade head in target env",
         tab_home: "Home",
         tab_record: "Record",
         tab_history: "History",
@@ -861,7 +1113,7 @@
         tab_settings: "Settings"
       },
       es: {
-        toolbar_subtitle: "Preview iOS con guia bilingue y hardening de release",
+        toolbar_subtitle: "AI Ensemble + dashboard iOS + guia completa",
         lang_english: "Ingles",
         lang_spanish: "Espanol",
         mode_guest: "Invitado",
@@ -869,10 +1121,14 @@
         mode_guest_active: "Modo invitado activo",
         mode_account_active: "Cuenta activa",
         home_title: "Parakeet Wellness",
-        home_subtitle: "Analisis de audio, alertas de contexto y guia amigable.",
+        home_subtitle: "Monitor de bienestar para tus periquitos",
+        stat_birds: "AVES",
+        stat_confidence: "CONFIANZA",
+        stat_energy: "ENERGIA",
         tip_title: "Consejo:",
         tip_home: " Agrega primero el perfil de tu periquito para mejorar la personalizacion.",
         latest_analysis: "Ultimo analisis",
+        bird_conf_badge: "Ave 92%",
         metric_mood: "Estado",
         metric_mood_value: "Feliz",
         metric_confidence: "Confianza",
@@ -883,16 +1139,10 @@
         context_temp: "Temp",
         context_humidity: "Humedad",
         context_wind: "Viento",
-        risk_title: "Evento de riesgo",
-        risk_desc: "La calidad del aire es moderada. Reduce aerosoles y mejora ventilacion.",
-        ai_card_title: "Resumen de capacidad AI",
-        ai_card_desc: "El backend extrae features de audio (MFCC, espectrales, pitch, energia), clasifica patrones de estado y combina calidad/contexto para resultados explicables.",
-        hardening_title: "Resumen de hardening para release",
-        hardening_b1: "La propiedad de datos de invitado ahora requiere X-Guest-Id y X-Guest-Secret.",
-        hardening_b2: "Builds de produccion fallan si falta API base URL o apunta a localhost.",
-        hardening_b3: "El arranque de backend puede exigir Alembic head antes de servir.",
-        hardening_b4: "Rate limit soporta backend Redis compartido para despliegues multi-instancia.",
-        cta_record: "Grabar vocalizacion",
+        ai_snapshot: "Modelo IA: Ensemble v2",
+        ai_card_desc: "CNN dual-head + Clasificador estadistico + Analisis temporal. Deteccion de ave, probabilidades de animo y desglose de vocalizacion con pesos adaptativos.",
+        cta_record: "Grabar",
+        cta_add_bird: "Agregar Ave",
         record_title: "Grabar",
         record_subtitle: "Captura al menos 30 segundos en ambiente silencioso para mejor confianza AI.",
         tip_record: " Mantener el telefono cerca de la jaula y evitar TV/musica.",
@@ -912,33 +1162,46 @@
         history_recent: "Analisis recientes",
         history_item_relaxed: "Relajado",
         history_item_stressed: "Estresado",
-        history_meta_1: "84% confianza · 71% energia · 2026-02-14",
-        history_meta_2: "73% confianza · 52% energia · 2026-02-12",
-        history_meta_3: "61% confianza · 66% energia · 2026-02-09",
-        guide_title: "Guia del Periquito Australiano",
-        guide_subtitle: "Cuidados practicos + senales + tutorial de uso.",
-        guide_info_title: "Informacion de especie",
-        guide_info_text: "Loros sociales que necesitan rutina, estimulacion y observacion diaria.",
-        guide_info_b1: "Vida promedio: 7-12 anos con buen cuidado.",
-        guide_info_b2: "Cambios de voz y postura son senales tempranas.",
-        guide_history_title: "Historia y conducta",
-        guide_history_text: "Evolucionaron en pastizales australianos y comunican en patrones de bandada.",
-        guide_history_b1: "El canto frecuente puede ser comunicacion normal.",
-        guide_history_b2: "Silencio repentino puede indicar estres/miedo.",
-        guide_care_title: "Cuidado y tips",
-        guide_care_b1: "Agua limpia diaria y control de apetito.",
-        guide_care_b2: "Rotacion de enriquecimiento (juguetes, perchas, forrajeo).",
-        guide_care_b3: "Mira tendencias semanales, no solo un evento.",
-        guide_risk_title: "Riesgos y senales",
-        guide_risk_b1: "Exposicion a mala calidad de aire (humo, aerosoles).",
-        guide_risk_b2: "Estres por calor/frio y cambios de rutina.",
-        guide_risk_b3: "Cambios respiratorios, baja de apetito, letargo persistente.",
-        guide_howto_title: "Como usar la app",
-        guide_howto_b1: "1. Agrega cada perfil con notas y foto.",
-        guide_howto_b2: "2. Graba 30+ segundos en ambiente tranquilo.",
-        guide_howto_b3: "3. Revisa estado, confianza y recomendacion.",
-        guide_howto_b4: "4. Usa Historial para tendencias y Ajustes para contexto.",
-        guide_safety_note: "Soporte educativo. Esta app no reemplaza diagnostico veterinario aviar.",
+        history_meta_1: "84% confianza · 71% energia · 3 segmentos · 2026-02-16",
+        history_meta_2: "73% confianza · 52% energia · 2 segmentos · 2026-02-14",
+        history_meta_3: "61% confianza · 66% energia · 4 segmentos · 2026-02-12",
+        guide_title: "Guia Completa del Periquito",
+        guide_subtitle: "Todo lo que necesitas para mantener a tu periquito feliz, sano y activo.",
+        guide_species_title: "Conoce a Tu Periquito",
+        guide_species_text: "Loros sociales inteligentes con comunicacion vocal compleja. Vida 7-15 anos.",
+        guide_habitat_title: "Habitat Ideal",
+        guide_habitat_text: "El entorno de la jaula impacta directamente salud, animo y vocalizaciones.",
+        guide_nutrition_title: "Nutricion Esencial",
+        guide_nutrition_text: "Dietas solo de semillas causan desnutricion. Pellets 60-70% + verduras frescas.",
+        guide_behavior_title: "Decodificador de Conducta",
+        guide_behavior_text: "Entender el lenguaje corporal ayuda a detectar problemas temprano.",
+        guide_voc_title: "Referencia de Vocalizaciones",
+        voc_singing: "Canto / Gorjeo",
+        voc_singing_mood: "Feliz, contento, socialmente activo",
+        voc_singing_action: "Excelente senal! Tu periquito esta comodo y prospera.",
+        voc_alarm: "Llamado de Alarma",
+        voc_alarm_mood: "Asustado, percibiendo amenaza",
+        voc_alarm_action: "Revisa amenazas: depredadores, sombras, movimientos subitos.",
+        voc_beak: "Rechinido de Pico",
+        voc_beak_mood: "Profundamente relajado, contento",
+        voc_beak_action: "Excelente senal! Generalmente antes de dormir. Tu periquito se siente seguro.",
+        guide_health_title: "Chequeo Rapido de Salud",
+        health_eyes: "Ojos",
+        health_eyes_ok: "Brillantes, claros, alertas",
+        health_eyes_warn: "Hinchados, con costra, semicerrados",
+        health_feathers: "Plumas",
+        health_feathers_ok: "Lisas, sedosas, bien acicaladas",
+        health_feathers_warn: "Erizadas constantemente, parches calvos",
+        health_breathing: "Respiracion",
+        health_breathing_ok: "Silenciosa, sin esfuerzo visible",
+        health_breathing_warn: "Boca abierta, cola moviendose, silbidos",
+        emergency_title: "Emergencia: Ir al Veterinario Ya",
+        emergency_1: "Sentado en piso de jaula, inflado, ojos cerrados",
+        emergency_2: "Respiracion con boca abierta o movimiento de cola",
+        emergency_3: "Convulsiones o incapacidad de posarse",
+        emergency_4: "Sangrado que no se detiene en 5 minutos",
+        emergency_action: "Mantener al ave caliente (29C), espacio oscuro y tranquilo, al veterinario ASAP.",
+        guide_safety_note: "Monitoreo de bienestar con IA. NO reemplaza diagnostico veterinario aviar.",
         settings_title: "Ajustes",
         settings_subtitle: "Modo de cuenta, idioma, habitat y acciones de privacidad.",
         tip_settings: " Configura coordenadas del habitat para activar riesgos contextuales.",
@@ -947,28 +1210,17 @@
         settings_email: "Email",
         settings_email_na: "No aplica",
         settings_email_account: "owner@parakeet.app",
-        settings_guest_secret: "Secreto de invitado",
-        settings_guest_secret_value: "Guardado en SecureStore",
-        settings_merge_contract: "Contrato de merge",
+        settings_ai_model: "Modelo IA",
+        settings_ai_model_value: "Ensemble v2",
         settings_auth_cta: "Crear cuenta o iniciar sesion",
         settings_habitat: "Habitat y contexto",
         settings_location: "Ubicacion",
         settings_location_value: "Casa",
         settings_latlon: "Lat/Lon",
-        settings_timezone: "Zona horaria",
-        settings_timezone_value: "America/New_York",
         settings_save_habitat: "Guardar habitat",
-        settings_privacy: "Ciclo de vida de privacidad",
-        settings_export: "Exportar datos de cuenta",
-        settings_delete: "Eliminar cuenta",
+        settings_privacy: "Privacidad",
+        settings_export: "Exportar datos",
         settings_delete_cta: "Eliminar cuenta",
-        settings_release: "Estado de release",
-        settings_release_status: "Estado",
-        settings_release_status_value: "Lista condicionalmente",
-        settings_release_checks: "Checks",
-        settings_release_checks_value: "Compilacion/Lint/Typecheck/Audit",
-        settings_release_blocker: "Pendiente operativo",
-        settings_release_blocker_value: "Ejecutar alembic upgrade head en entorno destino",
         tab_home: "Inicio",
         tab_record: "Grabar",
         tab_history: "Historial",
@@ -977,7 +1229,7 @@
       }
     };
 
-    const STORAGE_KEY = "parakeet_mockup_ui_state_v1";
+    const STORAGE_KEY = "parakeet_mockup_ui_state_v2";
     let currentLanguage = "en";
     let currentMode = "guest";
     let currentTab = "home";

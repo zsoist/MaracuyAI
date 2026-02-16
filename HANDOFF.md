@@ -1,100 +1,106 @@
-# HANDOFF - `codex/full-hardening-potenciacion`
+# HANDOFF - `claude/review-appstore-readiness`
 
-Last updated: **February 14, 2026 (release hardening pass)**
+Last updated: **February 16, 2026 (AI overhaul + UX + Guide mega-update)**
 
 ## 1) Branch Snapshot
 
 - Repo: `git@github.com:zsoist/Project-MK-2.git`
-- Branch: `codex/full-hardening-potenciacion`
-- Scope root:
-  - `/Users/daniel/Library/Mobile Documents/com~apple~CloudDocs/Paraket MK 2/Project-MK-2`
+- Branch: `claude/review-appstore-readiness-TnT7x`
+- Previous branch: `codex/full-hardening-potenciacion`
 
 This handoff is the current source-of-truth for implementation and release state.
 
 ## 2) What Was Completed In This Cycle
 
-## 2.1 Product expansion (mobile)
+### 2.1 AI/ML Pipeline Overhaul (backend)
 
-Implemented:
-- New Guide tab for Australian budgerigar education.
-- Full bilingual UX (`es`/`en`) with:
-  - device locale auto-detection
-  - manual override persisted in SecureStore
-- In-context education banners in key screens (Home, Record, History, Settings).
-- Settings now includes account deletion action.
+Replaced the primitive if/else heuristic classifier with a real 4-component ensemble ML system:
 
-Primary files:
-- `mobile/src/screens/GuideScreen.tsx`
-- `mobile/src/content/guide/en.ts`
-- `mobile/src/content/guide/es.ts`
-- `mobile/src/i18n/I18nProvider.tsx`
-- `mobile/src/i18n/locales/en.ts`
-- `mobile/src/i18n/locales/es.ts`
-- `mobile/src/components/TipBanner.tsx`
+- **CNN dual-head classifier** (`backend/app/ml/bird_classifier.py`):
+  - Conv2D x4 + BatchNorm + GlobalAvgPool + 2 softmax heads
+  - Predicts vocalization type (7 classes) and mood (6 classes) simultaneously
+  - Input: 128x128 mel spectrogram patches
 
-## 2.2 Backend hardening
+- **Advanced feature engine** (`backend/app/ml/feature_engine.py`):
+  - 100+ features: MFCCs (20 + delta + delta2), spectral (centroid, bandwidth, contrast, flatness, rolloff), pitch, energy, harmonic ratio, chroma, tonnetz
+  - Bird-specific: bird_band_energy_ratio (1-8kHz), spectral_entropy, amplitude_modulation_rate
 
-Implemented:
-- Guest to account merge endpoint:
-  - `POST /api/v1/auth/merge-guest`
-- Stronger guest proof model:
-  - `X-Guest-Secret` required for guest ownership resolution and guest merge.
-- Account data lifecycle endpoints:
-  - `GET /api/v1/auth/export-data`
-  - `DELETE /api/v1/auth/me`
-- Removed direct mutable `photo_url` field from standard parakeet update payload.
-- Canonical media URL support in recording responses.
-- Legacy media paths now self-heal to canonical public paths during read flows.
-- Storage cleanup fix for converted audio artifacts.
-- Added parakeet photo size limit for upload safety.
-- Added per-profile exception isolation logging in context refresh service.
-- Corrected AirNow PM2.5 semantics to use concentration (`ug/m3`) rather than AQI index aliasing.
-- Rate limiting now supports Redis shared backend (with memory fallback/strict mode).
+- **Statistical classifier** (`backend/app/ml/statistical_classifier.py`):
+  - Gaussian log-likelihood scoring against budgerigar-specific profiles
+  - 7 vocalization profiles and 6 mood profiles
+  - Bird detection confidence scoring
 
-Primary files:
-- `backend/app/api/routes/auth.py`
-- `backend/app/api/routes/parakeets.py`
-- `backend/app/api/routes/recordings.py`
-- `backend/app/services/storage_service.py`
-- `backend/app/services/context_service.py`
+- **Ensemble predictor** (`backend/app/ml/ensemble.py`):
+  - Adaptive weights: CNN available (50/30/20), CNN unavailable (5/65/30)
+  - Temporal consistency scoring, bird detection gating
+  - Per-mood recommendations including no-bird-detected case
 
-## 2.3 Release blocker execution
+- **Enhanced audio processor** (`backend/app/services/audio_processor.py`):
+  - Butterworth bandpass filter (800Hz-10kHz)
+  - HPSS (Harmonic-Percussive Source Separation)
+  - Adaptive noise reduction (quietest 0.5s window)
+  - Voice Activity Detection
 
-Implemented against prior blocker list:
+- **Rewritten ML service** (`backend/app/services/ml_service.py`):
+  - Full pipeline orchestrator: preprocess → segment → per-segment (CNN + statistical) → ensemble → rich output
+  - Returns bird_detected, mood_probabilities, vocalization_probabilities, segment_predictions, signal_quality
 
-1. Migration discipline foundation:
-- Added Alembic scaffolding and baseline migration:
-  - `backend/alembic.ini`
-  - `backend/migrations/env.py`
-  - `backend/migrations/versions/20260214_0001_baseline.py`
-- Runtime schema mutation now guarded by explicit flag:
-  - `backend/app/main.py`
-  - `backend/app/core/config.py` (`DB_AUTO_CREATE_ON_STARTUP`)
-- Release startup now validates DB revision against Alembic head when enforcement is enabled:
-  - `backend/app/core/migrations.py`
-  - `backend/app/main.py` (`ENFORCE_ALEMBIC_HEAD`)
+### 2.2 iOS-Style UX Overhaul (mobile)
 
-2. Production API env fail-fast:
-- Mobile now throws in non-dev builds if `EXPO_PUBLIC_API_BASE_URL` is missing or localhost-like.
-  - `mobile/src/config/env.ts`
-- Added EAS prebuild release env gate:
-  - `mobile/scripts/check-release-env.mjs`
-  - `mobile/eas.json`
-  - `mobile/package.json` (`check:release-env`, `eas-build-pre-install`)
+- **HomeScreen** (`mobile/src/screens/HomeScreen.tsx`):
+  - Rounded green hero header with stat badges (birds count, confidence%, energy%)
+  - Dashboard card with bird detection badge, mood indicator, and mini probability chart (top 3 moods)
+  - Welcome card for first-time users (no analysis) with prominent Add Bird CTA
+  - Dual CTA row: Record (filled green) + Add Bird (outlined)
+  - Tappable dashed-border empty state that navigates to AddParakeet
 
-3. Legacy recording path normalization utility:
-- Added one-time script for DB+filesystem normalization:
-  - `backend/scripts/normalize_media_paths.py`
+- **AnalysisResultCard** (`mobile/src/components/AnalysisResultCard.tsx`):
+  - BirdDetectionBadge component (green/yellow)
+  - ProbabilityBar for visual mood/vocalization breakdowns
+  - Analysis metadata section (segments, consistency, vocal activity, model version)
 
-4. Dependency hardening and Expo migration:
-- Upgraded mobile from Expo 52 to Expo 54 compatible stack.
-- Resolved previous `npm audit` high vulnerabilities to zero.
-  - `mobile/package.json`
-  - `mobile/package-lock.json`
+- **HistoryScreen** (`mobile/src/screens/HistoryScreen.tsx`):
+  - Bird detection warning badge, segment count, bird confidence in each history item
+
+### 2.3 Guide Mega-Overhaul (mobile)
+
+- **Content types** (`mobile/src/content/guide/types.ts`):
+  - Added VocalizationRef, HealthCheckItem interfaces
+  - Expanded GuideContent with vocalizationGuide, healthChecklist, emergencySigns sections
+
+- **English content** (`mobile/src/content/guide/en.ts`):
+  - 7 comprehensive care sections with icons
+  - 7 vocalization reference items with sound, mood, and action
+  - 7 health checklist items with healthy vs. warning indicators
+  - Emergency signs section with 8 urgent signs and action protocol
+  - 7-step how-to guide
+
+- **Spanish content** (`mobile/src/content/guide/es.ts`):
+  - Complete translation of all content above
+
+- **GuideScreen** (`mobile/src/screens/GuideScreen.tsx`):
+  - iOS-style hero header with green background
+  - Collapsible care section cards with icons and chevrons
+  - Vocalization reference: expandable cards with sound description, mood, and action
+  - Health checklist: card with green/red indicators per body area
+  - Emergency red box with warning signs and action protocol
+  - How-to card and safety disclaimer
+
+### 2.4 i18n Updates
+
+- Added 9 new HomeScreen keys to `en.ts` and `es.ts` (stat badges, welcome card, CTA labels, a11y)
+- Added 9 analysis detail keys (bird detection, confidence, segments, probabilities)
+- Updated AI model label to "Ensemble v2 (CNN + Statistical + Temporal)"
+
+### 2.5 Backend Fixes
+
+- Fixed hardcoded Spanish alert messages in `analysis_service.py` to English
+- Added bird-not-detected alert type
+- Added `backend/app/ml/weights/.gitkeep` for CNN model weights
 
 ## 3) Current Runtime Architecture
 
-## 3.1 Backend
+### 3.1 Backend
 
 Core routes:
 - `/api/v1/auth/*`
@@ -102,6 +108,10 @@ Core routes:
 - `/api/v1/recordings/*`
 - `/api/v1/analysis/*`
 - `/api/v1/context/*`
+
+ML pipeline:
+- AudioProcessor → FeatureEngine → StatisticalClassifier → BirdCNN → EnsemblePredictor
+- Orchestrated by MLService
 
 Identity model:
 - Guest mode via `X-Guest-Id` + `X-Guest-Secret`
@@ -112,17 +122,13 @@ Context providers:
 - weather: NOAA -> Open-Meteo fallback
 - AQI: AirNow (if key) -> Open-Meteo fallback
 
-Important release note:
-- Use Alembic migrations for schema evolution.
-- Do not rely on startup `create_all` in release environments.
-
-## 3.2 Mobile
+### 3.2 Mobile
 
 Main app tabs:
-- Home
+- Home (iOS-style dashboard with stats, CTA, bird detection)
 - Record
-- History
-- Guide
+- History (with bird detection badges)
+- Guide (collapsible sections, vocalization decoder, health checklist, emergency box)
 - Settings
 
 State/services:
@@ -130,17 +136,12 @@ State/services:
 - Axios API client with auth/guest headers
 - SecureStore for auth token, guest id, guest secret, language preference
 
-UX/education:
-- contextual tip banners
-- guide-driven onboarding flow
-- i18n translations across screens/components
-
 ## 4) Environment and Runbook
 
-## 4.1 Backend local dev
+### 4.1 Backend local dev
 
 ```bash
-cd "/Users/daniel/Library/Mobile Documents/com~apple~CloudDocs/Paraket MK 2/Project-MK-2/backend"
+cd backend
 cp .env.example .env
 docker compose up --build
 ```
@@ -148,22 +149,14 @@ docker compose up --build
 Optional migration workflow:
 
 ```bash
-cd "/Users/daniel/Library/Mobile Documents/com~apple~CloudDocs/Paraket MK 2/Project-MK-2/backend"
+cd backend
 alembic upgrade head
 ```
 
-Legacy media normalization (one-time where needed):
+### 4.2 Mobile local dev
 
 ```bash
-cd "/Users/daniel/Library/Mobile Documents/com~apple~CloudDocs/Paraket MK 2/Project-MK-2/backend"
-python -m scripts.normalize_media_paths --dry-run
-python -m scripts.normalize_media_paths
-```
-
-## 4.2 Mobile local dev
-
-```bash
-cd "/Users/daniel/Library/Mobile Documents/com~apple~CloudDocs/Paraket MK 2/Project-MK-2/mobile"
+cd mobile
 cp .env.example .env
 npm install
 npx expo start
@@ -184,60 +177,36 @@ python3 -m compileall backend/app backend/migrations backend/scripts
 npm --prefix mobile run typecheck
 npm --prefix mobile run lint
 npm --prefix mobile audit --audit-level=high
-EXPO_PUBLIC_API_BASE_URL=https://api.example.com/api/v1 EAS_BUILD_PROFILE=production VALIDATE_RELEASE_ENV=true npm --prefix mobile run check:release-env
 ```
-
-Result summary:
-- backend compile: pass
-- mobile typecheck: pass
-- mobile lint: pass
-- mobile audit(high): pass (`0 vulnerabilities`)
-- release env gate script: pass (valid URL) / fail as expected (missing URL)
 
 ## 6) Remaining Risks / Non-Blockers
 
+- CNN weights are placeholder (statistical classifier provides fallback).
 - No automated backend/mobile test suite yet (unit/integration/e2e gap).
-- Redis rate limiting must be enabled in production config to get cross-instance guarantees.
+- Redis rate limiting must be enabled in production config.
 - Operational migration execution must still be performed in target environments.
-- This workstation shell does not have Docker and local Python is missing backend DB driver deps (`asyncpg`), so migration execution evidence was not captured here.
 
 ## 7) iOS Release Verdict (Updated)
 
 Status: **CONDITIONALLY READY**
 
 Why not fully READY yet:
-- operational migration steps must be executed in target environment:
-  - `alembic upgrade head`
-  - media normalization script where legacy rows exist
-- test coverage remains below production-hardening expectations.
+- CNN model needs training on real budgerigar vocalization dataset (statistical fallback works in the meantime).
+- Operational migration steps must be executed in target environment.
+- Test coverage remains below production-hardening expectations.
 
-## 8) Next 48h Recommended Work
+## 8) Recommended Next Steps
 
-1. Execute migration + normalization in staging snapshot and verify all historical recordings play.
-2. Add backend integration tests for:
-- guest/account auth context
-- merge-guest idempotency
-- upload validation and media contract
-3. Add mobile smoke tests for:
-- first launch guest flow
-- language persistence
-- guide rendering and navigation
-4. Add context telemetry dashboards and alerting thresholds.
+1. Train CNN on labeled budgerigar audio dataset and place weights in `backend/app/ml/weights/`.
+2. Execute migration + normalization in staging.
+3. Add backend integration tests for ML pipeline.
+4. Add mobile smoke tests for guide rendering and analysis flow.
+5. Polish AddParakeetScreen and RecordScreen visual design.
+6. Run full iOS build + TestFlight validation.
 
 ## 9) Documentation Updated In This Cycle
 
 - `HANDOFF.md` (this file)
-- `README.md` (beginner-focused, ML/AI explained)
-- `REVIEW_IOS_FIRST_2026-02-14.md` (full findings + verdict + roadmap)
-- `mockup.html` (feature-aligned visual prototype)
-
-## 10) Final Alignment Notes
-
-- `mockup.html` is now aligned with the hardening architecture and explicitly reflects:
-  - guest identity proof (`X-Guest-Id` + `X-Guest-Secret`)
-  - release env gate behavior for production profiles
-  - migration discipline (`ENFORCE_ALEMBIC_HEAD`)
-  - Redis-capable shared rate limiting backend
-- Release status remains **CONDITIONALLY READY** until target-environment operational steps are executed:
-  - `alembic upgrade head`
-  - staging/production verification of historical recording playback
+- `README.md` (updated with ensemble ML architecture, new features)
+- `mockup.html` (updated with new UI sections)
+- Guide content: `mobile/src/content/guide/en.ts`, `es.ts`, `types.ts`
