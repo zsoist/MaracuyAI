@@ -21,12 +21,7 @@ from __future__ import annotations
 
 import numpy as np
 
-# Must match backend/app/ml/bird_classifier.py exactly
-VOCALIZATION_LABELS = [
-    "singing", "chattering", "alarm", "silence",
-    "distress", "contact_call", "beak_grinding",
-]
-MOOD_LABELS = ["happy", "relaxed", "stressed", "scared", "sick", "neutral"]
+from app.ml.bird_classifier import MOOD_LABELS, VOCALIZATION_LABELS
 
 NUM_VOC = len(VOCALIZATION_LABELS)
 NUM_MOOD = len(MOOD_LABELS)

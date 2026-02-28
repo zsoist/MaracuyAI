@@ -105,24 +105,28 @@ Tu PC (Docker Compose) → Cloudflare Tunnel (gratis) → app móvil
 
 ---
 
-## Archivos a Crear/Modificar
+## Archivos Integrados
 
-### Nuevos archivos (en el repo)
+### Training module (integrado en el repo)
 
 ```
-backend/
-├── app/ml/training/
-│   ├── train_from_v2_data.py    # Re-entrena con datos v2 para la arquitectura del repo
-│   ├── label_mapper.py          # Mapeo feliz/estrés → 6 moods + 7 vocalizaciones
-│   └── evaluate.py              # Evaluación con métricas + threshold optimization
+backend/app/ml/training/
+├── __init__.py              # Module init
+├── train_from_v2_data.py    # Re-entrena con datos v2 para la arquitectura del repo
+└── label_mapper.py          # Mapeo feliz/estrés → 6 moods + 7 vocalizaciones
 ```
+
+**Mejoras clave en la integración:**
+- `label_mapper.py` importa labels directamente desde `bird_classifier.py` (siempre sincronizado)
+- `train_from_v2_data.py` importa `_build_model()` desde `bird_classifier.py` (arquitectura siempre idéntica)
+- Dependencias de entrenamiento (`matplotlib`, `scikit-learn`) agregadas a `requirements.txt`
 
 ### Archivos existentes que NO se tocan
 
 Todo el backend, mobile, ML pipeline, ensemble, statistical classifier **se queda exactamente como está**. La única acción es generar el archivo `bird_classifier.weights.h5` y colocarlo en `backend/app/ml/weights/`.
 
 El ensemble ya está programado para detectar automáticamente si los pesos existen:
-- Sin pesos: `CNN=0.05, Statistical=0.65, Temporal=0.20` (estado actual)
+- Sin pesos: `CNN=0.05, Statistical=0.65, Temporal=0.30` (estado actual)
 - Con pesos: `CNN=0.50, Statistical=0.30, Temporal=0.20` (después de entrenar)
 
 ---

@@ -219,62 +219,8 @@ def augment_spectrograms(
 
 def build_model():
     """Build the exact same model as backend/app/ml/bird_classifier.py."""
-    import tensorflow as tf
-
-    VOCALIZATION_LABELS = [
-        "singing", "chattering", "alarm", "silence",
-        "distress", "contact_call", "beak_grinding",
-    ]
-    MOOD_LABELS = ["happy", "relaxed", "stressed", "scared", "sick", "neutral"]
-
-    inp = tf.keras.Input(shape=(N_MELS, SPEC_TIME_FRAMES, 1), name="mel_input")
-
-    # Shared backbone (MUST match bird_classifier.py exactly)
-    x = tf.keras.layers.Conv2D(32, (3, 3), padding="same", activation="relu")(inp)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.MaxPooling2D((2, 2))(x)
-    x = tf.keras.layers.Dropout(0.25)(x)
-
-    x = tf.keras.layers.Conv2D(64, (3, 3), padding="same", activation="relu")(x)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.MaxPooling2D((2, 2))(x)
-    x = tf.keras.layers.Dropout(0.25)(x)
-
-    x = tf.keras.layers.Conv2D(128, (3, 3), padding="same", activation="relu")(x)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.MaxPooling2D((2, 2))(x)
-    x = tf.keras.layers.Dropout(0.3)(x)
-
-    x = tf.keras.layers.Conv2D(128, (3, 3), padding="same", activation="relu")(x)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    x = tf.keras.layers.Dropout(0.4)(x)
-
-    shared = tf.keras.layers.Dense(256, activation="relu", name="shared_dense")(x)
-
-    # Vocalization head
-    voc_dense = tf.keras.layers.Dense(128, activation="relu")(shared)
-    voc_out = tf.keras.layers.Dense(
-        len(VOCALIZATION_LABELS), activation="softmax", name="vocalization"
-    )(voc_dense)
-
-    # Mood head
-    mood_dense = tf.keras.layers.Dense(128, activation="relu")(shared)
-    mood_out = tf.keras.layers.Dense(
-        len(MOOD_LABELS), activation="softmax", name="mood"
-    )(mood_dense)
-
-    model = tf.keras.Model(inputs=inp, outputs=[voc_out, mood_out])
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-        loss={
-            "vocalization": "categorical_crossentropy",
-            "mood": "categorical_crossentropy",
-        },
-        loss_weights={"vocalization": 1.0, "mood": 0.8},
-        metrics={"vocalization": "accuracy", "mood": "accuracy"},
-    )
-    return model
+    from app.ml.bird_classifier import _build_model
+    return _build_model()
 
 
 # ── Evaluation ─────────────────────────────────────────
@@ -283,10 +229,7 @@ def evaluate_and_save(
     model, X_test, y_mood_test, y_voc_test, y_binary_test, output_dir: str,
 ):
     """Run evaluation, save plots and metrics."""
-    import tensorflow as tf
-
-    MOOD_LABELS = ["happy", "relaxed", "stressed", "scared", "sick", "neutral"]
-    VOC_LABELS = ["singing", "chattering", "alarm", "silence", "distress", "contact_call", "beak_grinding"]
+    from app.ml.bird_classifier import MOOD_LABELS, VOCALIZATION_LABELS
 
     X_input = X_test[..., np.newaxis]
     voc_pred, mood_pred = model.predict(X_input, verbose=0)
@@ -304,7 +247,7 @@ def evaluate_and_save(
     )
     voc_report = classification_report(
         voc_true_idx, voc_pred_idx,
-        target_names=VOC_LABELS, digits=3, zero_division=0,
+        target_names=VOCALIZATION_LABELS, digits=3, zero_division=0,
     )
 
     logger.info("Mood Classification Report:\n%s", mood_report)
@@ -327,10 +270,10 @@ def evaluate_and_save(
     cm_voc = confusion_matrix(voc_true_idx, voc_pred_idx)
     axes[1].imshow(cm_voc, cmap="Greens")
     axes[1].set_title("Vocalization Confusion Matrix")
-    axes[1].set_xticks(range(len(VOC_LABELS)))
-    axes[1].set_xticklabels(VOC_LABELS, rotation=45, ha="right", fontsize=8)
-    axes[1].set_yticks(range(len(VOC_LABELS)))
-    axes[1].set_yticklabels(VOC_LABELS, fontsize=8)
+    axes[1].set_xticks(range(len(VOCALIZATION_LABELS)))
+    axes[1].set_xticklabels(VOCALIZATION_LABELS, rotation=45, ha="right", fontsize=8)
+    axes[1].set_yticks(range(len(VOCALIZATION_LABELS)))
+    axes[1].set_yticklabels(VOCALIZATION_LABELS, fontsize=8)
     for i in range(cm_voc.shape[0]):
         for j in range(cm_voc.shape[1]):
             axes[1].text(j, i, str(cm_voc[i, j]), ha="center", va="center", fontsize=10)
@@ -350,7 +293,7 @@ def evaluate_and_save(
     valid = binary_pred >= 0
     if valid.sum() > 0:
         binary_acc = float((binary_pred[valid] == y_binary_test[valid]).mean())
-        logger.info("Binary accuracy (feliz/estrés mapping): %.4f", binary_acc)
+        logger.info("Binary accuracy (feliz/estres mapping): %.4f", binary_acc)
     else:
         binary_acc = 0.0
 
@@ -360,8 +303,8 @@ def evaluate_and_save(
         "mood_accuracy": round(float((mood_pred_idx == mood_true_idx).mean()), 4),
         "voc_accuracy": round(float((voc_pred_idx == voc_true_idx).mean()), 4),
         "test_samples": int(len(X_test)),
-        "mood_labels": MOOD_LABELS,
-        "vocalization_labels": VOC_LABELS,
+        "mood_labels": list(MOOD_LABELS),
+        "vocalization_labels": list(VOCALIZATION_LABELS),
         "note": "Trained from v2 binary data with soft label mapping. "
                 "Accuracy is limited to covered classes (happy, stressed, neutral).",
     }
@@ -375,11 +318,11 @@ def evaluate_and_save(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Train the repo's BirdCNN using v2 Maracuyá audio data"
+        description="Train the repo's BirdCNN using v2 Maracuya audio data"
     )
     parser.add_argument(
         "--data-dir", required=True,
-        help="Carpeta raíz con subcarpetas Estres/ y Feliz/",
+        help="Carpeta raiz con subcarpetas Estres/ y Feliz/",
     )
     parser.add_argument(
         "--output-dir", default="./app/ml/weights",
@@ -398,7 +341,7 @@ def main():
     tf.random.set_seed(RANDOM_STATE)
     np.random.seed(RANDOM_STATE)
 
-    from label_mapper import build_soft_labels
+    from app.ml.training.label_mapper import build_soft_labels
 
     # ── 1. Build dataset ───────────────────────────────
     logger.info("Building dataset from %s ...", args.data_dir)
@@ -500,11 +443,11 @@ def main():
         model, X_test, y_mood_test, y_voc_test, y_binary_test, args.output_dir,
     )
 
-    logger.info("✅ Training complete. Weights at: %s", weights_path)
+    logger.info("Training complete. Weights at: %s", weights_path)
     logger.info(
         "To activate the CNN in the ensemble, copy the weights file to:\n"
         "  backend/app/ml/weights/bird_classifier.weights.h5\n"
-        "The ensemble will automatically shift from Statistical=0.65 → CNN=0.50"
+        "The ensemble will automatically shift from Statistical=0.65 to CNN=0.50"
     )
 
 

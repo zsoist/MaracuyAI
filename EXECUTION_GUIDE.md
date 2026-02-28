@@ -14,34 +14,30 @@ Entrenar un modelo CNN compatible con Project-MK-2 usando tus datos de audio de 
 # Clonar el repo (si no lo tienes)
 git clone https://github.com/zsoist/Project-MK-2.git
 cd Project-MK-2
-git checkout claude/review-appstore-readiness-TnT7x
-
-# Copiar los archivos de entrenamiento al repo
-cp -r /ruta/de/v3/backend/app/ml/training/* backend/app/ml/training/
 ```
 
-Tu estructura debe quedar así:
+Los archivos de entrenamiento ya vienen integrados en el repo:
 ```
 backend/app/ml/
 ├── __init__.py
-├── bird_classifier.py        # Ya existe en el repo
-├── ensemble.py                # Ya existe en el repo
-├── feature_engine.py          # Ya existe en el repo
-├── statistical_classifier.py  # Ya existe en el repo
+├── bird_classifier.py        # CNN dual-head (vocalization + mood)
+├── ensemble.py                # Blending CNN + Statistical + Temporal
+├── feature_engine.py          # 100+ audio features
+├── statistical_classifier.py  # Gaussian-distance classifier
 ├── training/
-│   ├── __init__.py            # NUEVO
-│   ├── label_mapper.py        # NUEVO
-│   └── train_from_v2_data.py  # NUEVO
+│   ├── __init__.py            # Training module
+│   ├── label_mapper.py        # v2 binary → soft multi-class labels
+│   └── train_from_v2_data.py  # Full training pipeline
 └── weights/
-    └── .gitkeep               # Ya existe — aquí irán los pesos
+    └── .gitkeep               # Aquí irán los pesos generados
 ```
 
-## Paso 1: Instalar dependencias de entrenamiento
+## Paso 1: Instalar dependencias
 
 ```bash
 cd backend
 pip install -r requirements.txt
-pip install matplotlib scikit-learn
+# matplotlib y scikit-learn ya están incluidos en requirements.txt
 ```
 
 ## Paso 2: Entrenar
