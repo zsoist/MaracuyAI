@@ -2,6 +2,8 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { MoodType } from '../types';
 import { MOOD_CONFIG } from '../store/useStore';
+import { useI18n } from '../i18n/useI18n';
+import type { TranslationKey } from '../i18n/types';
 
 interface MoodIndicatorProps {
   mood: MoodType;
@@ -10,8 +12,17 @@ interface MoodIndicatorProps {
 }
 
 export function MoodIndicator({ mood, confidence, size = 'small' }: MoodIndicatorProps) {
+  const { t } = useI18n();
   const config = MOOD_CONFIG[mood];
   const isLarge = size === 'large';
+  const labelMap: Record<MoodType, TranslationKey> = {
+    happy: 'moodHappy',
+    relaxed: 'moodRelaxed',
+    stressed: 'moodStressed',
+    scared: 'moodScared',
+    sick: 'moodSick',
+    neutral: 'moodNeutral',
+  };
 
   return (
     <View style={[styles.container, isLarge && styles.containerLarge]}>
@@ -27,10 +38,10 @@ export function MoodIndicator({ mood, confidence, size = 'small' }: MoodIndicato
         </Text>
       </View>
       <Text style={[styles.label, isLarge && styles.labelLarge, { color: config.color }]}>
-        {config.label}
+        {t(labelMap[mood])}
       </Text>
       <Text style={[styles.confidence, isLarge && styles.confidenceLarge]}>
-        {Math.round(confidence * 100)}% confianza
+        {t('moodConfidence', { value: Math.round(confidence * 100) })}
       </Text>
     </View>
   );

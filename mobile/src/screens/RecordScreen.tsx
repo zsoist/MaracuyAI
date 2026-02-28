@@ -1,191 +1,99 @@
-import { Audio } from 'expo-av';
-import * as DocumentPicker from 'expo-document-picker';
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { MoodIndicator } from '../components/MoodIndicator';
-import * as api from '../services/api';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+import { AnalysisLoadingState } from '../components/AnalysisLoadingState';
+import { AnalysisResultCard } from '../components/AnalysisResultCard';
+import { ParakeetTargetSelector } from '../components/ParakeetTargetSelector';
+import { RecordingQualityMeter } from '../components/RecordingQualityMeter';
+import { TipBanner } from '../components/TipBanner';
+import { FEATURES } from '../config/env';
+import { useRecordAnalysis } from '../hooks/useRecordAnalysis';
+import { useI18n } from '../i18n/useI18n';
 import { useStore } from '../store/useStore';
+import { colors, spacing, typography } from '../theme/tokens';
 import { formatDuration } from '../utils/audioHelpers';
 
-export function RecordScreen({ navigation }: { navigation: any }) {
-  const { parakeets, setLatestAnalysis, addRecording } = useStore();
-  const [isRecording, setIsRecording] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
-  const recordingRef = useRef<Audio.Recording | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+export function RecordScreen() {
+  const { t } = useI18n();
+  const parakeets = useStore((state) => state.parakeets);
+  const {
+    isRecording,
+    duration,
+    isAnalyzing,
+    analysisResult,
+    selectedParakeetId,
+    setSelectedParakeetId,
+    startRecording,
+    stopRecording,
+    pickAudioFile,
+    resetAnalysis,
+    recordingQuality,
+  } = useRecordAnalysis(parakeets);
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
-
-  const startRecording = async () => {
-    try {
-      const permission = await Audio.requestPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Permiso requerido', 'Necesitamos acceso al microfono para grabar.');
-        return;
-      }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      recordingRef.current = recording;
-      setIsRecording(true);
-      setDuration(0);
-      setAnalysisResult(null);
-
-      timerRef.current = setInterval(() => {
-        setDuration((d) => d + 1);
-      }, 1000);
-    } catch (err) {
-      Alert.alert('Error', 'No se pudo iniciar la grabacion.');
+  const toggleRecording = () => {
+    if (isRecording) {
+      void stopRecording();
+      return;
     }
-  };
-
-  const stopRecording = async () => {
-    if (!recordingRef.current) return;
-
-    if (timerRef.current) clearInterval(timerRef.current);
-    setIsRecording(false);
-
-    try {
-      await recordingRef.current.stopAndUnloadAsync();
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
-
-      if (uri) {
-        await analyzeAudio(uri, 'recording.wav');
-      }
-    } catch (err) {
-      Alert.alert('Error', 'No se pudo detener la grabacion.');
-    }
-  };
-
-  const pickFile = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: 'audio/*',
-        copyToCacheDirectory: true,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        await analyzeAudio(asset.uri, asset.name);
-      }
-    } catch (err) {
-      Alert.alert('Error', 'No se pudo seleccionar el archivo.');
-    }
-  };
-
-  const analyzeAudio = async (uri: string, filename: string) => {
-    setIsAnalyzing(true);
-    try {
-      const recording = await api.uploadRecording(uri, filename);
-      addRecording(recording);
-
-      const parakeetIds = parakeets.length > 0 ? parakeets.map((p) => p.id) : undefined;
-      const results = await api.analyzeRecording(recording.id, parakeetIds);
-
-      if (results.length > 0) {
-        setAnalysisResult(results[0]);
-        setLatestAnalysis(results[0]);
-      }
-    } catch (err) {
-      Alert.alert('Error', 'No se pudo analizar el audio. Verifica tu conexion.');
-    } finally {
-      setIsAnalyzing(false);
-    }
+    void startRecording();
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
         {isAnalyzing ? (
-          <View style={styles.analyzingContainer}>
-            <ActivityIndicator size="large" color="#4CAF50" />
-            <Text style={styles.analyzingText}>Analizando vocalizaciones...</Text>
-            <Text style={styles.analyzingSubtext}>
-              Procesando espectrograma y clasificando patrones
-            </Text>
-          </View>
+          <AnalysisLoadingState />
         ) : analysisResult ? (
-          <View style={styles.resultContainer}>
-            <Text style={styles.resultTitle}>Resultado del analisis</Text>
-            <MoodIndicator
-              mood={analysisResult.mood}
-              confidence={analysisResult.confidence}
-              size="large"
-            />
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Vocalizacion:</Text>
-              <Text style={styles.detailValue}>{analysisResult.vocalization_type}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Energia:</Text>
-              <Text style={styles.detailValue}>
-                {Math.round(analysisResult.energy_level * 100)}%
-              </Text>
-            </View>
-            {analysisResult.recommendations && (
-              <View style={styles.recommendationBox}>
-                <Text style={styles.recommendationTitle}>Recomendacion</Text>
-                <Text style={styles.recommendationText}>
-                  {analysisResult.recommendations}
-                </Text>
-              </View>
-            )}
-            <TouchableOpacity
-              style={styles.newRecordingButton}
-              onPress={() => {
-                setAnalysisResult(null);
-                setDuration(0);
-              }}
-            >
-              <Text style={styles.newRecordingText}>Nueva grabacion</Text>
-            </TouchableOpacity>
-          </View>
+          <AnalysisResultCard analysisResult={analysisResult} onNewRecording={resetAnalysis} />
         ) : (
           <View style={styles.recordContainer}>
+            <TipBanner text={t('tipHowToRecord')} />
+
+            <ParakeetTargetSelector
+              parakeets={parakeets}
+              selectedParakeetId={selectedParakeetId}
+              onSelect={setSelectedParakeetId}
+            />
+
+            {FEATURES.captureQuality && (
+              <RecordingQualityMeter
+                currentLevel={recordingQuality.currentLevel}
+                averageLevel={recordingQuality.averageLevel}
+                peakLevel={recordingQuality.peakLevel}
+                label={recordingQuality.label}
+                guidance={recordingQuality.guidance}
+              />
+            )}
+
             <Text style={styles.timerText}>{formatDuration(duration)}</Text>
 
             {isRecording && (
-              <Text style={styles.recordingHint}>
-                Minimo 30 segundos recomendados
-              </Text>
+              <Text style={styles.recordingHint}>{t('recordTimerHint')}</Text>
             )}
 
             <TouchableOpacity
               style={[styles.recordBtn, isRecording && styles.recordBtnActive]}
-              onPress={isRecording ? stopRecording : startRecording}
+              onPress={toggleRecording}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isRecording ? t('a11yStopRecording') : t('a11yStartRecording')
+              }
             >
-              <View
-                style={[styles.recordInner, isRecording && styles.recordInnerActive]}
-              />
+              <View style={[styles.recordInner, isRecording && styles.recordInnerActive]} />
             </TouchableOpacity>
 
             <Text style={styles.recordLabel}>
-              {isRecording ? 'Toca para detener' : 'Toca para grabar'}
+              {isRecording ? t('recordTapToStop') : t('recordTapToRecord')}
             </Text>
 
             {!isRecording && (
-              <TouchableOpacity style={styles.uploadButton} onPress={pickFile}>
-                <Text style={styles.uploadText}>Subir archivo de audio</Text>
+              <TouchableOpacity
+                style={styles.uploadButton}
+                onPress={() => void pickAudioFile()}
+                accessibilityRole="button"
+                accessibilityLabel={t('a11yUploadAudio')}
+              >
+                <Text style={styles.uploadText}>{t('recordUploadAudio')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -198,7 +106,7 @@ export function RecordScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -208,16 +116,17 @@ const styles = StyleSheet.create({
   },
   recordContainer: {
     alignItems: 'center',
+    width: '100%',
   },
   timerText: {
-    fontSize: 64,
+    fontSize: 56,
     fontWeight: '200',
-    color: '#333',
-    marginBottom: 8,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
   },
   recordingHint: {
-    fontSize: 13,
-    color: '#999',
+    fontSize: typography.caption,
+    color: colors.textSecondary,
     marginBottom: 40,
   },
   recordBtn: {
@@ -225,19 +134,19 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 4,
-    borderColor: '#F44336',
+    borderColor: colors.danger,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   recordBtnActive: {
-    borderColor: '#F44336',
+    borderColor: colors.danger,
   },
   recordInner: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#F44336',
+    backgroundColor: colors.danger,
   },
   recordInnerActive: {
     width: 28,
@@ -245,8 +154,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   recordLabel: {
-    fontSize: 15,
-    color: '#666',
+    fontSize: typography.body,
+    color: colors.textSecondary,
     marginBottom: 40,
   },
   uploadButton: {
@@ -254,82 +163,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#4CAF50',
+    borderColor: colors.primary,
   },
   uploadText: {
-    color: '#4CAF50',
-    fontSize: 15,
+    color: colors.primary,
+    fontSize: typography.body,
     fontWeight: '500',
-  },
-  analyzingContainer: {
-    alignItems: 'center',
-  },
-  analyzingText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginTop: 20,
-  },
-  analyzingSubtext: {
-    fontSize: 13,
-    color: '#999',
-    marginTop: 8,
-  },
-  resultContainer: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  resultTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 16,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '80%',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  detailLabel: {
-    fontSize: 15,
-    color: '#666',
-  },
-  detailValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-  },
-  recommendationBox: {
-    backgroundColor: '#E8F5E9',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 20,
-    width: '100%',
-  },
-  recommendationTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#2E7D32',
-    marginBottom: 6,
-  },
-  recommendationText: {
-    fontSize: 13,
-    color: '#333',
-    lineHeight: 20,
-  },
-  newRecordingButton: {
-    marginTop: 24,
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  newRecordingText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
   },
 });

@@ -27,5 +27,5 @@ class Parakeet(Base):
 
     owner: Mapped["User"] = relationship(back_populates="parakeets")  # noqa: F821
     analysis_results: Mapped[list["AnalysisResult"]] = relationship(  # noqa: F821
-        back_populates="parakeet", cascade="all, delete-orphan"
+        back_populates="parakeet"
     )

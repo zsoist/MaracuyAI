@@ -1,0 +1,8 @@
+Single-database Alembic setup.
+
+Usage:
+- alembic upgrade head
+- alembic revision --autogenerate -m "message"
+- alembic downgrade -1
+
+This project uses async SQLAlchemy at runtime; Alembic env is configured for async engine migrations.

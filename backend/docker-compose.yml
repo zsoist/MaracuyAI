@@ -1,18 +1,24 @@
 services:
   api:
     build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/parakeet_wellness
       - DEBUG=true
+      - ENFORCE_ALEMBIC_HEAD=false
       - STORAGE_BACKEND=local
       - UPLOAD_DIR=/app/uploads
+      - RATE_LIMIT_BACKEND=redis
+      - RATE_LIMIT_REDIS_URL=redis://redis:6379/0
     volumes:
       - .:/app
       - upload_data:/app/uploads
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   db:
@@ -31,6 +37,20 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
   upload_data:
+  redis_data:

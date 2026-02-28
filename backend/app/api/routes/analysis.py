@@ -1,16 +1,19 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
+from app.api.deps import AuthContext, get_auth_context
 from app.core.database import get_db
 from app.models.analysis_result import AnalysisResult, MoodType, VocalizationType
+from app.models.parakeet import Parakeet
 from app.models.recording import Recording
-from app.models.user import User
+from app.services.analysis_service import build_alerts, calculate_wellness_metrics
 from app.services.ml_service import MLService
+from app.services.parakeet_service import validate_user_parakeet_ids
+from app.services.recording_service import get_user_recording
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -18,8 +21,8 @@ ml_service = MLService()
 
 
 class AnalyzeRequest(BaseModel):
-    recording_id: str
-    parakeet_ids: list[str] | None = None
+    recording_id: uuid.UUID
+    parakeet_ids: list[uuid.UUID] | None = Field(default=None, max_length=10)
 
 
 class AnalysisResponse(BaseModel):
@@ -52,30 +55,30 @@ class WellnessSummary(BaseModel):
 async def analyze_recording(
     body: AnalyzeRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
-    recording_uuid = uuid.UUID(body.recording_id)
-    result = await db.execute(
-        select(Recording).where(
-            Recording.id == recording_uuid,
-            Recording.user_id == current_user.id,
-        )
+    recording = await get_user_recording(db, body.recording_id, auth_context.owner_id)
+    requested_parakeets = await validate_user_parakeet_ids(
+        db, auth_context.owner_id, body.parakeet_ids
     )
-    recording = result.scalar_one_or_none()
-    if not recording:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Recording not found"
-        )
 
-    analysis_output = await ml_service.analyze_audio(recording.file_url)
+    try:
+        analysis_output = await ml_service.analyze_audio(recording.file_url)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Audio analysis failed unexpectedly.",
+        ) from exc
 
     results = []
-    parakeet_ids = body.parakeet_ids or [None]
+    parakeet_ids = requested_parakeets or [None]
 
     for pid in parakeet_ids:
         analysis = AnalysisResult(
             recording_id=recording.id,
-            parakeet_id=uuid.UUID(pid) if pid else None,
+            parakeet_id=pid,
             mood=MoodType(analysis_output["mood"]),
             confidence=analysis_output["confidence"],
             energy_level=analysis_output["energy_level"],
@@ -93,16 +96,16 @@ async def analyze_recording(
 @router.get("/history/{parakeet_id}", response_model=list[AnalysisResponse])
 async def get_analysis_history(
     parakeet_id: uuid.UUID,
-    limit: int = 30,
+    limit: int = Query(30, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
     result = await db.execute(
         select(AnalysisResult)
         .join(Recording)
         .where(
             AnalysisResult.parakeet_id == parakeet_id,
-            Recording.user_id == current_user.id,
+            Recording.user_id == auth_context.owner_id,
         )
         .order_by(AnalysisResult.created_at.desc())
         .limit(limit)
@@ -114,14 +117,12 @@ async def get_analysis_history(
 async def get_wellness_summary(
     parakeet_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
-    from app.models.parakeet import Parakeet
-
     parakeet_result = await db.execute(
         select(Parakeet).where(
             Parakeet.id == parakeet_id,
-            Parakeet.user_id == current_user.id,
+            Parakeet.user_id == auth_context.owner_id,
         )
     )
     parakeet = parakeet_result.scalar_one_or_none()
@@ -133,56 +134,23 @@ async def get_wellness_summary(
         .join(Recording)
         .where(
             AnalysisResult.parakeet_id == parakeet_id,
-            Recording.user_id == current_user.id,
+            Recording.user_id == auth_context.owner_id,
         )
         .order_by(AnalysisResult.created_at.desc())
         .limit(100)
     )
     analyses = result.scalars().all()
-
-    if not analyses:
-        return WellnessSummary(
-            parakeet_id=str(parakeet_id),
-            parakeet_name=parakeet.name,
-            total_analyses=0,
-            average_confidence=0.0,
-            average_energy=0.0,
-            dominant_mood="neutral",
-            mood_distribution={},
-            recent_trend="stable",
-        )
-
-    mood_counts: dict[str, int] = {}
-    total_confidence = 0.0
-    total_energy = 0.0
-
-    for a in analyses:
-        mood_counts[a.mood.value] = mood_counts.get(a.mood.value, 0) + 1
-        total_confidence += a.confidence
-        total_energy += a.energy_level
-
-    n = len(analyses)
-    dominant_mood = max(mood_counts, key=mood_counts.get)  # type: ignore[arg-type]
-
-    recent = analyses[:5]
-    older = analyses[5:15]
-    if recent and older:
-        recent_energy = sum(a.energy_level for a in recent) / len(recent)
-        older_energy = sum(a.energy_level for a in older) / len(older)
-        diff = recent_energy - older_energy
-        trend = "improving" if diff > 0.1 else ("declining" if diff < -0.1 else "stable")
-    else:
-        trend = "stable"
+    metrics = calculate_wellness_metrics(analyses)
 
     return WellnessSummary(
         parakeet_id=str(parakeet_id),
         parakeet_name=parakeet.name,
-        total_analyses=n,
-        average_confidence=round(total_confidence / n, 3),
-        average_energy=round(total_energy / n, 3),
-        dominant_mood=dominant_mood,
-        mood_distribution=mood_counts,
-        recent_trend=trend,
+        total_analyses=metrics.total_analyses,
+        average_confidence=metrics.average_confidence,
+        average_energy=metrics.average_energy,
+        dominant_mood=metrics.dominant_mood,
+        mood_distribution=metrics.mood_distribution,
+        recent_trend=metrics.recent_trend,
     )
 
 
@@ -198,68 +166,33 @@ class AlertResponse(BaseModel):
 @router.get("/alerts", response_model=list[AlertResponse])
 async def get_alerts(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
-    from app.models.parakeet import Parakeet
-
     parakeets_result = await db.execute(
-        select(Parakeet).where(Parakeet.user_id == current_user.id)
+        select(Parakeet).where(Parakeet.user_id == auth_context.owner_id)
     )
     parakeets = {p.id: p for p in parakeets_result.scalars().all()}
 
     result = await db.execute(
         select(AnalysisResult)
         .join(Recording)
-        .where(Recording.user_id == current_user.id)
+        .where(Recording.user_id == auth_context.owner_id)
         .order_by(AnalysisResult.created_at.desc())
         .limit(50)
     )
     analyses = result.scalars().all()
-
-    alerts: list[AlertResponse] = []
-
-    for a in analyses:
-        p_name = parakeets[a.parakeet_id].name if a.parakeet_id and a.parakeet_id in parakeets else None
-        p_id = str(a.parakeet_id) if a.parakeet_id else None
-
-        if a.mood == MoodType.SICK:
-            alerts.append(AlertResponse(
-                priority="high",
-                parakeet_id=p_id,
-                parakeet_name=p_name,
-                message=f"Se detectaron vocalizaciones inusuales que pueden indicar enfermedad{f' en {p_name}' if p_name else ''}. Monitorea otros sintomas y considera visitar un veterinario aviar.",
-                mood=a.mood.value,
-                created_at=a.created_at.isoformat(),
-            ))
-        elif a.mood == MoodType.SCARED and a.vocalization_type == VocalizationType.ALARM:
-            alerts.append(AlertResponse(
-                priority="high",
-                parakeet_id=p_id,
-                parakeet_name=p_name,
-                message=f"Llamadas de alarma detectadas{f' de {p_name}' if p_name else ''}. Verifica que no haya depredadores o amenazas cerca.",
-                mood=a.mood.value,
-                created_at=a.created_at.isoformat(),
-            ))
-        elif a.mood == MoodType.STRESSED:
-            alerts.append(AlertResponse(
-                priority="medium",
-                parakeet_id=p_id,
-                parakeet_name=p_name,
-                message=f"Signos de estres detectados{f' en {p_name}' if p_name else ''}. Revisa el ambiente, ruidos fuertes o cambios recientes.",
-                mood=a.mood.value,
-                created_at=a.created_at.isoformat(),
-            ))
-        elif a.vocalization_type == VocalizationType.SILENCE and a.energy_level < 0.1:
-            alerts.append(AlertResponse(
-                priority="medium",
-                parakeet_id=p_id,
-                parakeet_name=p_name,
-                message=f"Silencio prolongado detectado{f' de {p_name}' if p_name else ''}. Verifica que este comiendo y bebiendo normalmente.",
-                mood=a.mood.value,
-                created_at=a.created_at.isoformat(),
-            ))
-
-    return alerts[:20]
+    alert_payloads = build_alerts(analyses, parakeets, max_alerts=20)
+    return [
+        AlertResponse(
+            priority=alert.priority,
+            parakeet_id=alert.parakeet_id,
+            parakeet_name=alert.parakeet_name,
+            message=alert.message,
+            mood=alert.mood,
+            created_at=alert.created_at,
+        )
+        for alert in alert_payloads
+    ]
 
 
 def _to_response(analysis: AnalysisResult) -> AnalysisResponse:

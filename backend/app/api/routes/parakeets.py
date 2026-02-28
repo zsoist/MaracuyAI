@@ -1,17 +1,20 @@
 import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
+from app.api.deps import AuthContext, get_auth_context
 from app.core.database import get_db
 from app.models.parakeet import Parakeet
-from app.models.user import User
+from app.services.parakeet_service import get_user_parakeet
+from app.services.storage_service import StorageService
 
 router = APIRouter(prefix="/parakeets", tags=["parakeets"])
+storage = StorageService()
+MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
 class ParakeetCreate(BaseModel):
@@ -25,7 +28,6 @@ class ParakeetUpdate(BaseModel):
     name: str | None = None
     color_description: str | None = None
     birth_date: date | None = None
-    photo_url: str | None = None
     notes: str | None = None
 
 
@@ -45,10 +47,10 @@ class ParakeetResponse(BaseModel):
 async def create_parakeet(
     body: ParakeetCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
     parakeet = Parakeet(
-        user_id=current_user.id,
+        user_id=auth_context.owner_id,
         name=body.name,
         color_description=body.color_description,
         birth_date=body.birth_date,
@@ -62,11 +64,11 @@ async def create_parakeet(
 @router.get("/", response_model=list[ParakeetResponse])
 async def list_parakeets(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
     result = await db.execute(
         select(Parakeet)
-        .where(Parakeet.user_id == current_user.id)
+        .where(Parakeet.user_id == auth_context.owner_id)
         .order_by(Parakeet.created_at.desc())
     )
     return [_to_response(p) for p in result.scalars().all()]
@@ -76,9 +78,9 @@ async def list_parakeets(
 async def get_parakeet(
     parakeet_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
-    parakeet = await _get_user_parakeet(db, parakeet_id, current_user.id)
+    parakeet = await get_user_parakeet(db, parakeet_id, auth_context.owner_id)
     return _to_response(parakeet)
 
 
@@ -87,9 +89,9 @@ async def update_parakeet(
     parakeet_id: uuid.UUID,
     body: ParakeetUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
-    parakeet = await _get_user_parakeet(db, parakeet_id, current_user.id)
+    parakeet = await get_user_parakeet(db, parakeet_id, auth_context.owner_id)
     update_data = body.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(parakeet, key, value)
@@ -101,25 +103,55 @@ async def update_parakeet(
 async def delete_parakeet(
     parakeet_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    auth_context: AuthContext = Depends(get_auth_context),
 ):
-    parakeet = await _get_user_parakeet(db, parakeet_id, current_user.id)
+    parakeet = await get_user_parakeet(db, parakeet_id, auth_context.owner_id)
+    if parakeet.photo_url:
+        await storage.delete_file(parakeet.photo_url)
     await db.delete(parakeet)
 
 
-async def _get_user_parakeet(
-    db: AsyncSession, parakeet_id: uuid.UUID, user_id: uuid.UUID
-) -> Parakeet:
-    result = await db.execute(
-        select(Parakeet).where(
-            Parakeet.id == parakeet_id,
-            Parakeet.user_id == user_id,
+@router.post("/{parakeet_id}/photo", response_model=ParakeetResponse)
+async def upload_parakeet_photo(
+    parakeet_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    auth_context: AuthContext = Depends(get_auth_context),
+):
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Unsupported file type. Please upload an image.",
         )
-    )
-    parakeet = result.scalar_one_or_none()
-    if not parakeet:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parakeet not found")
-    return parakeet
+
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded image is empty.",
+        )
+    if len(contents) > MAX_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Image is too large. Maximum size is 10MB.",
+        )
+
+    parakeet = await get_user_parakeet(db, parakeet_id, auth_context.owner_id)
+    previous_photo = parakeet.photo_url
+    try:
+        parakeet.photo_url = await storage.save_image(
+            contents=contents,
+            user_id=str(auth_context.owner_id),
+            original_filename=file.filename or "photo.jpg",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    await db.flush()
+    if previous_photo:
+        await storage.delete_file(previous_photo)
+
+    return _to_response(parakeet)
 
 
 def _to_response(parakeet: Parakeet) -> ParakeetResponse:
