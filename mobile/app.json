@@ -10,27 +10,28 @@
       "backgroundColor": "#4CAF50"
     },
     "ios": {
-        "supportsTablet": true,
-        "bundleIdentifier": "com.parakeetwellness.app",
-        "infoPlist": {
-          "NSMicrophoneUsageDescription": "We need microphone access to record your parakeet's vocalizations for wellness analysis.",
-          "NSPhotoLibraryUsageDescription": "We need photo library access so you can choose a profile photo for your parakeet."
-        }
+      "supportsTablet": true,
+      "bundleIdentifier": "com.parakeetwellness.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "We need microphone access to record your parakeet's vocalizations for wellness analysis.",
+        "NSPhotoLibraryUsageDescription": "We need photo library access so you can choose a profile photo for your parakeet."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#4CAF50"
       },
-      "android": {
-        "adaptiveIcon": {
-          "backgroundColor": "#4CAF50"
-        },
-        "package": "com.parakeetwellness.app",
-        "permissions": [
-          "RECORD_AUDIO"
-        ]
-      },
-      "plugins": [
-        "expo-av",
-        "expo-image-picker",
-        "expo-document-picker",
-        "expo-secure-store"
+      "package": "com.parakeetwellness.app",
+      "permissions": [
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE"
       ]
+    },
+    "plugins": [
+      "expo-av",
+      "expo-image-picker",
+      "expo-document-picker",
+      "expo-secure-store"
+    ]
   }
 }

@@ -44,10 +44,13 @@ Thumbs.db
 *.flac
 !backend/app/ml/test_samples/
 
-# ML weights (track with Git LFS if needed)
+# ML weights and training artifacts (track with Git LFS if needed)
 backend/app/ml/weights/*.h5
+backend/app/ml/weights/*.keras
 backend/app/ml/weights/*.pt
 backend/app/ml/weights/*.onnx
+backend/app/ml/weights/*.png
+backend/app/ml/weights/training_metadata.json
 
 # Docker
 docker-compose.override.yml

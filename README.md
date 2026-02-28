@@ -121,29 +121,47 @@ When audio reaches the backend, this happens:
    - mood_probabilities, vocalization_probabilities, classifier_weights
    - segment_predictions, signal_quality, model_version
 
-### 3.3 Why this AI design is useful
+### 3.3 Training pipeline (integrated)
+
+The repo includes a complete training module at `backend/app/ml/training/` for re-training the CNN using audio data:
+
+- **`label_mapper.py`**: Maps v2 binary labels (feliz/estres) to soft multi-class labels for the 6 moods and 7 vocalization types. Imports label lists directly from `bird_classifier.py` to stay in sync.
+- **`train_from_v2_data.py`**: Full training pipeline that loads audio from `Estres/` and `Feliz/` folders, preprocesses using the exact same pipeline as inference (bandpass, HPSS, mel 128x128), trains the dual-head CNN, and outputs weights + evaluation plots.
+
+Training usage:
+```bash
+cd backend
+python -m app.ml.training.train_from_v2_data \
+    --data-dir /path/to/Archivos_audio \
+    --output-dir ./app/ml/weights \
+    --augment
+```
+
+The ensemble automatically detects trained weights and shifts from statistical-heavy (5/65/30) to CNN-heavy (50/30/20) weighting.
+
+### 3.4 Why this AI design is useful
 
 - Ensemble approach is robust even without trained CNN weights (statistical fallback).
 - Bird detection prevents false readings from non-bird audio.
 - Temporal consistency scoring catches erratic/noisy segments.
 - Outputs are explainable (you can trace why a result happened).
-- Strong foundation for future model training with real-world data.
+- Training module reuses the exact model architecture from inference (no drift).
 
-### 3.4 What AI does NOT do yet
+### 3.5 What AI does NOT do yet
 
 - It does not diagnose disease.
 - It does not identify exact individual bird voices automatically in mixed audio.
-- CNN weights are placeholder until trained on real budgerigar dataset.
+- CNN weights require training on your audio dataset before achieving full accuracy.
 - It does not guarantee medical-grade precision.
 
-### 3.5 Planned AI evolution
+### 3.6 Planned AI evolution
 
 Roadmap direction:
 - Train CNN on labeled budgerigar vocalization dataset
-- hybrid reasoning (rules + richer model outputs + context)
-- better confidence handling and explainability
-- smarter discovery/watchlist behavior
-- improved robustness and telemetry
+- Hybrid reasoning (rules + richer model outputs + context)
+- Better confidence handling and explainability
+- Smarter discovery/watchlist behavior
+- Improved robustness and telemetry
 
 ## 4. System Architecture
 
@@ -156,6 +174,7 @@ Monorepo root:
 - FastAPI
 - SQLAlchemy async + PostgreSQL
 - librosa, noisereduce, scipy, tensorflow
+- matplotlib, scikit-learn (training)
 
 ### Mobile stack
 - Expo / React Native / TypeScript
@@ -163,6 +182,22 @@ Monorepo root:
 - Zustand
 - Axios
 - Expo SecureStore
+
+### ML module structure
+```
+backend/app/ml/
+├── __init__.py
+├── bird_classifier.py         # CNN dual-head (vocalization + mood)
+├── ensemble.py                # Blending CNN + Statistical + Temporal
+├── feature_engine.py          # 100+ audio features
+├── statistical_classifier.py  # Gaussian-distance classifier
+├── training/
+│   ├── __init__.py
+│   ├── label_mapper.py        # v2 binary -> soft multi-class labels
+│   └── train_from_v2_data.py  # Full training pipeline
+└── weights/
+    └── .gitkeep               # Trained weights go here
+```
 
 ## 5. API Overview
 
@@ -232,7 +267,23 @@ If testing on a physical phone:
 EXPO_PUBLIC_API_BASE_URL=http://192.168.1.25:8000/api/v1
 ```
 
-## 6.3 First realistic user flow
+## 6.3 Train the CNN (optional)
+
+```bash
+cd backend
+pip install -r requirements.txt
+
+python -m app.ml.training.train_from_v2_data \
+    --data-dir /path/to/audio/data \
+    --output-dir ./app/ml/weights \
+    --augment \
+    --epochs 80 \
+    --batch-size 16
+```
+
+The `--data-dir` must contain `Estres/` and `Feliz/` subdirectories with WAV files. After training, the ensemble automatically detects the weights and shifts to CNN-heavy analysis.
+
+## 6.4 First realistic user flow
 
 1. Launch app (guest mode is automatic).
 2. Open `Settings` and set language if needed.
@@ -281,16 +332,21 @@ Still recommended before App Store release:
 - configure Redis rate limit backend in production
 - run iOS regression sweep for Expo 54 build profiles
 
-## 9. Release Readiness Snapshot (Current)
+## 9. Hosting Options
 
-Latest local checks:
-- `python3 -m compileall backend/app backend/migrations backend/scripts`: pass
-- `npm --prefix mobile run typecheck`: pass
-- `npm --prefix mobile run lint`: pass
-- `npm --prefix mobile audit --audit-level=high`: pass (`0 vulnerabilities`)
+### Option A: Localhost + Cloudflare Tunnel (free, recommended for dev)
+```bash
+docker compose up -d
+cloudflared tunnel --url http://localhost:8000
+```
 
-Current iOS verdict status:
-- **CONDITIONALLY READY** after code-level blocker fixes; release execution steps still required (migration run + media normalization verification).
+### Option B: Oracle Cloud Always Free (free, 24GB RAM)
+- ARM Ampere VM with Docker
+
+### Option C: Hetzner VPS (from ~3 EUR/month)
+- Fast setup, reliable
+
+See `HOSTING_GUIDE.md` for full deployment instructions.
 
 ## 10. Troubleshooting (Beginner-Friendly)
 
@@ -312,6 +368,11 @@ Current iOS verdict status:
 ### Recording rejected as too short
 - Record at least the configured minimum duration.
 - Keep stable distance and reduce background noise.
+
+### CNN not loading weights
+- Verify `bird_classifier.weights.h5` exists in `backend/app/ml/weights/`.
+- Check Docker volume mounts the weights directory.
+- Check logs: `docker compose logs api | grep -i weights`.
 
 ## 11. Important Product Limitation Reminder
 
