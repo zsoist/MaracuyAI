@@ -1,30 +1,36 @@
 # Documentation Index
 
-This documentation set has been reset around the actual product:
+This documentation set is organized to make MaracuyAI legible as a serious applied ML prototype and portfolio artifact.
 
-`MaracuyAI = binary audio classifier for Maracuya`
+## Start Here
 
-## Core
+- [README](../README.md) - external project overview
+- [Project status](../PROJECT_STATUS.md) - concise current-state snapshot
+- [Collaboration framing](../COLLABORATION.md) - honest authorship and collaboration notes
 
-- `product/definition.md` - what the product is and is not
-- `architecture/system-design.md` - target system shape
-- `data/labeling-guide.md` - binary label rules and dataset handling
-- `model/training-and-evaluation.md` - model strategy and promotion criteria
+## Portfolio Docs
 
-## Planning
+- [Portfolio audit](portfolio/repo-audit.md) - what is real, partial, legacy, and strong in the repo today
+- [Case study](portfolio/case-study.md) - full technical narrative for reviewers and collaborators
+- [Project highlights](portfolio/project-highlights.md) - two-minute recruiter-friendly summary
+- [Architecture notes](portfolio/architecture.md) - system diagrams and lifecycle walkthrough
+- [Evaluation roadmap](portfolio/evaluation-roadmap.md) - what is implemented vs what still needs validation
 
-- `planning/integration-plan.md` - rebuild roadmap from the current codebase to the real product
+## Core Product Docs
 
-## Operations
+- [Product definition](product/definition.md) - narrow product scope and non-goals
+- [System design](architecture/system-design.md) - repo-grounded architecture view
+- [Labeling guide](data/labeling-guide.md) - binary label rules and annotation discipline
+- [Training and evaluation](model/training-and-evaluation.md) - current model paths and evidence boundaries
 
-- `operations/handoff.md` - current repo reset note and implementation state
-- `operations/execution-guide.md` - practical workflow for binary model experiments
-- `operations/local-dashboard.md` - local Mac microphone dashboard workflow
+## Planning And Operations
 
-## Deployment
+- [Integration plan](planning/integration-plan.md) - roadmap from prototype to more rigorous system
+- [Execution guide](operations/execution-guide.md) - practical loop for experiments and validation
+- [Local dashboard guide](operations/local-dashboard.md) - Mac microphone testing workflow
+- [Repository evolution note](operations/handoff.md) - how the repo moved from broader scope to focused framing
+- [Hosting guide](deployment/hosting-guide.md) - local-first deployment notes
 
-- `deployment/hosting-guide.md` - minimal hosting options for dev and beta
+## Supporting Artifact
 
-## Legacy UI Artifact
-
-- `mockups/app-preview.html` - legacy interface preview, not the product definition
+- [Legacy mockup](mockups/app-preview.html) - retained as a historical UI artifact, not as the product definition

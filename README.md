@@ -1,109 +1,212 @@
 # MaracuyAI
 
-MaracuyAI is a personalized audio classifier for one bird: `Maracuya`.
+Personalized bioacoustic classification for a single parakeet, `Maracuya`.
 
-The product goal is simple:
+MaracuyAI explores a practical question caretakers often answer subjectively: does this bird sound okay, or does it sound stressed?
 
-- a user records or uploads audio of Maracuya
-- the system analyzes the sound
-- the system returns a binary result: `good` or `bad`
-- the response includes a confidence score
+Technical positioning: this repository is a research-engineering prototype that combines audio preprocessing, binary inference, API design, persistence, and local client surfaces for testing an applied ML workflow end to end.
 
-This repository currently contains a larger mobile + backend codebase, but that is no longer the product definition. From this point forward, the source of truth is a narrower scope: a reliable binary classifier first, a thin client second.
+## Portfolio Summary
 
-## Core Product Definition
+This repository is strongest as evidence of:
 
-MaracuyAI answers one question:
+- applied ML experimentation on real audio data
+- audio preprocessing and inference pipeline design
+- backend and client integration around a narrow product question
+- local-first system thinking, including upload, storage, model selection, and traceability
+- collaborative development around a real-world use case rather than a tutorial prompt
 
-`Does Maracuya sound okay, or stressed/negative?`
+The repo should be read as a serious prototype and portfolio artifact, not as a claim of production-validated animal health AI.
 
-That means the real value of the project is:
+## Problem Framing
 
-- the dataset
-- the labeling quality
-- the model and evaluation pipeline
-- the inference contract
+When a caretaker hears changes in a bird's vocalizations, the judgment is often informal: "this sounds normal" or "this sounds off." MaracuyAI narrows that ambiguity into a binary classification task:
 
-The UI is important, but it is not the core IP.
+- `good`: the vocal profile appears okay / routine / non-stressed
+- `bad`: the vocal profile appears stressed / negative / concerning
 
-## V1 Scope
+The project is intentionally centered on one bird rather than on generalized species-wide classification. That narrow framing is what makes the work credible as an applied ML exercise.
 
-Version 1 should do only this:
+## What The System Does
 
-1. Accept a short audio recording.
-2. Run a binary classifier specialized for Maracuya.
-3. Return:
-   - `good` or `bad`
-   - confidence score
-   - optional short explanation
-4. Store enough metadata to review model performance later.
+The intended flow is:
 
-## Not V1
+1. record audio or upload an existing clip
+2. normalize and preprocess the file
+3. run inference through the active model path
+4. return a binary label plus confidence
+5. persist enough metadata to review the run later
 
-These are explicitly out of scope for the first real version:
+For local testing, the repository includes a browser dashboard optimized for "Mac microphone + phone playback" validation as well as a broader Expo mobile client.
 
-- generalized bird wellness platform
-- 6-class or 7-class emotional taxonomy
-- veterinary diagnosis
-- multi-bird identity recognition
-- weather and AQI reasoning
-- complex app tabs and platform-specific polish before model validation
+## What Is Technically In The Repo Today
 
-## Product Principle
+### Backend
 
-This is a `model-first` project.
+- FastAPI application with routes for auth, parakeets, recordings, analysis, and context
+- SQLAlchemy models and Alembic migrations
+- local media storage with audio normalization and format conversion
+- guest-mode auth flow for local operator use
+- local dashboard served directly by the backend at `/dashboard/`
 
-The order of importance is:
+### Model And Training Code
 
-1. data
-2. labels
-3. evaluation
-4. inference API
-5. client UX
+- repo-native audio preprocessing and statistical/ensemble inference path
+- dedicated binary Maracuya adapter in `backend/app/ml/maracuya_binary_model.py`
+- legacy CNN and training pipeline in `backend/app/ml/` and `backend/app/ml/training/`
+- TensorFlow, librosa, NumPy, SciPy, and scikit-learn dependencies present in the backend stack
 
-If the binary classifier is not trustworthy, the rest of the product does not matter yet.
+### Client Surfaces
 
-## Recommended System Shape
+- Expo / React Native mobile app with recording, history, profile, settings, and guide screens
+- lightweight local browser dashboard for rapid desktop testing
 
-The target system is intentionally simple:
+### Scripts And Operations
 
-- `data/` process and dataset definitions
-- `model/` training, evaluation, and experiment tracking
-- `api/` inference endpoint returning `good|bad + confidence`
-- `client/` thin recording/upload interface
+- Docker-based local stack
+- local dashboard launcher
+- operational docs for running and testing the stack
 
-The current repository still has a broader structure under `backend/` and `mobile/`. That code can be reused, but the product definition is now narrower than the current implementation.
+### Documentation
 
-## Current Reality
+- product definition, system design, data labeling, training notes, and portfolio-facing documentation in [`docs/`](docs/README.md)
 
-What already exists:
+## Architecture Snapshot
 
-- mobile app shell
-- FastAPI backend
-- audio preprocessing pipeline
-- CNN-related code
-- statistical fallback code
-- training scripts
+```mermaid
+flowchart LR
+    A["Audio Input<br/>Mac microphone or uploaded file"] --> B["Upload + Storage Layer<br/>FastAPI + file normalization"]
+    B --> C["Inference Selection"]
+    C --> D["Binary Maracuya CNN<br/>External .keras artifact for local testing"]
+    C --> E["Repo Fallback Path<br/>Preprocessing + statistical / ensemble inference"]
+    D --> F["Binary Verdict<br/>label + confidence + model version"]
+    E --> F
+    F --> G["Persistence<br/>recordings + analyses in Postgres"]
+    F --> H["User Surfaces<br/>local dashboard + Expo mobile app"]
+    G --> H
+```
 
-What still needs to be made rigorous:
+## Tech Stack
 
-- binary label definition
-- dataset split strategy
-- evaluation protocol
-- baseline metrics
-- clear promotion criteria for a trained model
+- Backend: FastAPI, SQLAlchemy, Alembic, PostgreSQL, Docker Compose
+- Audio / ML: TensorFlow, librosa, NumPy, SciPy, scikit-learn, pydub, noisereduce
+- Client: Expo, React Native, TypeScript, Zustand
+- Ops / local workflow: Docker Desktop, local browser dashboard, host-mounted model artifact for local inference tests
 
-## Documentation
+## Technical Contribution Framing
 
-The new source-of-truth docs are:
+As a portfolio artifact, the value of MaracuyAI is not just "an app that classifies bird sounds." The stronger story is the engineering judgment behind the system:
 
-- [docs/product/definition.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/product/definition.md)
-- [docs/architecture/system-design.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/architecture/system-design.md)
-- [docs/data/labeling-guide.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/data/labeling-guide.md)
-- [docs/model/training-and-evaluation.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/model/training-and-evaluation.md)
-- [docs/planning/integration-plan.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/planning/integration-plan.md)
-- [docs/operations/execution-guide.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/operations/execution-guide.md)
-- [docs/operations/local-dashboard.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/operations/local-dashboard.md)
-- [docs/deployment/hosting-guide.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/deployment/hosting-guide.md)
+- narrowing an overbuilt "wellness" idea into a sharper personalized binary classification problem
+- treating the model and labeling workflow as the core product, with client polish as secondary
+- wiring a local operator loop that supports realistic testing with microphone capture and uploaded recordings
+- integrating model selection, persistence, and UI feedback into a usable end-to-end prototype
+- documenting the project in a way that separates prototype capability from validated capability
 
-See [docs/README.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/README.md) for the full map.
+This is best described as collaborative technical work around a concrete, real-world ML use case.
+
+## Current Maturity
+
+Current status:
+
+- working local prototype / research-engineering artifact
+- backend, persistence, upload flow, and local dashboard are operational
+- binary inference direction is established
+- repo can load an external trained `.keras` model for local testing
+- fallback inference path still exists for development continuity
+
+What is not proven by the repo:
+
+- benchmarked model performance
+- rigorous held-out evaluation results committed in the repo
+- production-grade monitoring or validation
+- medical or veterinary diagnostic reliability
+
+MaracuyAI should therefore be presented as a serious prototype, not as a production or diagnostic system.
+
+## Repository Map
+
+```text
+.
+├── backend/
+│   ├── app/
+│   │   ├── api/              # FastAPI routes and auth dependencies
+│   │   ├── core/             # config, database, security, migrations helpers
+│   │   ├── ml/               # binary adapter, legacy CNN, ensemble, training utilities
+│   │   ├── models/           # SQLAlchemy models for recordings, analyses, users, etc.
+│   │   ├── services/         # storage, preprocessing, inference orchestration
+│   │   └── static/dashboard/ # local browser dashboard
+│   ├── docker-compose.yml
+│   └── requirements.txt
+├── mobile/                   # Expo / React Native client
+├── docs/                     # product, architecture, operations, and portfolio docs
+├── scripts/                  # local run helpers
+├── CHANGELOG.md
+├── PROJECT_STATUS.md
+└── COLLABORATION.md
+```
+
+## Running Locally
+
+### Local dashboard workflow
+
+1. Optional but recommended: place a trained binary model at `~/Downloads/modelo_periquitos.keras`
+2. Start the local stack:
+
+```bash
+./scripts/run_local_dashboard.sh
+```
+
+3. Open `http://localhost:8000/dashboard/`
+4. Allow microphone access
+5. Record from your Mac or upload an audio file
+
+If the external model artifact is present, the backend will prefer it. If not, the repo uses its fallback inference path for local testing.
+
+More detail: [`docs/operations/local-dashboard.md`](docs/operations/local-dashboard.md)
+
+## Portfolio Docs
+
+- [Portfolio audit](docs/portfolio/repo-audit.md)
+- [Case study](docs/portfolio/case-study.md)
+- [Project highlights](docs/portfolio/project-highlights.md)
+- [Architecture notes](docs/portfolio/architecture.md)
+- [Evaluation roadmap](docs/portfolio/evaluation-roadmap.md)
+- [Project status](PROJECT_STATUS.md)
+- [Collaboration framing](COLLABORATION.md)
+
+## Demo Assets To Add
+
+The repo does not currently ship polished public demo media. Strong next additions would be:
+
+- TODO: dashboard screenshot showing upload -> verdict flow
+- TODO: short GIF of Mac microphone testing workflow
+- TODO: example evaluation artifact such as a confusion matrix or run summary
+
+## Why This Is A Strong Portfolio Project
+
+Recruiters and technical reviewers can read this repository as evidence of:
+
+- ML prototyping on an ambiguous real-world signal
+- model-aware product scoping rather than feature sprawl
+- backend API design for audio workflows
+- client integration across mobile and browser surfaces
+- practical data / evaluation discipline, even where validation is still incomplete
+- honest communication about maturity, limitations, and next steps
+
+## Limitations And Next Steps
+
+Current limitations:
+
+- the repo does not publish benchmark numbers or formal evaluation reports
+- the strongest binary model artifact is mounted locally rather than committed to the repo
+- some mobile and context features still reflect a broader historical scope than the current product definition
+- automated testing coverage is limited
+
+High-value next steps:
+
+1. freeze the dataset and labeling protocol for a true held-out evaluation set
+2. publish model evaluation artifacts in-repo
+3. simplify the API contract so binary output is first-class everywhere
+4. reduce legacy "wellness platform" surfaces or clearly mark them experimental
+5. add demo assets and automated tests to improve external reviewability

@@ -2,62 +2,72 @@
 
 ## Purpose
 
-The model is only as good as the label definition. For MaracuyAI, the labels must stay simple and consistent.
+MaracuyAI is only as credible as its labeling rules. This project should prefer a simple, disciplined binary labeling scheme over a wider but noisier emotional taxonomy.
 
 ## Binary Labels
 
 ### `good`
 
-Use `good` when the recording reflects normal or positive behavior, including:
+Use `good` when the recording reflects a routine, non-stressed baseline for Maracuya, for example:
 
-- calm routine vocalization
-- playful or social sounds
-- non-agitated familiar sounds
-- healthy baseline behavior
+- calm or familiar vocal behavior
+- social or playful sounds that do not appear agitated
+- recordings that the caretaker would reasonably describe as "normal"
 
 ### `bad`
 
-Use `bad` when the recording reflects stress, agitation, or negative concern, including:
+Use `bad` when the recording appears to reflect stress, agitation, or clearly negative deviation from baseline, for example:
 
-- alarm-like calls
-- distressed or repeated high-tension vocalization
-- clear signs of agitation
-- abnormal negative patterns compared to Maracuya's baseline
+- alarm-like calling
+- repeated high-tension or distressed vocalization
+- behavior that the caretaker consistently interprets as "something is off"
 
-## Do Not Label By Guessing
+## Annotation Rule
 
-If the recording is ambiguous, noisy, or too short, do not force it into the dataset without review.
+Do not label by imagination. Label by observed behavior pattern plus caretaker context.
 
-Use one of these handling strategies:
+If a recording is too noisy, too short, or ambiguous:
 
-- exclude it
-- mark it for relabeling
-- keep it as unlabeled data
+- exclude it from the labeled set
+- mark it for review
+- or retain it as unlabeled exploratory data
 
-## Suggested Metadata Per Recording
+## Recommended Metadata
 
-- recording id
-- timestamp
-- duration
+For each recording, capture at least:
+
+- recording identifier
+- timestamp or collection date
 - source device
+- duration
 - manual label
-- label confidence from the human annotator
-- notes
+- annotator confidence
+- short notes on why the label was chosen
+
+## Segment-Level Considerations
+
+The training utilities in this repo segment longer recordings. That means labeling discipline should consider both:
+
+- clip-level intent: why the recording exists
+- segment-level quality: whether each segment contains usable bird audio
+
+Avoid assuming every segment cut from a labeled clip is equally informative.
 
 ## Split Strategy
 
-At minimum:
+Use at minimum:
 
-- train split
+- training split
 - validation split
-- test split
+- held-out test split
 
-Do not evaluate on recordings that the model already saw during training.
+Do not evaluate on audio that has already been seen during training, and avoid leakage through near-duplicate clips.
 
-## Immediate Recommendation
+## Folder Convention Already Reflected In The Repo
 
-You mentioned 200+ recordings but far fewer manually labeled samples. The highest-leverage next step is not more interface work. It is:
+The current legacy training script expects a binary folder structure:
 
-1. normalize the dataset
-2. label more samples consistently
-3. define a clean held-out test set
+- `Estres/`
+- `Feliz/`
+
+That is a practical starting point, but it should eventually be paired with an explicit manifest or dataset note so label decisions are reviewable outside the folder names alone.

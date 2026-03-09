@@ -1,48 +1,29 @@
-# Local Dashboard Plan
+# Local Dashboard Guide
 
-## Goal
+## Purpose
 
-Use MaracuyAI locally on your Mac with:
+The local dashboard is the fastest way to validate the product loop on a Mac:
 
-- your Mac microphone
-- a bird sample played from your phone
-- a friendly browser dashboard
-- a local backend running on `localhost`
+- capture or upload audio
+- run local inference
+- inspect the verdict and model metadata
 
-## Local Flow
+It is a testing and demo surface, not evidence of production deployment.
 
-1. Start the local stack.
-2. Open the browser dashboard.
-3. Allow microphone access.
-4. Press record.
-5. Play the bird sample from your phone near the Mac microphone.
-6. Stop recording.
-7. Read the result board.
+## Workflow
 
-## What Has Been Prepared
+1. start the local stack
+2. open the dashboard in a browser
+3. allow microphone access
+4. record from the Mac or upload an audio file
+5. inspect the binary verdict, confidence, and debug metadata
 
-- backend serves a local dashboard at `/dashboard/`
-- dashboard records audio in the browser
-- dashboard uploads audio to the local backend
-- dashboard auto-creates a local guest identity
-- dashboard auto-creates a default bird profile named `Maracuya`
-- Docker Compose now runs Alembic migrations before starting the API
-- local Docker now looks for `~/Downloads/modelo_periquitos.keras` and uses it when present
-
-## Run
+## Local Run
 
 From the repo root:
 
 ```bash
 ./scripts/run_local_dashboard.sh
-```
-
-The launcher resets the local demo database volume before starting. That keeps the Mac demo deterministic and avoids stale migration state from older runs.
-
-If you want the dashboard to use the real binary CNN from the notebook instead of the fallback ensemble, place the trained file here before starting:
-
-```text
-~/Downloads/modelo_periquitos.keras
 ```
 
 Then open:
@@ -51,16 +32,23 @@ Then open:
 http://localhost:8000/dashboard/
 ```
 
-## Expected Use
+## Model Selection Behavior
 
-This is a local operator board, not the final product. It is meant to make testing easier while the core binary classifier is still being refined.
+- if `~/Downloads/modelo_periquitos.keras` exists, the backend prefers the dedicated binary Maracuya CNN
+- otherwise the backend uses the repo fallback path and the dashboard maps its broader output into `good` / `bad`
 
-## Current Binary Behavior
+## Why This Surface Matters
 
-- when `~/Downloads/modelo_periquitos.keras` exists, the backend uses that binary CNN directly
-- otherwise the dashboard collapses the fallback backend mood output into a binary answer:
+The dashboard is useful portfolio evidence because it shows the project can move from:
 
-- `happy`, `relaxed`, `neutral` -> `good`
-- `stressed`, `scared`, `sick` -> `bad`
+- audio capture
+- to upload
+- to inference
+- to persisted result
 
-That lets you test the intended product interaction now, even before the backend is fully reduced to a true binary model.
+without requiring a notebook or ad hoc script execution.
+
+## Suggested Demo Assets
+
+- TODO: add a dashboard screenshot with a successful binary result
+- TODO: add a short GIF of the microphone-recording workflow

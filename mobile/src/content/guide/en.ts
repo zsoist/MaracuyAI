@@ -3,7 +3,7 @@ import type { GuideContent } from './types';
 export const guideEn: GuideContent = {
   heroTitle: 'Budgerigar Care Guide',
   heroSubtitle:
-    'Everything you need to keep your Australian budgie happy, healthy, and thriving. Backed by avian veterinary science.',
+    'General budgerigar care notes kept in the repo as legacy reference material. This content is separate from classifier validation.',
 
   sections: [
     {
@@ -256,17 +256,17 @@ export const guideEn: GuideContent = {
       'Keep the bird warm (85\u00B0F / 29\u00B0C), in a quiet dark space, and transport to an avian vet ASAP. Do not attempt home treatment for these symptoms.',
   },
 
-  howToTitle: 'How to Use This App Effectively',
+  howToTitle: 'How to Use This Prototype',
   howToSteps: [
     '1. Add each budgie\'s profile with name, photo, and notes about their personality.',
     '2. Record at least 30 seconds of audio in a quiet room with your phone near the cage.',
-    '3. Review the AI analysis: mood, vocalization type, confidence, and probability breakdown.',
+    '3. Review the classifier result, confidence, and any model metadata that was returned.',
     '4. Check the bird detection badge \u2014 if your bird was not detected, try a quieter environment.',
-    '5. Track trends weekly in History. One bad reading does not mean trouble \u2014 look for patterns.',
-    '6. Set up habitat coordinates in Settings for weather and air quality context alerts.',
-    '7. Use this Guide as a reference whenever you notice behavioral changes.',
+    '5. Track repeated samples over time. One bad reading does not establish a pattern.',
+    '6. Treat habitat/context features as legacy prototype scope, not the core product claim.',
+    '7. Use this guide only as general bird-care reference content.',
   ],
 
   safetyNote:
-    'This app provides AI-powered wellness monitoring and educational content. It does NOT replace professional diagnosis by a qualified avian veterinarian. When in doubt, always consult a vet.',
+    'This guide is legacy reference content. MaracuyAI should be presented primarily as an experimental audio-classification project, not as diagnostic or veterinary software.',
 };

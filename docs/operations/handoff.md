@@ -1,55 +1,37 @@
-# Repo Reset Note
+# Repository Evolution Note
 
-Last updated: **March 9, 2026**
+## Why This Note Exists
 
-## What Changed
+MaracuyAI did not start with the same scope it has now. This note explains the shift so public readers do not mistake historical breadth for current product certainty.
 
-The repository used to describe a broader parakeet wellness platform with:
+## Historical Scope
 
-- multi-class mood outputs
-- wider product scope
-- heavier mobile-app framing
-- extra architecture around context and platform features
+The repository accumulated features that suggested a broader parakeet "wellness platform," including:
 
-That is no longer the source of truth.
+- multi-mood outputs
+- context and environment systems
+- alerts and summaries
+- a wider mobile information architecture
 
-## New Source Of Truth
+Those layers are still present in code and remain valid implementation evidence.
 
-The project is now defined as:
+## Current Source Of Truth
 
-`a binary audio classifier for Maracuya`
+The strongest and most credible project definition is now:
 
-The product question is:
+> personalized binary audio classification for Maracuya
 
-`Does Maracuya sound okay, or stressed/bad?`
+That means the most important repo questions are:
 
-## What The Current Codebase Still Represents
+- how audio is labeled
+- how inference is run
+- how results are reviewed
+- how model maturity is communicated honestly
 
-The codebase still contains a larger implementation footprint:
+## Practical Interpretation
 
-- mobile app shell
-- FastAPI backend
-- CNN-related code
-- statistical fallback code
-- preprocessing and storage systems
+When code footprint and product framing disagree:
 
-This is useful implementation material, but it is not the product definition anymore.
-
-## Working Rule Going Forward
-
-When product scope and current code conflict, prefer the new documentation and simplify toward:
-
-- binary labels
-- measurable model evaluation
-- thin inference API
-- thin client UX
-
-## Immediate Priority
-
-The next important work is:
-
-1. clean the dataset
-2. define binary labels clearly
-3. measure baseline performance
-4. validate a trainable binary model
-5. only then decide how much app complexity is justified
+- keep the code as evidence of experimentation and system breadth
+- keep the docs centered on the narrower binary ML problem
+- treat broader surfaces as experimental or legacy scope unless re-validated

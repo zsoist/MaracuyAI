@@ -3,7 +3,7 @@ import type { GuideContent } from './types';
 export const guideEs: GuideContent = {
   heroTitle: 'Guia Completa del Periquito',
   heroSubtitle:
-    'Todo lo que necesitas para mantener a tu periquito australiano feliz, sano y activo. Basado en ciencia veterinaria aviar.',
+    'Notas generales sobre cuidado de periquitos conservadas como material de referencia legacy. Este contenido es independiente de la validacion del clasificador.',
 
   sections: [
     {
@@ -256,17 +256,17 @@ export const guideEs: GuideContent = {
       'Mantener al ave caliente (29\u00B0C), en un espacio oscuro y tranquilo, y transportar al veterinario aviar lo antes posible. No intentar tratamiento casero para estos sintomas.',
   },
 
-  howToTitle: 'Como Usar Esta App Efectivamente',
+  howToTitle: 'Como Usar Este Prototipo',
   howToSteps: [
     '1. Agrega el perfil de cada periquito con nombre, foto y notas sobre su personalidad.',
     '2. Graba al menos 30 segundos de audio en un cuarto silencioso con el telefono cerca de la jaula.',
-    '3. Revisa el analisis de IA: animo, tipo de vocalizacion, confianza y desglose de probabilidades.',
+    '3. Revisa el resultado del clasificador, la confianza y cualquier metadato del modelo.',
     '4. Verifica la insignia de deteccion de ave \u2014 si no se detecto, intenta un ambiente mas silencioso.',
-    '5. Rastrea tendencias semanalmente en Historial. Una mala lectura no significa problema \u2014 busca patrones.',
-    '6. Configura coordenadas del habitat en Ajustes para alertas de clima y calidad de aire.',
-    '7. Usa esta Guia como referencia cuando notes cambios de conducta.',
+    '5. Sigue muestras repetidas en el tiempo. Una lectura mala no establece un patron.',
+    '6. Trata las funciones de habitat/contexto como alcance legacy del prototipo, no como la promesa central del producto.',
+    '7. Usa esta guia solo como contenido general de referencia.',
   ],
 
   safetyNote:
-    'Esta app ofrece monitoreo de bienestar con IA y contenido educativo. NO reemplaza el diagnostico profesional de un veterinario aviar calificado. En caso de duda, siempre consulta un veterinario.',
+    'Esta guia es contenido legacy de referencia. MaracuyAI debe presentarse principalmente como un proyecto experimental de clasificacion de audio, no como software diagnostico o veterinario.',
 };

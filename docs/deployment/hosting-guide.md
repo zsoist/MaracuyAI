@@ -1,45 +1,46 @@
 # Hosting Guide
 
-## Recommendation
+## Deployment Philosophy
 
-Do not optimize hosting before the binary classifier is validated.
+MaracuyAI should remain local-first until evaluation evidence is stronger. The repo demonstrates local operational viability well; it does not yet justify heavy production framing.
 
-For now, the deployment goal is simple:
+## Recommended Order
 
-- run the inference API
-- let a client send audio
-- get back `good` or `bad`
+### 1. Local backend + local dashboard
 
-## Best Dev Setup
+Best for:
 
-### Option A: local backend + local client
+- model iteration
+- caretaker testing
+- quick debugging
 
-Use this while the model is still changing quickly.
+### 2. Local backend + controlled remote access
 
-### Option B: local backend + Cloudflare Tunnel
+Reasonable for:
 
-Use this for remote device testing or small private beta.
+- device-specific testing
+- private review by collaborators
 
-### Option C: small VPS
+### 3. Small hosted backend
 
-Use this only after:
+Only becomes important once:
 
-- model behavior is stable
-- the API contract is stable
-- you actually need shared access
+- the active model artifact is versioned clearly
+- the inference contract is stable
+- evaluation reporting is good enough to justify wider access
 
-## Hosting Principle
+## What To Avoid
 
-The model and evaluation loop matter more than production infrastructure right now.
+Do not let infrastructure sophistication outrun model maturity.
 
-If the classifier is still evolving weekly, prioritize:
+For this project, credibility comes more from:
 
-- repeatable training
-- versioned inference
-- simple deploys
+- reproducible inference behavior
+- evaluation artifacts
+- honest versioning
 
-over:
+than from:
 
 - autoscaling
-- complex cloud topology
-- heavy mobile release operations
+- cloud complexity
+- aggressive deployment language

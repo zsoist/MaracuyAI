@@ -1,74 +1,50 @@
-# Rebuild Plan
+# Integration Plan
 
 ## Objective
 
-Turn the current repository into a cleaner system centered on one product:
+Move the repository from "interesting prototype with broad historical scope" to "credible personalized audio-ML system with clearer evidence boundaries."
 
-`binary audio classification for Maracuya`
+## Main Gap
 
-## Current Gap
+The repo already has real implementation breadth. The biggest remaining work is not adding more features; it is aligning the codebase, docs, and evaluation story around the same narrow product definition.
 
-The repo currently has more architecture than product clarity.
+## Workstreams
 
-What is overbuilt relative to the real goal:
+### 1. Data work
 
-- multi-class emotion framing
-- wider wellness language
-- broader mobile feature set
-- context and environment systems
+- document the dataset structure actually used for training
+- tighten labeling discipline
+- preserve a held-out evaluation split
 
-What is under-defined relative to the real goal:
+### 2. Model work
 
-- binary label rules
-- dataset quality
-- evaluation protocol
-- model promotion criteria
+- keep the binary model path explicit
+- record which artifact is active during local testing
+- publish evaluation artifacts when available
 
-## Rebuild Phases
+### 3. API work
 
-### Phase 0: product reset
+- make binary output the first-class contract everywhere
+- reduce legacy mood-heavy payload expectations over time
 
-- define the real product
-- define binary outputs
-- define non-goals
+### 4. Client work
 
-### Phase 1: data foundation
+- keep the local dashboard as the fastest operator surface
+- decide whether the mobile app should be simplified or explicitly framed as broader experimental UI
 
-- inventory recordings
-- relabel consistently
-- create train/validation/test split
-- document label policy
+### 5. Credibility work
 
-### Phase 2: modeling baseline
+- keep scope statements consistent across docs
+- mark legacy features clearly
+- add demo and evaluation artifacts as they become available
 
-- run a simple baseline
-- record failure cases
-- establish minimum acceptable metrics
+## Priority Rule
 
-### Phase 3: binary CNN path
+Features should be prioritized based on whether they improve one of these:
 
-- adapt or retrain the neural model for binary output
-- compare against the baseline
-- keep versioned metrics
+- data quality
+- evaluation quality
+- inference reliability
+- clarity of the user-facing result
 
-### Phase 4: inference API
-
-- expose a minimal endpoint
-- return label, confidence, model version
-
-### Phase 5: client simplification
-
-- keep the mobile app if useful
-- or replace it with a simpler web client
-- optimize for recording and answer, not product breadth
-
-## Decision Rule
-
-Any feature that does not help:
-
-- collect better data
-- train a better binary model
-- evaluate the model
-- deliver the result cleanly
-
-should be considered secondary for now.
+If a feature does not improve one of those, it is secondary.

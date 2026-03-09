@@ -2,40 +2,59 @@
 
 ## Goal
 
-Train a binary classifier for Maracuya's audio:
+Train and evaluate a binary classifier that maps Maracuya recordings to:
 
 - `good`
 - `bad`
 
+## Model Paths Present In The Repo
+
+### 1. Dedicated binary Maracuya path
+
+The repository now contains a dedicated binary adapter in `backend/app/ml/maracuya_binary_model.py`. It is designed to load an external trained Keras artifact for local testing.
+
+Important limitation:
+
+- the repo does not commit that trained model file
+- the local stack looks for it at `~/Downloads/modelo_periquitos.keras`
+
+That means the binary path is operationally real, but its strongest artifact is external to the repo.
+
+### 2. Legacy repo-native path
+
+The repository also contains:
+
+- a broader CNN path
+- statistical scoring
+- ensemble logic
+- training utilities in `backend/app/ml/training/`
+
+This legacy path is useful engineering evidence and fallback behavior, but it is not the cleanest expression of the current product definition.
+
+## What The Training Utilities Show
+
+The training script in `backend/app/ml/training/train_from_v2_data.py` demonstrates:
+
+- binary folder assumptions (`Estres/` and `Feliz/`)
+- spectrogram preprocessing
+- augmentation
+- TensorFlow model training
+- metric generation hooks
+
+That is strong evidence of applied ML workflow design, even though the repo does not yet publish benchmark results.
+
 ## Modeling Strategy
 
-Start simple, then earn complexity.
+The disciplined progression for this project is:
 
-### Stage 1: baseline
+1. define the label system clearly
+2. establish a simple baseline
+3. evaluate the candidate CNN
+4. promote a model only when the evidence is written down
 
-Build a baseline binary model first:
+## Metrics To Track
 
-- spectrogram or feature-based input
-- simple classifier
-- measurable validation metrics
-
-This gives you a reality check before relying on a larger CNN.
-
-### Stage 2: CNN
-
-Use the CNN path only after:
-
-- the dataset is cleaned
-- labels are stable
-- the baseline is measured
-
-### Stage 3: promotion
-
-Promote a model only if it beats the baseline on the held-out test set.
-
-## Evaluation Metrics
-
-Track at least:
+At minimum:
 
 - accuracy
 - precision
@@ -43,28 +62,27 @@ Track at least:
 - F1 score
 - confusion matrix
 
-If one class is rarer, accuracy alone is not enough.
+If the classes are imbalanced or the decision cost is asymmetric, accuracy alone is not enough.
 
-## Current Neural Capability
+## Current Capability Language
 
-The repository includes neural-model code and training scripts, but the repo does not ship trained weights by default. That means the project currently has:
+The most honest language for the repo is:
 
-- implemented neural architecture
-- partial training pipeline
-- no guaranteed trained production model out of the box
-
-The product should therefore be described as:
-
+- `binary-capable`
 - `neural-capable`
-- not yet `neural-proven` until the trained binary model is evaluated properly
+- `prototype-ready for local inference`
+
+The repo should not claim:
+
+- validated production model
+- benchmarked clinical or veterinary utility
+- rigorous generalization beyond the observed personalized use case
 
 ## Promotion Rule
 
-Do not ship a model because it exists.
+A model should only be treated as "promoted" when the repo can answer:
 
-Ship it only when you can answer:
-
-- what data was it trained on?
-- what test set did it fail on?
-- what is the false positive / false negative tradeoff?
-- what version is running in production?
+- what data split was used?
+- what metrics were recorded?
+- what failure cases were observed?
+- what artifact and version were actually used for inference?

@@ -1,61 +1,67 @@
 # Product Definition
 
-## Name
-
-`MaracuyAI` is named after `Maracuya`, your girlfriend's bird.
-
 ## One-Sentence Definition
 
-MaracuyAI is a personalized system that classifies Maracuya's vocal audio as either `good` or `bad`.
+MaracuyAI is a personalized audio-classification system that helps classify whether `Maracuya` sounds okay or stressed based on recorded vocalizations.
+
+## Product Question
+
+The entire product should stay anchored to one question:
+
+> Does this recording sound okay, or does it sound stressed / negative?
+
+That framing is intentionally narrower than a generalized bird-health or emotion platform.
 
 ## Problem
 
-The user can hear that the bird sounds different, but cannot reliably turn those sounds into a consistent judgment. The system should reduce that ambiguity by analyzing recorded audio and returning a binary state with confidence.
+Caretakers often notice changes in a bird's vocal behavior before they can explain them precisely. Those judgments are subjective and inconsistent. MaracuyAI turns that ambiguity into a binary ML task so recordings can be reviewed more systematically.
 
 ## Primary User
 
-The owner or caretaker of Maracuya.
+The owner or caretaker of Maracuya, or a close collaborator helping evaluate the recordings and model behavior.
 
-## Primary Job To Be Done
+## Intended User Flow
 
-`When I record Maracuya making sounds, I want the system to tell me whether the bird sounds okay or stressed so I can react quickly and track changes over time.`
+1. capture or upload an audio clip
+2. run inference
+3. return a binary answer plus confidence
+4. retain enough metadata to review results over time
 
 ## V1 Output Contract
 
-Every successful inference should return:
+The product-facing contract should remain simple:
 
 - `label`: `good` or `bad`
-- `confidence`: number from 0 to 1
-- `recording_id`: identifier
-- `model_version`: identifier
-- `notes`: optional short explanation
+- `confidence`: `0.0` to `1.0`
+- `model_version`: identifier of the active inference path
+- `recording_id`: traceable identifier for later review
+- `notes`: optional short explanation or operational context
 
 ## Success Criteria
 
-V1 is successful if it can:
+The project is succeeding when it can:
 
-- classify held-out recordings better than chance
-- produce stable results on repeated recordings of similar sounds
-- support a simple user flow from recording to answer
-- keep the label system understandable to a non-technical user
+- outperform chance on held-out recordings
+- behave consistently on similar repeated samples
+- stay understandable to a non-technical caretaker
+- support a clean recording-to-result loop without requiring notebook access
 
 ## Non-Goals
 
-Not part of the first real version:
+This project should not currently be framed as:
 
-- diagnosing illness
-- supporting many birds
-- detecting species
-- explaining every vocalization subtype
-- building a generalized emotional intelligence system
-- turning this into a broad pet-health platform
+- veterinary diagnosis
+- generalized species classification
+- multi-bird identity recognition
+- full emotional-state modeling
+- a broad pet-health platform
 
 ## Product Position
 
-The product is not "an app with AI features."
+MaracuyAI is best positioned as:
 
-It is:
+- a model-first prototype
+- a personalized bioacoustic classification project
+- a serious applied ML workflow wrapped in usable local interfaces
 
-- a binary audio decision engine
-- wrapped in a usable interface
-- trained on recordings of one specific bird
+The repo may contain broader historical features, but they are secondary to this definition.

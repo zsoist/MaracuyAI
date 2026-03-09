@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Parakeet Wellness",
+    "name": "MaracuyAI",
     "slug": "parakeet-wellness",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -13,7 +13,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.parakeetwellness.app",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "We need microphone access to record your parakeet's vocalizations for wellness analysis.",
+        "NSMicrophoneUsageDescription": "We need microphone access to record bird vocalizations for experimental audio analysis.",
         "NSPhotoLibraryUsageDescription": "We need photo library access so you can choose a profile photo for your parakeet."
       }
     },

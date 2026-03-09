@@ -2,79 +2,67 @@
 
 ## Design Goal
 
-Build the smallest system that can reliably answer:
+Build a small but credible system that can take a recording, run inference, and return a traceable binary result.
 
-`good or bad?`
+## Repo-Grounded Architecture
 
-## Preferred V1 Architecture
+### Data and storage layer
 
-### 1. Data layer
+- recording upload routes in the FastAPI backend
+- file normalization and storage in `backend/app/services/storage_service.py`
+- persisted recording and analysis rows in Postgres
 
-- raw recordings
-- segment metadata
-- labels
-- train/validation/test splits
+### Inference layer
 
-### 2. Model layer
+- active binary Maracuya adapter when a local `.keras` model artifact is mounted
+- legacy repo-native fallback path using preprocessing, statistical scoring, and broader inference logic
+- analysis metadata returned through the API for review and debugging
 
-- preprocessing pipeline
-- baseline binary model
-- CNN training pipeline
-- evaluation reports
+### Client layer
 
-### 3. Inference layer
+- local browser dashboard for desktop testing
+- Expo mobile app for broader recording and history flows
 
-- single API endpoint
-- upload or reference audio
-- return binary prediction and confidence
+## Current Architecture Snapshot
 
-### 4. Client layer
-
-- record or upload audio
-- display result
-- optionally show history
-
-## What To Simplify From The Current Repo
-
-The current codebase is broader than the product:
-
-- multi-class mood modeling
-- broader "wellness" framing
-- weather/context engine
-- larger mobile information architecture
-
-Those systems are not the current center of gravity. They should be treated as optional follow-on work, not as the definition of the product.
-
-## Recommended Target Repository Shape
-
-```text
-.
-|-- README.md
-|-- docs/
-|-- backend/
-|   |-- app/
-|   |-- scripts/
-|   `-- tests/
-|-- mobile/
-`-- research/
-    |-- datasets/
-    |-- experiments/
-    `-- reports/
+```mermaid
+flowchart LR
+    A["Capture or upload audio"] --> B["FastAPI upload route"]
+    B --> C["Normalize and persist recording"]
+    C --> D["Select inference path"]
+    D --> E["Binary Maracuya CNN<br/>preferred"]
+    D --> F["Legacy repo fallback path"]
+    E --> G["Binary verdict + metadata"]
+    F --> G
+    G --> H["Persist analysis result"]
+    G --> I["Dashboard / mobile display"]
 ```
 
-`research/` does not need to exist yet, but conceptually the project should think in those terms: experiments and evaluation first, interface second.
+## What Is Central Vs Secondary
 
-## Current Code Reuse Strategy
+### Central to the current product
 
-Keep:
+- audio ingestion
+- model selection and inference
+- binary output
+- local testing workflow
 
-- audio preprocessing code
-- storage and upload code
-- existing backend shell
-- existing mobile recording shell
+### Secondary or legacy
 
-Refactor over time:
+- multi-mood interpretations
+- context / weather / AQI features
+- broader "wellness" language
+- mobile information architecture beyond record -> result -> history
 
-- collapse multi-class outputs into binary outputs for product use
-- make the training/evaluation path explicit
-- reduce product claims until the binary classifier is validated
+Those secondary systems are still implementation evidence, but they should not define the repo's public story.
+
+## Architectural Direction
+
+The repository should continue moving toward:
+
+- binary-first API contracts
+- explicit model-version reporting
+- reproducible evaluation artifacts
+- thinner client surfaces centered on the inference loop
+
+This direction improves credibility because it reduces ambiguity between "interesting code" and "validated capability."
