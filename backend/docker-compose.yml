@@ -12,9 +12,11 @@ services:
       - UPLOAD_DIR=/app/uploads
       - RATE_LIMIT_BACKEND=memory
       - RATE_LIMIT_REDIS_URL=redis://redis:6379/0
+      - MARACUYA_BINARY_MODEL_PATH=/external/downloads/modelo_periquitos.keras
     volumes:
       - .:/app
       - upload_data:/app/uploads
+      - ${HOME}/Downloads:/external/downloads:ro
     depends_on:
       db:
         condition: service_healthy

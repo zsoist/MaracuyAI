@@ -38,6 +38,14 @@ fi
 echo "Starting MaracuyAI local dashboard stack..."
 echo "Open http://localhost:8000/dashboard/ once the API is up."
 
+MODEL_PATH="${MARACUYA_BINARY_MODEL_HOST_PATH:-$HOME/Downloads/modelo_periquitos.keras}"
+if [[ -f "$MODEL_PATH" ]]; then
+  echo "Found Maracuya binary CNN at $MODEL_PATH"
+else
+  echo "No trained Maracuya binary CNN found at $MODEL_PATH"
+  echo "Place modelo_periquitos.keras there to use your girlfriend's model instead of the fallback backend."
+fi
+
 cd "$ROOT_DIR/backend"
 echo "Resetting the local demo database for a clean startup..."
 "$DOCKER_BIN" compose down -v --remove-orphans >/dev/null 2>&1 || true

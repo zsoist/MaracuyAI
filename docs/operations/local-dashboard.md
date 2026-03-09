@@ -27,6 +27,7 @@ Use MaracuyAI locally on your Mac with:
 - dashboard auto-creates a local guest identity
 - dashboard auto-creates a default bird profile named `Maracuya`
 - Docker Compose now runs Alembic migrations before starting the API
+- local Docker now looks for `~/Downloads/modelo_periquitos.keras` and uses it when present
 
 ## Run
 
@@ -37,6 +38,12 @@ From the repo root:
 ```
 
 The launcher resets the local demo database volume before starting. That keeps the Mac demo deterministic and avoids stale migration state from older runs.
+
+If you want the dashboard to use the real binary CNN from the notebook instead of the fallback ensemble, place the trained file here before starting:
+
+```text
+~/Downloads/modelo_periquitos.keras
+```
 
 Then open:
 
@@ -50,7 +57,8 @@ This is a local operator board, not the final product. It is meant to make testi
 
 ## Current Binary Behavior
 
-The dashboard collapses the current backend mood output into a binary answer:
+- when `~/Downloads/modelo_periquitos.keras` exists, the backend uses that binary CNN directly
+- otherwise the dashboard collapses the fallback backend mood output into a binary answer:
 
 - `happy`, `relaxed`, `neutral` -> `good`
 - `stressed`, `scared`, `sick` -> `bad`

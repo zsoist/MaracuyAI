@@ -62,6 +62,8 @@ class Settings(BaseSettings):
     AUDIO_MIN_DURATION_SECONDS: float = 2.0
     AUDIO_MAX_DURATION_SECONDS: int = 300  # 5 minutes max
     AUDIO_SEGMENT_DURATION: float = 3.0  # seconds per analysis window
+    MARACUYA_BINARY_MODEL_PATH: str = "/external/downloads/modelo_periquitos.keras"
+    MARACUYA_BINARY_MODEL_THRESHOLD: float = 0.4
 
     # Context providers
     AIRNOW_API_KEY: str = ""

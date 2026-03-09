@@ -21,6 +21,7 @@ import numpy as np
 from app.ml.bird_classifier import BirdCNN
 from app.ml.ensemble import EnsemblePredictor, SegmentPrediction
 from app.ml.feature_engine import FeatureEngine
+from app.ml.maracuya_binary_model import MaracuyaBinaryModel
 from app.ml.statistical_classifier import StatisticalClassifier
 from app.services.audio_processor import AudioProcessor
 
@@ -72,6 +73,7 @@ class MLService:
         self.processor = AudioProcessor()
         self.feature_engine = FeatureEngine(sr=self.processor.sr)
         self.stat_classifier = StatisticalClassifier()
+        self.binary_model = MaracuyaBinaryModel()
         self._cnn: BirdCNN | None = None
         self._ensemble: EnsemblePredictor | None = None
 
@@ -95,6 +97,9 @@ class MLService:
         Returns a rich dict with mood, vocalization, confidence, probabilities,
         bird detection status, energy, segment details, and recommendations.
         """
+        if self.binary_model.is_available:
+            return self._analyze_with_maracuya_binary(file_path)
+
         # Step 1: Full preprocessing
         processed = self.processor.full_preprocess(file_path)
 
@@ -195,6 +200,63 @@ class MLService:
                 "pitch_mean": legacy_features.pitch_mean,
                 "pitch_std": legacy_features.pitch_std,
                 "rms_mean": float(np.mean(legacy_features.rms_energy)),
+            },
+        }
+
+    def _analyze_with_maracuya_binary(self, file_path: str) -> dict:
+        result = self.binary_model.analyze_file(file_path)
+        is_happy = result["binary_label"] == "feliz"
+        prob_feliz = result["prob_feliz"]
+        prob_estres = result["prob_estres"]
+        mood = "happy" if is_happy else "stressed"
+        vocalization_type = "contact_call" if is_happy else "alarm"
+
+        return {
+            "mood": mood,
+            "vocalization_type": vocalization_type,
+            "confidence": result["confidence"],
+            "energy_level": result["energy_level"],
+            "recommendations": RECOMMENDATIONS[mood],
+            "details": {
+                "bird_detected": True,
+                "bird_confidence": result["confidence"],
+                "temporal_consistency": 1.0,
+                "vocal_activity_ratio": 1.0,
+                "mood_probabilities": {
+                    "happy": round(prob_feliz, 4),
+                    "relaxed": 0.0,
+                    "stressed": round(prob_estres, 4),
+                    "scared": 0.0,
+                    "sick": 0.0,
+                    "neutral": 0.0,
+                },
+                "vocalization_probabilities": {
+                    "singing": 0.0,
+                    "chattering": 0.0,
+                    "alarm": 1.0 if not is_happy else 0.0,
+                    "silence": 0.0,
+                    "distress": 0.0,
+                    "contact_call": 1.0 if is_happy else 0.0,
+                    "beak_grinding": 0.0,
+                },
+                "classifier_weights": {
+                    "maracuya_binary_cnn": 1.0,
+                },
+                "cnn_weights_loaded": True,
+                "model_version": result["model_version"],
+                "active_model_backend": result["model_version"],
+                "binary_label": result["binary_label"],
+                "prob_feliz": round(prob_feliz, 4),
+                "prob_estres": round(prob_estres, 4),
+                "threshold": result["threshold"],
+                "segments_analyzed": result["segments_analyzed"],
+                "segment_seconds": result["segment_seconds"],
+                "segment_overlap": result["segment_overlap"],
+                "probs_per_segment": result["probs_per_segment"],
+                "model_path": result["model_path"],
+                "duration": round(result["duration_seconds"], 2),
+                "sample_rate": result["sample_rate"],
+                "vocalization_proxy": True,
             },
         }
 

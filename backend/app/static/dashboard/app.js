@@ -123,6 +123,19 @@ function chooseMimeType() {
 }
 
 function classifyBinary(analysis) {
+  if (analysis.details?.binary_label) {
+    return {
+      label: analysis.details.binary_label === "feliz" ? "good" : "bad",
+      goodScore: analysis.details.prob_feliz ?? 0,
+      badScore: analysis.details.prob_estres ?? 0,
+      confidence: Math.max(
+        analysis.details.prob_feliz ?? 0,
+        analysis.details.prob_estres ?? 0,
+        analysis.confidence || 0,
+      ),
+    };
+  }
+
   const probabilities = analysis.details?.mood_probabilities || {};
   const goodScore = positiveMoods.reduce((sum, label) => sum + (probabilities[label] || 0), 0);
   const badScore = negativeMoods.reduce((sum, label) => sum + (probabilities[label] || 0), 0);
@@ -163,7 +176,12 @@ function updateStatusCard(resultPayload) {
   const retryNote = analysis.details?.bird_detected === false
     ? " Bird was not detected clearly, so a retry is recommended."
     : "";
-  resultCopy.textContent = `Backend mood: ${analysis.mood}. Vocalization: ${analysis.vocalization_type}.${retryNote}`;
+  const modelSource = analysis.details?.active_model_backend || analysis.details?.model_version;
+  if (analysis.details?.binary_label) {
+    resultCopy.textContent = `Binary model: ${analysis.details.binary_label}. Backend mood: ${analysis.mood}.${retryNote}`;
+  } else {
+    resultCopy.textContent = `Backend mood: ${analysis.mood}. Vocalization: ${analysis.vocalization_type}.${retryNote}`;
+  }
 
   elements.metricBinaryConfidence.textContent = `${Math.round(binary.confidence * 100)}%`;
   elements.metricMood.textContent = analysis.mood;
@@ -175,10 +193,12 @@ function updateStatusCard(resultPayload) {
   elements.badScoreValue.textContent = `${Math.round(binary.badScore * 100)}%`;
   elements.resultNote.textContent = analysis.details?.bird_detected === false
     ? "The model produced a binary answer, but the backend did not clearly detect bird audio. Try moving the phone closer to your Mac microphone."
-    : "This binary board is derived from the current backend output and is ready for local testing on your Mac.";
+    : analysis.details?.binary_label
+      ? "This result comes from the Maracuya binary CNN provided for the project."
+      : "This binary board is derived from the current backend output and is ready for local testing on your Mac.";
 
   elements.debugRecordingId.textContent = recording.id;
-  elements.debugModelVersion.textContent = analysis.details?.model_version || "--";
+  elements.debugModelVersion.textContent = modelSource || "--";
   elements.debugVocalization.textContent = analysis.vocalization_type;
   elements.debugBirdConfidence.textContent = `${Math.round((analysis.details?.bird_confidence || 0) * 100)}%`;
   elements.lastStatus.textContent = binary.label === "good" ? "Good" : "Bad";
