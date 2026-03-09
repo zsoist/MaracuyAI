@@ -1,20 +1,29 @@
 # Documentation Index
 
-This repository keeps non-runtime materials under `docs/` so the project root stays focused on the application code.
+This documentation set has been reset around the actual product:
 
-## Operations
+`MaracuyAI = binary audio classifier for Maracuya`
 
-- `operations/handoff.md` - current implementation snapshot and handoff notes
-- `operations/execution-guide.md` - step-by-step CNN training and weight generation guide
+## Core
 
-## Deployment
-
-- `deployment/hosting-guide.md` - local and VPS deployment options
+- `product/definition.md` - what the product is and is not
+- `architecture/system-design.md` - target system shape
+- `data/labeling-guide.md` - binary label rules and dataset handling
+- `model/training-and-evaluation.md` - model strategy and promotion criteria
 
 ## Planning
 
-- `planning/integration-plan.md` - migration analysis and architecture notes
+- `planning/integration-plan.md` - rebuild roadmap from the current codebase to the real product
 
-## Mockups
+## Operations
 
-- `mockups/app-preview.html` - standalone UI preview
+- `operations/handoff.md` - current repo reset note and implementation state
+- `operations/execution-guide.md` - practical workflow for binary model experiments
+
+## Deployment
+
+- `deployment/hosting-guide.md` - minimal hosting options for dev and beta
+
+## Legacy UI Artifact
+
+- `mockups/app-preview.html` - legacy interface preview, not the product definition

@@ -1,136 +1,70 @@
-# v3 — Guía de Ejecución Paso a Paso
+# Execution Guide
 
-## Lo que vas a hacer
+## Goal
 
-Entrenar un modelo CNN compatible con MaracuyAI usando tus datos de audio de periquitos (carpetas Estres/ y Feliz/), generar los pesos, y colocarlos en el repo para que el ensemble los detecte automáticamente.
+Run MaracuyAI as a binary audio-classification project, not as a broad app-first project.
 
-**Resultado:** El backend pasa de clasificador heurístico (confianza ~40-55%) a CNN real (confianza esperada ~70-85%).
+## Working Loop
 
----
+### 1. Prepare data
 
-## Paso 0: Preparar el entorno
+- gather recordings of Maracuya
+- remove unusable files
+- define `good` and `bad`
+- split train, validation, and test sets
 
-```bash
-# Clonar el repo (si no lo tienes)
-git clone https://github.com/zsoist/MaracuyAI.git
-cd MaracuyAI
-```
+### 2. Establish a baseline
 
-Los archivos de entrenamiento ya vienen integrados en el repo:
-```
-backend/app/ml/
-├── __init__.py
-├── bird_classifier.py        # CNN dual-head (vocalization + mood)
-├── ensemble.py                # Blending CNN + Statistical + Temporal
-├── feature_engine.py          # 100+ audio features
-├── statistical_classifier.py  # Gaussian-distance classifier
-├── training/
-│   ├── __init__.py            # Training module
-│   ├── label_mapper.py        # v2 binary → soft multi-class labels
-│   └── train_from_v2_data.py  # Full training pipeline
-└── weights/
-    └── .gitkeep               # Aquí irán los pesos generados
-```
+Before trusting a CNN, train a simple baseline and record its metrics.
 
-## Paso 1: Instalar dependencias
+Minimum outputs:
 
-```bash
-cd backend
-pip install -r requirements.txt
-# matplotlib y scikit-learn ya están incluidos en requirements.txt
-```
+- accuracy
+- precision
+- recall
+- F1
+- confusion matrix
 
-## Paso 2: Entrenar
+### 3. Train the binary model
 
-```bash
-cd backend
+Use the current backend ML code as a starting point, but the target output for product use is binary.
 
-python -m app.ml.training.train_from_v2_data \
-    --data-dir "C:\Users\WINDOWS\Documents\Maracuya\Archivos_audio" \
-    --output-dir ./app/ml/weights \
-    --augment \
-    --epochs 80 \
-    --batch-size 16
-```
+That means:
 
-**Lo que genera:**
-```
-backend/app/ml/weights/
-├── bird_classifier.weights.h5     ← LO QUE NECESITA EL REPO
-├── bird_classifier_full.keras     ← Modelo completo (para debug)
-├── training_metadata.json         ← Métricas
-├── training_curves.png            ← Plots de loss/accuracy
-└── evaluation_plots.png           ← Confusion matrices
-```
+- map inference to `good` or `bad`
+- keep the model version explicit
+- save evaluation artifacts
 
-## Paso 3: Verificar
+### 4. Validate before productizing
 
-```bash
-# Levantar el backend
-docker compose up -d
+Do not move a model into product use unless:
 
-# Verificar que el modelo se cargó
-curl http://localhost:8000/health
-# Debe mostrar: "cnn_weights_loaded": true (en los logs del container)
+- it beats the baseline
+- it performs on a held-out test set
+- you know what mistakes it makes
 
-# Ver logs
-docker compose logs api | grep -i "weights"
-# Debe decir: "Loaded trained bird classifier weights from ..."
-```
+### 5. Expose through a thin API
 
-## Paso 4: Verificar el cambio en el ensemble
+The API contract should stay simple:
 
-Antes (sin pesos):
-```json
-{
-  "classifier_weights": {"cnn": 0.05, "statistical": 0.65, "temporal": 0.30}
-}
-```
+- submit audio
+- receive `good` or `bad`
+- receive confidence and model version
 
-Después (con pesos):
-```json
-{
-  "classifier_weights": {"cnn": 0.50, "statistical": 0.30, "temporal": 0.20}
-}
-```
+### 6. Keep the client thin
 
-## Paso 5: Exponer al exterior (para la app móvil)
+The mobile or web client should mainly:
 
-```bash
-# Opción rápida
-cloudflared tunnel --url http://localhost:8000
+- record audio
+- upload audio
+- show the answer
+- optionally show recent history
 
-# Copiar la URL y ponerla en mobile/.env:
-# EXPO_PUBLIC_API_BASE_URL=https://xxxx.trycloudflare.com/api/v1
-```
+## Practical Repo Rule
 
-## Paso 6: Levantar la app móvil
+If a task does not improve one of these four things, it is probably not core right now:
 
-```bash
-cd mobile
-npm install
-npx expo start
-```
-
----
-
-## Troubleshooting
-
-### "No se encontraron segmentos"
-→ Verifica que `--data-dir` tenga subcarpetas `Estres/` y `Feliz/` con archivos `.wav`
-
-### "Failed to load weights"
-→ Verifica que `bird_classifier.weights.h5` esté en `backend/app/ml/weights/`
-→ El modelo debe tener EXACTAMENTE la misma arquitectura que `bird_classifier.py`
-
-### Los pesos no se detectan en Docker
-→ Asegúrate de que el volumen monte la carpeta de weights:
-```yaml
-volumes:
-  - .:/app
-```
-→ El archivo debe estar en `/app/app/ml/weights/bird_classifier.weights.h5` dentro del container
-
-### Accuracy baja (<60%)
-→ Normal con solo 2 clases mapeadas a 6+7. El statistical classifier compensa.
-→ La accuracy real mejora conforme los usuarios etiqueten datos en la app.
+- labels
+- evaluation
+- model quality
+- inference reliability
