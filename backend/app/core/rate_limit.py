@@ -4,7 +4,7 @@ import asyncio
 import logging
 import time
 from collections import defaultdict, deque
-from collections.abc import Deque
+from typing import Deque
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request

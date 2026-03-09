@@ -1,19 +1,35 @@
+import base64
+import hashlib
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_LONG_PASSWORD_PREFIX = "sha256:"
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(_normalize_password(password), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    normalized_password = _normalize_password(plain_password)
+    try:
+        return bcrypt.checkpw(normalized_password, hashed_password.encode("utf-8"))
+    except ValueError:
+        return False
+
+
+def _normalize_password(password: str) -> bytes:
+    password_bytes = password.encode("utf-8")
+    if len(password_bytes) <= 72:
+        return password_bytes
+
+    digest = hashlib.sha256(password_bytes).digest()
+    encoded = base64.urlsafe_b64encode(digest).rstrip(b"=")
+    return _LONG_PASSWORD_PREFIX.encode("ascii") + encoded
 
 
 def create_access_token(subject: str, expires_delta: timedelta | None = None) -> str:

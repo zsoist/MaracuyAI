@@ -19,7 +19,7 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-mood_enum = sa.Enum(
+mood_enum = postgresql.ENUM(
     "HAPPY",
     "RELAXED",
     "STRESSED",
@@ -27,9 +27,10 @@ mood_enum = sa.Enum(
     "SICK",
     "NEUTRAL",
     name="moodtype",
+    create_type=False,
 )
 
-vocalization_enum = sa.Enum(
+vocalization_enum = postgresql.ENUM(
     "SINGING",
     "CHATTERING",
     "ALARM",
@@ -38,10 +39,14 @@ vocalization_enum = sa.Enum(
     "CONTACT_CALL",
     "BEAK_GRINDING",
     name="vocalizationtype",
+    create_type=False,
 )
 
 
 def upgrade() -> None:
+    mood_enum.create(op.get_bind(), checkfirst=True)
+    vocalization_enum.create(op.get_bind(), checkfirst=True)
+
     op.create_table(
         "users",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -222,3 +227,6 @@ def downgrade() -> None:
 
     op.drop_index("ix_users_email", table_name="users")
     op.drop_table("users")
+
+    vocalization_enum.drop(op.get_bind(), checkfirst=True)
+    mood_enum.drop(op.get_bind(), checkfirst=True)
