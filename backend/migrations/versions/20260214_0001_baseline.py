@@ -147,9 +147,6 @@ def upgrade() -> None:
         unique=False,
     )
 
-    mood_enum.create(op.get_bind(), checkfirst=True)
-    vocalization_enum.create(op.get_bind(), checkfirst=True)
-
     op.create_table(
         "analysis_results",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -206,9 +203,6 @@ def downgrade() -> None:
     op.drop_index("ix_analysis_results_parakeet_id", table_name="analysis_results")
     op.drop_index("ix_analysis_results_recording_id", table_name="analysis_results")
     op.drop_table("analysis_results")
-
-    vocalization_enum.drop(op.get_bind(), checkfirst=True)
-    mood_enum.drop(op.get_bind(), checkfirst=True)
 
     op.drop_index("ix_environment_snapshots_captured_at", table_name="environment_snapshots")
     op.drop_index(

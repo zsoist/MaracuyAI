@@ -36,6 +36,8 @@ From the repo root:
 ./scripts/run_local_dashboard.sh
 ```
 
+The launcher resets the local demo database volume before starting. That keeps the Mac demo deterministic and avoids stale migration state from older runs.
+
 Then open:
 
 ```text

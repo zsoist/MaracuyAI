@@ -39,4 +39,6 @@ echo "Starting MaracuyAI local dashboard stack..."
 echo "Open http://localhost:8000/dashboard/ once the API is up."
 
 cd "$ROOT_DIR/backend"
+echo "Resetting the local demo database for a clean startup..."
+"$DOCKER_BIN" compose down -v --remove-orphans >/dev/null 2>&1 || true
 "$DOCKER_BIN" compose up --build
