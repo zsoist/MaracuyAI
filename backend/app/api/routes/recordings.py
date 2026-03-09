@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel, Field
@@ -28,6 +29,17 @@ ALLOWED_AUDIO_TYPES = {
     "audio/ogg",
     "audio/flac",
     "audio/webm",
+}
+ALLOWED_AUDIO_EXTENSIONS = {
+    ".wav",
+    ".mp3",
+    ".m4a",
+    ".mp4",
+    ".ogg",
+    ".flac",
+    ".webm",
+    ".aac",
+    ".caf",
 }
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 
@@ -70,10 +82,17 @@ async def upload_recording(
     db: AsyncSession = Depends(get_db),
     auth_context: AuthContext = Depends(get_auth_context),
 ):
-    if file.content_type and file.content_type not in ALLOWED_AUDIO_TYPES:
+    if not _is_supported_audio_upload(
+        content_type=file.content_type,
+        filename=file.filename,
+    ):
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=f"Unsupported audio format: {file.content_type}. Supported: WAV, MP3, M4A, OGG, FLAC, WebM",
+            detail=(
+                "Unsupported audio format: "
+                f"{file.content_type or 'unknown'}. Supported: WAV, MP3, M4A/MP4, "
+                "OGG, FLAC, WebM, AAC, CAF"
+            ),
         )
 
     contents = await file.read()
@@ -267,3 +286,24 @@ def _estimate_recording_quality(recording: Recording) -> dict[str, object]:
         "label": label,
         "warnings": warnings,
     }
+
+
+def _is_supported_audio_upload(content_type: str | None, filename: str | None) -> bool:
+    normalized_type = (content_type or "").split(";", 1)[0].strip().lower()
+    if normalized_type in ALLOWED_AUDIO_TYPES:
+        return True
+
+    # Browser recorder output varies across Safari/Chrome multipart uploads.
+    if normalized_type in {"video/mp4", "application/octet-stream"}:
+        return _has_supported_audio_extension(filename)
+
+    if normalized_type.startswith("audio/"):
+        return _has_supported_audio_extension(filename) or normalized_type in ALLOWED_AUDIO_TYPES
+
+    return _has_supported_audio_extension(filename)
+
+
+def _has_supported_audio_extension(filename: str | None) -> bool:
+    if not filename:
+        return False
+    return Path(filename).suffix.lower() in ALLOWED_AUDIO_EXTENSIONS

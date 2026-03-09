@@ -1,4 +1,3 @@
-import io
 import imghdr
 import os
 import shutil
@@ -33,7 +32,7 @@ class StorageService:
             f.write(contents)
 
         try:
-            y, sr = librosa.load(io.BytesIO(contents), sr=None, mono=True)
+            y, sr = librosa.load(str(file_path), sr=None, mono=True)
             duration = float(librosa.get_duration(y=y, sr=sr))
             sample_rate = int(sr)
         except Exception as exc:
@@ -61,7 +60,7 @@ class StorageService:
             wav_path = user_dir / f"{file_id}.wav"
             try:
                 y_resampled, _ = librosa.load(
-                    io.BytesIO(contents), sr=settings.AUDIO_SAMPLE_RATE, mono=True
+                    str(file_path), sr=settings.AUDIO_SAMPLE_RATE, mono=True
                 )
                 sf.write(str(wav_path), y_resampled, settings.AUDIO_SAMPLE_RATE)
                 # Keep only one canonical media artifact per recording.
