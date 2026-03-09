@@ -19,6 +19,7 @@ This documentation set has been reset around the actual product:
 
 - `operations/handoff.md` - current repo reset note and implementation state
 - `operations/execution-guide.md` - practical workflow for binary model experiments
+- `operations/local-dashboard.md` - local Mac microphone dashboard workflow
 
 ## Deployment
 

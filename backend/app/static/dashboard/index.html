@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MaracuyAI Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/dashboard/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero-card">
+      <div class="hero-copy">
+        <p class="eyebrow">MaracuyAI Local Board</p>
+        <h1>Mac microphone dashboard for Maracuya</h1>
+        <p class="hero-text">
+          Record from your Mac, play the bird sample from your phone, and get a fast local verdict.
+        </p>
+        <div class="hero-actions">
+          <button id="record-toggle" class="record-button" type="button">
+            <span class="record-button-core"></span>
+          </button>
+          <div class="hero-action-copy">
+            <strong id="record-state-label">Ready to record</strong>
+            <span id="record-hint">Press once, play the sample near your Mac microphone, then stop.</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="status-pill" id="stack-status-pill">Stack checking...</div>
+        <div class="stat-grid">
+          <section class="stat-card">
+            <span class="stat-label">Profile</span>
+            <strong class="stat-value" id="profile-name">Maracuya</strong>
+          </section>
+          <section class="stat-card">
+            <span class="stat-label">Mic timer</span>
+            <strong class="stat-value" id="recording-timer">00:00</strong>
+          </section>
+          <section class="stat-card">
+            <span class="stat-label">Last result</span>
+            <strong class="stat-value" id="last-status">None yet</strong>
+          </section>
+          <section class="stat-card">
+            <span class="stat-label">Analyses</span>
+            <strong class="stat-value" id="analysis-count">0</strong>
+          </section>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard-grid">
+      <section class="panel panel-primary">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Live verdict</p>
+            <h2>Current analysis board</h2>
+          </div>
+          <button id="upload-trigger" class="ghost-button" type="button">Upload audio file</button>
+          <input id="audio-upload" type="file" accept="audio/*" hidden />
+        </div>
+
+        <div id="result-card" class="result-card result-card-idle">
+          <div class="result-main">
+            <span class="result-label">Waiting</span>
+            <strong class="result-title">No analysis yet</strong>
+            <p class="result-copy">Record with your Mac microphone or upload a file to start.</p>
+          </div>
+          <div class="result-metrics">
+            <div class="metric">
+              <span>Binary confidence</span>
+              <strong id="metric-binary-confidence">--</strong>
+            </div>
+            <div class="metric">
+              <span>Model mood</span>
+              <strong id="metric-mood">--</strong>
+            </div>
+            <div class="metric">
+              <span>Bird detected</span>
+              <strong id="metric-bird-detected">--</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="confidence-panel">
+          <div>
+            <p class="panel-kicker">Binary score split</p>
+            <h3>Good vs bad</h3>
+          </div>
+          <div class="score-row">
+            <span>Good</span>
+            <div class="score-bar"><div id="good-score-fill" class="score-fill score-fill-good"></div></div>
+            <strong id="good-score-value">0%</strong>
+          </div>
+          <div class="score-row">
+            <span>Bad</span>
+            <div class="score-bar"><div id="bad-score-fill" class="score-fill score-fill-bad"></div></div>
+            <strong id="bad-score-value">0%</strong>
+          </div>
+        </div>
+
+        <div class="notes-card">
+          <p class="panel-kicker">Session note</p>
+          <p id="result-note">The board derives a binary answer from the current backend output so you can test the real product flow locally.</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">How to use</p>
+            <h2>Local demo steps</h2>
+          </div>
+        </div>
+        <ol class="steps-list">
+          <li>Allow microphone access in your browser.</li>
+          <li>Put your phone near the Mac microphone.</li>
+          <li>Press record and play the bird sample from your phone.</li>
+          <li>Stop recording and wait for the result board.</li>
+        </ol>
+        <div class="sub-panel">
+          <p class="panel-kicker">Useful details</p>
+          <ul class="details-list">
+            <li>Guest mode is created automatically in this browser.</li>
+            <li>A default local bird profile named Maracuya is created automatically.</li>
+            <li>The dashboard runs entirely against your local backend at <code>localhost:8000</code>.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Recent history</p>
+            <h2>Last analyses</h2>
+          </div>
+          <button id="refresh-history" class="ghost-button" type="button">Refresh</button>
+        </div>
+        <div id="history-list" class="history-list">
+          <div class="history-empty">No history yet.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Debug details</p>
+            <h2>Backend interpretation</h2>
+          </div>
+        </div>
+        <dl class="debug-grid">
+          <div>
+            <dt>Recording ID</dt>
+            <dd id="debug-recording-id">--</dd>
+          </div>
+          <div>
+            <dt>Model version</dt>
+            <dd id="debug-model-version">--</dd>
+          </div>
+          <div>
+            <dt>Top vocalization</dt>
+            <dd id="debug-vocalization">--</dd>
+          </div>
+          <div>
+            <dt>Bird confidence</dt>
+            <dd id="debug-bird-confidence">--</dd>
+          </div>
+        </dl>
+      </section>
+    </main>
+  </div>
+
+  <template id="history-item-template">
+    <article class="history-item">
+      <div class="history-badge"></div>
+      <div class="history-copy">
+        <strong class="history-title"></strong>
+        <p class="history-subtitle"></p>
+      </div>
+      <div class="history-meta"></div>
+    </article>
+  </template>
+
+  <script type="module" src="/dashboard/app.js"></script>
+</body>
+</html>

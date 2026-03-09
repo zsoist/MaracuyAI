@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import analysis, auth, context, parakeets, recordings
@@ -65,11 +66,22 @@ media_dir = Path(settings.UPLOAD_DIR) / "public"
 media_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/media", StaticFiles(directory=media_dir), name="media")
 
+dashboard_dir = Path(__file__).parent / "static" / "dashboard"
+if dashboard_dir.exists():
+    app.mount("/dashboard", StaticFiles(directory=dashboard_dir, html=True), name="dashboard")
+
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(parakeets.router, prefix=settings.API_V1_PREFIX)
 app.include_router(recordings.router, prefix=settings.API_V1_PREFIX)
 app.include_router(analysis.router, prefix=settings.API_V1_PREFIX)
 app.include_router(context.router, prefix=settings.API_V1_PREFIX)
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    if dashboard_dir.exists():
+        return RedirectResponse(url="/dashboard/")
+    return {"status": "ok", "app": settings.APP_NAME}
 
 
 @app.get("/health")

@@ -103,6 +103,7 @@ The new source-of-truth docs are:
 - [docs/model/training-and-evaluation.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/model/training-and-evaluation.md)
 - [docs/planning/integration-plan.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/planning/integration-plan.md)
 - [docs/operations/execution-guide.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/operations/execution-guide.md)
+- [docs/operations/local-dashboard.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/operations/local-dashboard.md)
 - [docs/deployment/hosting-guide.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/deployment/hosting-guide.md)
 
 See [docs/README.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/README.md) for the full map.
