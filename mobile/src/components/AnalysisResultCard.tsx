@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { useI18n } from '../i18n/useI18n';
-import type { AnalysisDetails, AnalysisResult, MoodType } from '../types';
+import type { AnalysisDetails, AnalysisResult } from '../types';
 import { MoodIndicator } from './MoodIndicator';
 import type { TranslationKey } from '../i18n/types';
 import { colors, radius, spacing } from '../theme/tokens';

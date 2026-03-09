@@ -75,12 +75,14 @@ This section explains the current AI layer in plain language.
 
 ### 3.1 What kind of AI is currently implemented
 
-Current analysis is a 4-component ensemble ML stack:
+The repository contains a 4-component ensemble ML stack:
 
 1. **CNN dual-head classifier** (TensorFlow/Keras): Conv2D x4 with BatchNorm, trained on mel spectrograms to predict vocalization type and mood simultaneously.
 2. **Statistical classifier**: Gaussian log-likelihood scoring against budgerigar-specific acoustic profiles for each mood and vocalization class.
 3. **Advanced feature engine**: Extracts 100+ audio features (MFCCs + deltas, spectral features, pitch, energy, bird-band energy ratio, harmonic ratio, chroma, tonnetz, and more).
 4. **Ensemble predictor**: Blends CNN + Statistical + Temporal predictions with adaptive weights. CNN available: 50/30/20 weighting. CNN unavailable: 5/65/30.
+
+Important implementation detail: the repo does **not** ship trained CNN weights by default. Unless `backend/app/ml/weights/bird_classifier.weights.h5` exists, the backend now skips neural inference entirely and uses the statistical + temporal path only. In other words, the neural architecture is implemented, but trained neural capability is optional until you train and add weights.
 
 ### 3.2 Audio analysis pipeline (step by step)
 
@@ -137,7 +139,7 @@ python -m app.ml.training.train_from_v2_data \
     --augment
 ```
 
-The ensemble automatically detects trained weights and shifts from statistical-heavy (5/65/30) to CNN-heavy (50/30/20) weighting.
+The ensemble automatically detects trained weights and shifts from statistical-heavy (5/65/30) to CNN-heavy (50/30/20) weighting. Without weights, the app still analyzes audio, but it is relying on the non-neural fallback path rather than a trained CNN.
 
 ### 3.4 Why this AI design is useful
 

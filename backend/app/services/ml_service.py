@@ -114,11 +114,16 @@ class MLService:
             self.processor.compute_mel_spectrogram(seg)
             for seg in segments
         ]
+        cnn_available = self.cnn.has_trained_weights
 
-        try:
-            cnn_results = self.cnn.predict_batch(mel_patches)
-        except Exception:
-            logger.warning("CNN batch prediction failed, falling back to statistical only")
+        if cnn_available:
+            try:
+                cnn_results = self.cnn.predict_batch(mel_patches)
+            except Exception:
+                logger.warning("CNN batch prediction failed, falling back to statistical only")
+                cnn_results = [None] * len(segments)
+        else:
+            logger.info("No trained CNN weights detected, using statistical-only ensemble path")
             cnn_results = [None] * len(segments)
 
         for i, segment in enumerate(segments):

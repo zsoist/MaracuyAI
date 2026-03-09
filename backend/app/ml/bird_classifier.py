@@ -111,6 +111,10 @@ class BirdCNN:
         )
 
     @property
+    def weights_path(self) -> Path:
+        return Path(self._weights_dir) / "bird_classifier.weights.h5"
+
+    @property
     def model(self):
         if self._model is None:
             self._model = _build_model()
@@ -120,12 +124,14 @@ class BirdCNN:
     @property
     def has_trained_weights(self) -> bool:
         """Return True if real trained weights were loaded successfully."""
-        # Force lazy init
-        _ = self.model
+        if self._weights_loaded:
+            return True
+        if self._model is None:
+            return self.weights_path.exists()
         return self._weights_loaded
 
     def _try_load_weights(self):
-        weights_path = Path(self._weights_dir) / "bird_classifier.weights.h5"
+        weights_path = self.weights_path
         if weights_path.exists():
             try:
                 self._model.load_weights(str(weights_path))
