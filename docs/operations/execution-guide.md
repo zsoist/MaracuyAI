@@ -2,7 +2,7 @@
 
 ## Lo que vas a hacer
 
-Entrenar un modelo CNN compatible con Project-MK-2 usando tus datos de audio de periquitos (carpetas Estres/ y Feliz/), generar los pesos, y colocarlos en el repo para que el ensemble los detecte automáticamente.
+Entrenar un modelo CNN compatible con MaracuyAI usando tus datos de audio de periquitos (carpetas Estres/ y Feliz/), generar los pesos, y colocarlos en el repo para que el ensemble los detecte automáticamente.
 
 **Resultado:** El backend pasa de clasificador heurístico (confianza ~40-55%) a CNN real (confianza esperada ~70-85%).
 
@@ -12,8 +12,8 @@ Entrenar un modelo CNN compatible con Project-MK-2 usando tus datos de audio de 
 
 ```bash
 # Clonar el repo (si no lo tienes)
-git clone https://github.com/zsoist/Project-MK-2.git
-cd Project-MK-2
+git clone https://github.com/zsoist/MaracuyAI.git
+cd MaracuyAI
 ```
 
 Los archivos de entrenamiento ya vienen integrados en el repo:

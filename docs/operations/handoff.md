@@ -1,12 +1,12 @@
 # HANDOFF - Parakeet Wellness AI
 
-Last updated: **February 28, 2026 (Training pipeline integration + full audit)**
+Last updated: **March 9, 2026 (main branch normalization + repository cleanup)**
 
 ## 1) Branch Snapshot
 
-- Repo: `git@github.com:zsoist/Project-MK-2.git`
-- Branch: `claude/integrate-new-model-RgYYF`
-- Previous branch: `claude/review-appstore-readiness-TnT7x`
+- Repo: `git@github.com:zsoist/MaracuyAI.git`
+- Branch: `main`
+- Previous branch: `claude/integrate-new-model-RgYYF`
 
 This handoff is the current source-of-truth for implementation and release state.
 
@@ -163,7 +163,7 @@ python -m app.ml.training.train_from_v2_data \
 ## 7) Documentation
 
 - `README.md` - Full product documentation
-- `HANDOFF.md` - This file (implementation state)
-- `EXECUTION_GUIDE.md` - Step-by-step training guide
-- `HOSTING_GUIDE.md` - Deployment options (local, Oracle, Hetzner)
-- `INTEGRATION_PLAN.md` - v2 -> v3 migration analysis
+- `docs/operations/handoff.md` - This file (implementation state)
+- `docs/operations/execution-guide.md` - Step-by-step training guide
+- `docs/deployment/hosting-guide.md` - Deployment options (local, Oracle, Hetzner)
+- `docs/planning/integration-plan.md` - v2 -> v3 migration analysis

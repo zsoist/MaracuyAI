@@ -168,6 +168,7 @@ Roadmap direction:
 ## 4. System Architecture
 
 Monorepo root:
+- `docs/` - product, deployment, handoff, and planning documentation
 - `backend/` - Python FastAPI server
 - `mobile/` - Expo / React Native app
 
@@ -348,7 +349,15 @@ cloudflared tunnel --url http://localhost:8000
 ### Option C: Hetzner VPS (from ~3 EUR/month)
 - Fast setup, reliable
 
-See `HOSTING_GUIDE.md` for full deployment instructions.
+See [docs/deployment/hosting-guide.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/deployment/hosting-guide.md) for full deployment instructions.
+
+## 10.1 Repository Docs
+
+- [docs/README.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/README.md) - documentation index
+- [docs/operations/handoff.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/operations/handoff.md) - implementation state and handoff notes
+- [docs/operations/execution-guide.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/operations/execution-guide.md) - CNN training walkthrough
+- [docs/planning/integration-plan.md](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/planning/integration-plan.md) - migration and gap analysis
+- [docs/mockups/app-preview.html](/Users/daniel/CODEX/MaracuyaAI%20CODEX/docs/mockups/app-preview.html) - standalone product mockup
 
 ## 10. Troubleshooting (Beginner-Friendly)
 

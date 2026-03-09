@@ -1,8 +1,8 @@
-# Maracuyá v3 — Plan de Integración con Project-MK-2
+# Maracuyá v3 — Plan de Integración
 
 ## Full Scan: Estado Actual del Repositorio
 
-### Branch: `claude/review-appstore-readiness-TnT7x` (18 commits, la más avanzada)
+### Branch baseline: `main`
 
 **Arquitectura general:**
 ```
@@ -25,15 +25,15 @@ React Native (Expo 52)  →  FastAPI (Python 3.12)  →  PostgreSQL 16 + Redis 7
 
 ---
 
-## Gap Analysis: v2 (Maracuyá) vs Project-MK-2
+## Gap Analysis: v2 (Maracuyá) vs current system
 
-| Aspecto | v2 (Maracuyá) | Project-MK-2 | Incompatibilidad |
+| Aspecto | v2 (Maracuyá) | Sistema actual | Incompatibilidad |
 |---------|---------------|--------------|-------------------|
-| **Clasificación** | Binaria (feliz/estrés) | Multi-clase: 6 moods × 7 vocalizaciones | **CRÍTICA** — No puedes meter un modelo binario donde esperan 6+7 clases |
+| **Clasificación** | Binaria (feliz/estrés) | Multi-clase: 6 moods × 7 vocalizaciones | **CRÍTICA** — No puedes meter un modelo binario donde el sistema actual espera 6+7 clases |
 | **Input shape** | `(64, 130, 1)` — 64 mels | `(128, 128, 1)` — 128 mels | **ALTA** — Shapes incompatibles |
 | **Normalización** | `(log_mel + 80) / 80` → [0,1] | `power_to_db(mel, ref=max)` → min-max per-patch | **MEDIA** — Pipeline distinto |
 | **Modelo** | Sequential CNN (3 conv, 1 head, sigmoid) | Functional CNN dual-head (4 conv, 2 heads, softmax) | **CRÍTICA** — Arquitectura completamente distinta |
-| **Preprocesamiento** | Simple: load → mel → normalize | Avanzado: load → normalize → noise reduce → bandpass → HPSS → VAD → segment | **El repo es superior** |
+| **Preprocesamiento** | Simple: load → mel → normalize | Avanzado: load → normalize → noise reduce → bandpass → HPSS → VAD → segment | **El repo actual es superior** |
 | **Segment duration** | 3.0s | 3.0s | ✅ Compatible |
 | **Sample rate** | 22050 | 22050 | ✅ Compatible |
 | **Output format** | `{"label": "feliz", "prob_feliz": 0.87}` | `{"mood": "happy", "mood_probabilities": {...}, "vocalization_type": "singing", ...}` | **MEDIA** — v2 output no cabe en la API existente |

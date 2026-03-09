@@ -120,8 +120,8 @@ curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker ubuntu
 
 # 5. Clonar repo y levantar
-git clone https://github.com/zsoist/Project-MK-2.git
-cd Project-MK-2/backend
+git clone https://github.com/zsoist/MaracuyAI.git
+cd MaracuyAI/backend
 cp .env.example .env
 # Editar .env (SECRET_KEY, CORS_ORIGINS)
 docker compose up -d
@@ -159,8 +159,8 @@ Mismo proceso que Oracle pero pagando. Ventaja: setup en 2 minutos, más confiab
 
 ssh root@<IP>
 apt update && apt install -y docker.io docker-compose-v2
-git clone https://github.com/zsoist/Project-MK-2.git
-cd Project-MK-2/backend
+git clone https://github.com/zsoist/MaracuyAI.git
+cd MaracuyAI/backend
 cp .env.example .env
 # Editar .env
 docker compose up -d

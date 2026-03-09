@@ -1,4 +1,4 @@
-"""Maps v2 binary labels (feliz/estrés) to the multi-class labels used by Project-MK-2.
+"""Maps v2 binary labels (feliz/estrés) to the multi-class labels used by MaracuyAI.
 
 The repo's BirdCNN has two heads:
   - Vocalization: 7 classes (singing, chattering, alarm, silence, distress, contact_call, beak_grinding)
